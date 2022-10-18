@@ -1,5 +1,4 @@
-use boba_app::*;
-use boba_winit::*;
+use boba::prelude::*;
 
 fn main() {
     let app = BobaApp::new();
