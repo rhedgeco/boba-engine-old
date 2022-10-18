@@ -25,21 +25,20 @@ pub struct WgpuRenderExecutor {
 }
 
 impl WgpuRenderer {
-    pub async fn new(window: &Window) -> Result<Self, RendererError> {
+    pub fn new(window: &Window, present: wgpu::PresentMode) -> Result<Self, RendererError> {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe { instance.create_surface(window) };
-        let Some(adapter) = instance
+        let Some(adapter) = pollster::block_on(instance
             .request_adapter(&wgpu::RequestAdapterOptionsBase {
                 power_preference: wgpu::PowerPreference::default(),
                 force_fallback_adapter: false,
                 compatible_surface: Some(&surface),
-            })
-            .await else {
+            })) else {
                 return Err(RendererError::AdapterRequestFailed);
             };
 
-        let Ok((device, queue)) = adapter
+        let Ok((device, queue)) = pollster::block_on(adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
@@ -51,8 +50,7 @@ impl WgpuRenderer {
                     },
                 },
                 None,
-            )
-            .await else {
+            )) else {
                 return Err(RendererError::DeviceRequestFailed);
             };
 
@@ -61,7 +59,7 @@ impl WgpuRenderer {
             format: surface.get_supported_formats(&adapter)[0],
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::AutoNoVsync,
+            present_mode: present,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
         };
 

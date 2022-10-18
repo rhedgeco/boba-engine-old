@@ -54,7 +54,7 @@ impl BobaRunner for WinitRunner {
     fn run(self, mut app: BobaApp) {
         env_logger::init();
 
-        let mut renderer = pollster::block_on(WgpuRenderer::new(&self.window)).unwrap();
+        let mut renderer = WgpuRenderer::new(&self.window, wgpu::PresentMode::AutoNoVsync).unwrap();
 
         self.event_loop
             .run(move |event, _, control_flow| match event {
