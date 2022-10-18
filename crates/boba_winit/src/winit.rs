@@ -7,21 +7,14 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-pub struct WinitHeadless {
-    event_loop: EventLoop<()>,
-}
+use crate::WgpuRenderer;
+
+#[derive(Default)]
+pub struct WinitHeadless;
 
 pub struct WinitRunner {
     window: Window,
     event_loop: EventLoop<()>,
-}
-
-impl Default for WinitHeadless {
-    fn default() -> Self {
-        Self {
-            event_loop: EventLoop::new(),
-        }
-    }
 }
 
 impl Default for WinitRunner {
@@ -47,8 +40,8 @@ impl WinitRunner {
 impl BobaRunner for WinitHeadless {
     fn run(self, mut app: BobaApp) {
         env_logger::init();
-
-        self.event_loop.run(move |event, _, _| match event {
+        let event_loop = EventLoop::new();
+        event_loop.run(move |event, _, _| match event {
             Event::MainEventsCleared => {
                 app.update();
             }
@@ -61,6 +54,8 @@ impl BobaRunner for WinitRunner {
     fn run(self, mut app: BobaApp) {
         env_logger::init();
 
+        let mut renderer = pollster::block_on(WgpuRenderer::new(&self.window)).unwrap();
+
         self.event_loop
             .run(move |event, _, control_flow| match event {
                 Event::WindowEvent {
@@ -68,11 +63,21 @@ impl BobaRunner for WinitRunner {
                     window_id,
                 } if window_id == self.window.id() => match event {
                     WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                    WindowEvent::Resized(physical_size) => renderer.resize(*physical_size),
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                        renderer.resize(**new_inner_size)
+                    }
                     _ => {}
                 },
 
                 Event::RedrawRequested(window_id) if window_id == self.window.id() => {
                     app.update();
+                    match renderer.render_app(&mut app) {
+                        Ok(_) => {}
+                        Err(wgpu::SurfaceError::Lost) => renderer.resize(renderer.get_size()),
+                        Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                        Err(e) => eprintln!("{:?}", e),
+                    }
                 }
                 Event::MainEventsCleared => {
                     self.window.request_redraw();
