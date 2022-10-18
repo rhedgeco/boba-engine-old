@@ -14,7 +14,6 @@ members = [
 [dependencies]
 boba_app = { path = "./crates/boba_app" }
 boba_winit = { path = "./crates/boba_winit" }
-boba_renderer = { path = "./crates/boba_renderer" }
 
 log = "0.4"
 env_logger = "0.9"

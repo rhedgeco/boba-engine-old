@@ -1,4 +1,4 @@
-mod prelude {
+pub mod prelude {
     pub use boba_app::*;
     pub use boba_winit::*;
 }

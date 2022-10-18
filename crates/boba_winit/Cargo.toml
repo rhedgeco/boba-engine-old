@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 boba_app = { path = "../boba_app" }
-boba_renderer = { path = "../boba_renderer" }
 
 log = "0.4"
 env_logger = "0.9"
