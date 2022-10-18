@@ -6,9 +6,24 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[workspace]
+members = [
+  "crates/*",
+]
+
 [dependencies]
+boba_app = { path = "./crates/boba_app" }
+boba_winit = { path = "./crates/boba_winit" }
+boba_renderer = { path = "./crates/boba_renderer" }
+
 log = "0.4"
 env_logger = "0.9"
 winit = "0.27"
 wgpu = "0.14"
 pollster = "0.2"
+bytemuck = { version = "1.12", features = [ "derive" ] }
+
+[dependencies.image]
+version = "0.24"
+default-features = false
+features = ["png", "jpeg"]

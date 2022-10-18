@@ -1,6 +1,7 @@
-use boba::prelude::*;
+use boba_app::*;
+use boba_winit::*;
 
 fn main() {
-    let mut app = BobaApp::new();
-    WinitRunner::default().run(&mut app);
+    let app = BobaApp::new();
+    WinitRunner::default().run(app);
 }
