@@ -1,21 +1,31 @@
-use std::time::Instant;
+// use std::time::Instant;
 
+use boba_input::*;
 use raster::Color;
 
-pub struct BobaApp {
-    instant: Instant,
+pub struct BobaApp {}
+
+impl Default for BobaApp {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BobaApp {
     pub fn new() -> Self {
-        Self {
-            instant: Instant::now(),
-        }
+        Self {}
     }
 
-    pub fn update(&mut self) {
-        println!("Update App {:?}", 1. / self.instant.elapsed().as_secs_f64());
-        self.instant = Instant::now();
+    pub fn update(&mut self) {}
+
+    pub fn keyboard_input(&mut self, state: KeyState, key: Option<KeyCode>, scancode: u32) {
+        println!(
+            "Key {:?} {:?} -> {:?} on thread {:?}",
+            scancode,
+            state,
+            key,
+            std::thread::current().id()
+        )
     }
 
     pub fn render(&mut self, renderer: &mut dyn BobaRenderer) {

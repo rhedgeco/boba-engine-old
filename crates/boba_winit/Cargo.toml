@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 boba_app = { path = "../boba_app" }
+boba_input = { path = "../boba_input" }
 
 log = "0.4"
 env_logger = "0.9"

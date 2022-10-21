@@ -6,4 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+boba_input = { path = "../boba_input" }
+boba_component = { path = "../boba_component" }
+boba_stage = { path = "../boba_stage" }
+
 raster = "0.2"
+downcast-rs = "1.2"
