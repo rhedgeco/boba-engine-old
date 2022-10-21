@@ -13,16 +13,5 @@ members = [
 
 [dependencies]
 boba_app = { path = "./crates/boba_app" }
-boba_winit = { path = "./crates/boba_winit" }
-
-log = "0.4"
-env_logger = "0.9"
-winit = "0.27"
-wgpu = "0.14"
-pollster = "0.2"
-bytemuck = { version = "1.12", features = [ "derive" ] }
-
-[dependencies.image]
-version = "0.24"
-default-features = false
-features = ["png", "jpeg"]
+boba_window = { path = "./crates/boba_window" }
+boba_renderer = { path = "./crates/boba_renderer" }

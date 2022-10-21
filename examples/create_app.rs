@@ -1,6 +1,7 @@
 use boba::prelude::*;
 
 fn main() {
-    let app = BobaApp::new();
-    WinitRunner::default().run(app);
+    let app = MilkTea::new();
+    let runner = BobaWindow::<BobaRenderer>::new().unwrap();
+    runner.run(app);
 }

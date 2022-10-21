@@ -1,13 +1,14 @@
 [package]
-name = "boba_app"
+name = "boba_renderer"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-boba_component = { path = "../boba_component" }
+boba_window = { path = "../boba_window"}
 
 winit = "0.27"
-raster = "0.2"
-downcast-rs = "1.2"
+wgpu = "0.14"
+pollster = "0.2"
+bytemuck = { version = "1.12", features = [ "derive" ] }
