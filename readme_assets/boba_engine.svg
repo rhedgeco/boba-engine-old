@@ -7,6 +7,8 @@
    viewBox="0 0 207.02344 105.80005"
    version="1.1"
    id="svg5"
+   sodipodi:docname="boba_engine.svg"
+   inkscape:version="1.2.1 (9c6d41e410, 2022-07-14, custom)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -22,9 +24,30 @@
      inkscape:pagecheckerboard="0"
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
-     showgrid="false" />
+     showgrid="false"
+     inkscape:zoom="1.7342944"
+     inkscape:cx="391.802"
+     inkscape:cy="200.36967"
+     inkscape:window-width="3424"
+     inkscape:window-height="1366"
+     inkscape:window-x="8"
+     inkscape:window-y="36"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
   <defs
      id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient1055">
+      <stop
+         style="stop-color:#ff9a9a;stop-opacity:1;"
+         offset="0"
+         id="stop1051" />
+      <stop
+         style="stop-color:#ffc0c0;stop-opacity:1;"
+         offset="1"
+         id="stop1053" />
+    </linearGradient>
     <rect
        x="34.44873"
        y="660.58185"
@@ -61,8 +84,8 @@
        id="linearGradient4176"
        x1="77.17057"
        y1="162.43988"
-       x2="80.582405"
-       y2="132.76799"
+       x2="82.167351"
+       y2="137.09457"
        gradientUnits="userSpaceOnUse" />
     <linearGradient
        inkscape:collect="always"
@@ -73,7 +96,17 @@
        x2="93.983002"
        y2="106.79387"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(0.86258242,0,0,0.91923386,38.739525,-19.337577)" />
+       gradientTransform="matrix(0.86258242,0,0,0.91923386,38.83544,-21.018025)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1055"
+       id="linearGradient1057"
+       x1="82.080254"
+       y1="131.51376"
+       x2="86.373268"
+       y2="124.40855"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0.56563648,-1.5872013)" />
   </defs>
   <g
      inkscape:label="Layer 1"
@@ -107,19 +140,19 @@
        inkscape:export-ydpi="96" />
     <path
        style="fill:#f6d3bd;fill-opacity:1;stroke:none;stroke-width:3.865;stroke-dasharray:none;stroke-opacity:1"
-       d="m 58.765892,127.03685 c 2.510543,-0.64201 4.398698,-0.60996 6.678416,-0.52727 2.279717,0.0827 6.101629,2.0112 10.629603,2.40483 4.417573,0.38402 7.790566,-2.11131 14.770349,-1.25977 6.256978,0.76336 7.542696,4.09503 10.34998,6.78081 2.74193,2.62325 -0.83428,14.991 -0.83428,14.991 0,0 -2.772715,8.30577 -10.356575,11.80671 -7.58386,3.50095 -16.277758,4.37004 -25.593589,-2.4211 -9.315828,-6.79114 -9.054975,-18.7032 -9.054975,-18.7032 z"
+       d="m 61.556903,125.71003 c 3.237663,0.10929 6.152238,-1.3669 9.979054,-1.30844 3.826816,0.0585 8.023069,1.93729 11.985233,2.76719 3.962164,0.8299 7.337985,0.0667 10.396798,1.40669 3.058813,1.34001 3.237198,2.89438 6.875292,5.00274 2.74193,2.62325 -0.43332,15.84824 -0.43332,15.84824 0,0 -2.772715,8.30577 -10.356575,11.80671 -7.58386,3.50095 -16.277758,4.37004 -25.593589,-2.4211 -9.315828,-6.79114 -9.054975,-18.7032 -9.054975,-18.7032 z"
        id="path1226"
-       sodipodi:nodetypes="csssscsscc" />
+       sodipodi:nodetypes="csssccsscc" />
     <path
-       style="fill:#ffc0c0;fill-opacity:1;stroke:none;stroke-width:3.86501;stroke-dasharray:none;stroke-opacity:1"
-       d="M 88.639523,108.05116 78.081887,129.8737 c 0,0 -0.34405,1.47206 3.774438,2.10566 4.897382,0.75343 5.071107,-1.25742 5.071107,-1.25742 l 9.600997,-20.15953 c 0,0 0.242844,-1.17173 -3.528511,-1.94893 -4.012723,-0.82694 -4.360395,-0.56232 -4.360395,-0.56232 z"
+       style="fill:url(#linearGradient1057);fill-opacity:1;stroke:none;stroke-width:3.86501;stroke-dasharray:none;stroke-opacity:1"
+       d="M 89.205159,106.46396 78.647523,128.2865 c 0,0 -0.34405,1.47206 3.774438,2.10566 4.897382,0.75343 5.071107,-1.25742 5.071107,-1.25742 l 9.600997,-20.15953 c 0,0 0.242844,-1.17173 -3.528511,-1.94893 -4.012723,-0.82694 -4.360395,-0.56232 -4.360395,-0.56232 z"
        id="path4624"
        sodipodi:nodetypes="ccsccsc" />
     <path
        style="fill:url(#linearGradient4176);fill-opacity:1;stroke:none;stroke-width:3.865;stroke-dasharray:none;stroke-opacity:1"
-       d="m 57.882783,130.70233 c 6.402504,3.55649 15.725031,3.14123 20.529077,1.17063 5.342538,-2.19147 7.696193,0.19678 12.117652,2.34446 6.071961,2.94941 6.811135,0.20119 10.600378,0.40415 2.59246,0.13886 -2.818921,19.49451 -2.818921,19.49451 0,0 -0.393975,3.60419 -7.977835,7.10513 -7.58386,3.50095 -15.196824,5.77327 -24.512655,-1.01787 -9.315828,-6.79114 -9.905234,-18.75138 -9.905234,-18.75138 z"
+       d="m 61.514958,125.50877 c 1.986074,2.89252 5.519438,4.55118 8.448399,5.01789 3.311363,0.52765 8.675181,-0.0422 12.531835,0.54539 3.856655,0.58758 5.158195,1.60944 8.838402,1.83358 3.726319,0.22695 5.38663,-0.38234 8.32258,-1.44531 2.592456,0.13886 -1.345205,22.65576 -1.345205,22.65576 0,0 -0.393975,3.60419 -7.977835,7.10513 -7.58386,3.50095 -15.196824,5.77327 -24.512655,-1.01787 C 56.504651,153.4122 54.677057,139.3623 54.677057,139.3623 Z"
        id="path4134"
-       sodipodi:nodetypes="cssscsscc" />
+       sodipodi:nodetypes="csssccsscc" />
     <circle
        style="fill:none;fill-opacity:1;stroke:#262626;stroke-width:3.206;stroke-dasharray:none;stroke-opacity:1"
        id="path493"
@@ -159,8 +192,8 @@
     <ellipse
        style="fill:url(#linearGradient4687);fill-opacity:1;stroke:none;stroke-width:3.44163;stroke-dasharray:none;stroke-opacity:1"
        id="path4679"
-       cx="119.61982"
-       cy="81.129906"
+       cx="119.71574"
+       cy="79.449455"
        rx="4.1279893"
        ry="2.3557291"
        transform="matrix(0.96466306,0.2634866,-0.28153833,0.95954998,0,0)" />
@@ -181,8 +214,8 @@
        style="font-size:96px;white-space:pre;shape-inside:url(#rect6704);fill:#4d4d4d;fill-opacity:1;stroke:none;stroke-width:12.1172;stroke-dasharray:none;stroke-opacity:1"><tspan
          x="34.449219"
          y="744.58203"
-         id="tspan7196"><tspan
+         id="tspan2338"><tspan
            style="font-weight:900;font-family:'Adobe Clean Black';-inkscape-font-specification:'Adobe Clean Black,  Heavy'"
-           id="tspan7194">ENGINE</tspan></tspan></text>
+           id="tspan2336">ENGINE</tspan></tspan></text>
   </g>
 </svg>
