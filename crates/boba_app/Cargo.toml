@@ -6,8 +6,3 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-boba_component = { path = "../boba_component" }
-
-winit = "0.27"
-raster = "0.2"
-downcast-rs = "1.2"

@@ -12,6 +12,4 @@ members = [
 ]
 
 [dependencies]
-boba_app = { path = "./crates/boba_app" }
-boba_window = { path = "./crates/boba_window" }
-boba_renderer = { path = "./crates/boba_renderer" }
+boba_component = { path = "./crates/boba_component" }

@@ -1,15 +1,14 @@
-mod milk_tea;
-
-pub use milk_tea::*;
-
-pub enum BobaEvent {
-    Update,
+pub fn add(left: usize, right: usize) -> usize {
+    left + right
 }
 
-pub trait BobaApp {
-    fn handle_event(&mut self, event: BobaEvent);
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-pub trait BobaRunner {
-    fn run<A: 'static + BobaApp>(self, app: A);
+    #[test]
+    fn it_works() {
+        let result = add(2, 2);
+        assert_eq!(result, 4);
+    }
 }
