@@ -26,14 +26,14 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="1.2263313"
-     inkscape:cx="270.31847"
-     inkscape:cy="216.49941"
+     inkscape:cx="16.716527"
+     inkscape:cy="121.90833"
      inkscape:window-width="3424"
      inkscape:window-height="1366"
      inkscape:window-x="8"
      inkscape:window-y="36"
      inkscape:window-maximized="0"
-     inkscape:current-layer="layer1" />
+     inkscape:current-layer="g2357" />
   <defs
      id="defs2">
     <linearGradient
@@ -70,7 +70,7 @@
        inkscape:collect="always"
        id="linearGradient4174">
       <stop
-         style="stop-color:#d38d5f;stop-opacity:1;"
+         style="stop-color:#a46b3f;stop-opacity:1;"
          offset="0"
          id="stop4170" />
       <stop
@@ -84,8 +84,8 @@
        id="linearGradient4176"
        x1="77.17057"
        y1="162.43988"
-       x2="82.167351"
-       y2="137.09457"
+       x2="80.965805"
+       y2="137.84085"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(1.0357678,0,0,1.0357678,-2.8079775,-5.9274248)" />
     <linearGradient
@@ -131,9 +131,9 @@
        inkscape:label="Engine"><tspan
          x="34.449219"
          y="744.58203"
-         id="tspan2472"><tspan
+         id="tspan2514"><tspan
            style="font-weight:900;font-family:'Adobe Clean Black';-inkscape-font-specification:'Adobe Clean Black,  Heavy'"
-           id="tspan2470">ENGINE</tspan></tspan></text>
+           id="tspan2512">ENGINE</tspan></tspan></text>
     <path
        id="path5471"
        style="fill:#262626;fill-opacity:1;stroke:none;stroke-width:3.9322;stroke-dasharray:none;stroke-opacity:1"
