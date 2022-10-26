@@ -1,7 +1,0 @@
-[package]
-name = "boba_component"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-downcast-rs = "1.2"

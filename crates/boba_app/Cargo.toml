@@ -3,6 +3,5 @@ name = "boba_app"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+boba_objects = { path = "../boba_objects" }
