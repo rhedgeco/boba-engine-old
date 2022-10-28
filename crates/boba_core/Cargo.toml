@@ -1,7 +1,7 @@
 [package]
-name = "boba_app"
+name = "boba_core"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-boba_objects = { path = "../boba_objects" }
+anymap = "0.12"

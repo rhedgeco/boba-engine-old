@@ -1,7 +1,0 @@
-[package]
-name = "boba_objects"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-uuid = { version = "1.2", features = ["v4", "fast-rng"] }

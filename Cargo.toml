@@ -12,4 +12,4 @@ members = [
 ]
 
 [dependencies]
-boba_objects = { path = "./crates/boba_objects" }
+boba_core = { path = "./crates/boba_core" }

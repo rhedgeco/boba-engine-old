@@ -1,27 +1,37 @@
-use boba_objects::{register_updaters, DataUpdate, RegisteredUpdater};
+use std::{cell::RefCell, rc::Rc};
 
-#[derive(Debug)]
+use boba_core::*;
+
 struct TestItem1;
 
-#[derive(Debug)]
 struct TestItem2;
+
+struct TestItem3;
 
 struct TestData {
     _data: u64,
 }
 
-impl DataUpdate<TestItem1> for TestData {
-    fn update(&mut self, item: &TestItem1) {
-        println!("Update 1 with {:?}", item);
+impl ControllerStage<TestItem1> for TestData {
+    fn update(&mut self, _: &mut TestItem1, _: &mut BobaResources) {
+        println!("Update 1 data:{:?}", self._data);
     }
 }
 
-impl DataUpdate<TestItem2> for TestData {
-    fn update(&mut self, item: &TestItem2) {
-        println!("Update 2 with {:?}", item);
+impl ControllerStage<TestItem2> for TestData {
+    fn update(&mut self, _: &mut TestItem2, _: &mut BobaResources) {
+        println!("Update 2 data:{:?}", self._data);
     }
 }
 
-register_updaters!(TestData: TestItem1, TestItem2);
+register_stages!(TestData: TestItem1, TestItem2);
 
-fn main() {}
+fn main() {
+    let mut world = BobaApp::default();
+    let test1 = TestData { _data: 5 };
+    let cont1 = BobaController::new(Rc::new(RefCell::new(test1)));
+    world.add_controller(cont1.clone());
+    world.update(&mut TestItem1);
+    world.update(&mut TestItem2);
+    world.update(&mut TestItem3);
+}
