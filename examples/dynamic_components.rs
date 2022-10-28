@@ -1,5 +1,3 @@
-use std::{cell::RefCell, rc::Rc};
-
 use boba_core::*;
 
 struct TestItem1;
@@ -29,7 +27,7 @@ register_stages!(TestData: TestItem1, TestItem2);
 fn main() {
     let mut world = BobaApp::default();
     let test1 = TestData { _data: 5 };
-    let cont1 = BobaController::new(Rc::new(RefCell::new(test1)));
+    let cont1 = BobaController::new(test1);
     world.add_controller(cont1.clone());
     world.update(&mut TestItem1);
     world.update(&mut TestItem2);
