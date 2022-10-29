@@ -47,7 +47,7 @@ pub trait RegisteredStages {
 }
 
 #[macro_export]
-macro_rules! register_controller_stages {
+macro_rules! register_controller_with_stages {
     ($type:ty: $($item:ty),+ $(,)?) => {
 
         // weird hack to check if type implements all provided traits

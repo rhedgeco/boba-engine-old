@@ -35,7 +35,7 @@ impl ControllerStage<TestStage2> for TestController {
     }
 }
 
-register_controller_stages!(TestController: TestStage1, TestStage2);
+register_controller_with_stages!(TestController: TestStage1, TestStage2);
 
 fn main() {
     let mut app = BobaApp::default();
