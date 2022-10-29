@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::BobaResources;
+use crate::{BobaResources, BobaStage};
 
 pub struct BobaController<T: 'static + RegisteredStages> {
     pub(crate) controller: Rc<RefCell<T>>,
@@ -34,16 +34,20 @@ impl<T: 'static + RegisteredStages> BobaController<T> {
     }
 }
 
-pub trait ControllerStage<StageData: 'static>: RegisteredStages {
+pub trait ControllerStage<StageData: 'static + BobaStage>: RegisteredStages {
     fn update(&mut self, data: &mut StageData, resources: &mut BobaResources);
 }
 
 pub trait RegisteredStages {
+    /// # Safety
+    ///
+    /// This function should only be implemented with the provided macro.
+    /// Implementing it yourself could lead to wacky and undefined behaviour. (probably segfaults lol)
     unsafe fn transmute_trait(&mut self, trait_id: TypeId) -> Option<&mut dyn RegisteredStages>;
 }
 
 #[macro_export]
-macro_rules! register_stages {
+macro_rules! register_controller_stages {
     ($type:ty: $($item:ty),+ $(,)?) => {
 
         // weird hack to check if type implements all provided traits

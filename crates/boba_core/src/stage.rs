@@ -1,5 +1,5 @@
-pub trait BobaStage<T: 'static> {
-    fn start(&mut self);
-    fn data_mut(&mut self) -> &mut T;
-    fn finish(&mut self);
+use crate::{storage::controller_storage::ControllerStorage, BobaResources};
+
+pub trait BobaStage {
+    fn run(&mut self, controllers: &mut ControllerStorage, resources: &mut BobaResources);
 }

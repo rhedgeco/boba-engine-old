@@ -1,27 +1,27 @@
 use crate::{
-    storage::controller_storage::ControllerStorage, BobaController, BobaResources, RegisteredStages,
+    storage::{controller_storage::ControllerStorage, stage_storage::StageStorage},
+    BobaResources,
 };
 
+#[derive(Default)]
 pub struct BobaApp {
     resources: BobaResources,
     controllers: ControllerStorage,
-}
-
-impl Default for BobaApp {
-    fn default() -> Self {
-        Self {
-            resources: Default::default(),
-            controllers: Default::default(),
-        }
-    }
+    stages: StageStorage,
 }
 
 impl BobaApp {
-    pub fn add_controller<T: 'static + RegisteredStages>(&mut self, updater: BobaController<T>) {
-        self.controllers.add(updater);
+    pub fn stages(&mut self) -> &mut StageStorage {
+        &mut self.stages
     }
 
-    pub fn update<T: 'static>(&mut self, data: &mut T) {
-        self.controllers.update(data, &mut self.resources);
+    pub fn controllers(&mut self) -> &mut ControllerStorage {
+        &mut self.controllers
+    }
+
+    pub fn update(&mut self) {
+        for stage in self.stages.iter_mut() {
+            stage.run(&mut self.controllers, &mut self.resources);
+        }
     }
 }
