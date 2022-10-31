@@ -41,7 +41,7 @@ fn main() {
     let mut app = BobaApp::default();
     let test_stage1 = TestStage1;
     let test_stage2 = TestStage2;
-    let controller = BobaController::new(TestController { _data: 5 });
+    let controller = BobaController::build(TestController { _data: 5 });
 
     app.stages().add(test_stage1);
     app.stages().add(test_stage2);

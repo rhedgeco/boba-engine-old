@@ -19,7 +19,7 @@ impl<T: 'static + RegisteredStages> Clone for BobaController<T> {
 }
 
 impl<T: 'static + RegisteredStages> BobaController<T> {
-    pub fn new(controller: T) -> Self {
+    pub fn build(controller: T) -> Self {
         Self {
             controller: Rc::new(Some(RefCell::new(controller))),
         }

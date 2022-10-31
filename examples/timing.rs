@@ -1,4 +1,5 @@
 use boba_core::{controller_storage::ControllerStorage, *};
+use milk_tea_runner::MilkTeaRunner;
 
 #[derive(Debug)]
 struct Update;
@@ -21,11 +22,8 @@ register_controller_with_stages!(TimeTestController: Update);
 
 fn main() {
     let mut app = BobaApp::default();
-    let controller = BobaController::new(TimeTestController);
-
+    let controller = BobaController::build(TimeTestController);
     app.stages().add(Update);
     app.controllers().add(controller);
-    loop {
-        app.update()
-    }
+    app.run::<MilkTeaRunner>();
 }

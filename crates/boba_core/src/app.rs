@@ -1,6 +1,6 @@
 use crate::{
     storage::{controller_storage::ControllerStorage, stage_storage::StageStorage},
-    BobaResources,
+    BobaResources, BobaRunner,
 };
 
 #[derive(Default)]
@@ -29,5 +29,10 @@ impl BobaApp {
         }
 
         self.resources.time().reset();
+    }
+
+    pub fn run<T: BobaRunner>(self) {
+        let mut runner = T::init();
+        runner.run(self);
     }
 }
