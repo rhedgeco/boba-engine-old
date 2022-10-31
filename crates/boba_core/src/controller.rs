@@ -7,7 +7,7 @@ use std::{
 use crate::{BobaResources, BobaStage};
 
 pub struct BobaController<T: 'static + RegisteredStages> {
-    pub(crate) controller: Rc<RefCell<T>>,
+    pub(crate) controller: Rc<Option<RefCell<T>>>,
 }
 
 impl<T: 'static + RegisteredStages> Clone for BobaController<T> {
@@ -21,16 +21,24 @@ impl<T: 'static + RegisteredStages> Clone for BobaController<T> {
 impl<T: 'static + RegisteredStages> BobaController<T> {
     pub fn new(controller: T) -> Self {
         Self {
-            controller: Rc::new(RefCell::new(controller)),
+            controller: Rc::new(Some(RefCell::new(controller))),
         }
     }
 
-    pub fn data(&self) -> Ref<T> {
-        self.controller.borrow()
+    pub fn data(&self) -> Option<Ref<T>> {
+        let Some(test) = self.controller.as_ref() else {
+            return None
+        };
+
+        Some(test.borrow())
     }
 
-    pub fn data_mut(&mut self) -> RefMut<T> {
-        self.controller.borrow_mut()
+    pub fn data_mut(&mut self) -> Option<RefMut<T>> {
+        let Some(test) = self.controller.as_ref() else {
+            return None
+        };
+
+        Some(test.borrow_mut())
     }
 }
 

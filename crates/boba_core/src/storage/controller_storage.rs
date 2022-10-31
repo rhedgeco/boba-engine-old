@@ -18,7 +18,10 @@ impl ControllerStorage {
         resources: &mut BobaResources,
     ) {
         for controller in self.controllers.iter_mut() {
-            let mut registered_stages = controller.data_mut();
+            let Some(mut registered_stages) = controller.data_mut() else {
+                continue;
+            };
+
             unsafe {
                 if let Some(updater) = registered_stages
                     .transmute_trait(TypeId::of::<dyn ControllerStage<StageData>>())
@@ -34,11 +37,15 @@ impl ControllerStorage {
 }
 
 trait AnyController {
-    fn data_mut(&mut self) -> RefMut<dyn RegisteredStages>;
+    fn data_mut(&mut self) -> Option<RefMut<dyn RegisteredStages>>;
 }
 
 impl<T: 'static + RegisteredStages> AnyController for BobaController<T> {
-    fn data_mut(&mut self) -> RefMut<dyn RegisteredStages> {
-        self.data_mut()
+    fn data_mut(&mut self) -> Option<RefMut<dyn RegisteredStages>> {
+        let Some(data) = self.data_mut() else {
+            return None;
+        };
+
+        Some(data)
     }
 }
