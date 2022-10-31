@@ -27,12 +27,12 @@ impl BobaTime {
         self.instant = Instant::now();
     }
 
-    pub fn delta(&self) -> &f64 {
-        &self.delta
+    pub fn delta(&self) -> f64 {
+        self.delta
     }
 
-    pub fn unscaled_delta(&self) -> &f64 {
-        &self.unscaled_delta
+    pub fn unscaled_delta(&self) -> f64 {
+        self.unscaled_delta
     }
 
     pub fn set_time_scale(&mut self, time_scale: f64) {
@@ -55,7 +55,11 @@ impl Default for BobaResources {
 }
 
 impl BobaResources {
-    pub fn time(&mut self) -> &mut BobaTime {
+    pub fn time(&self) -> &BobaTime {
+        &self.time
+    }
+
+    pub fn time_mut(&mut self) -> &mut BobaTime {
         &mut self.time
     }
 

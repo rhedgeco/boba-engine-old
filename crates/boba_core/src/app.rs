@@ -28,11 +28,6 @@ impl BobaApp {
             stage.run(&mut self.controllers, &mut self.resources);
         }
 
-        self.resources.time().reset();
-    }
-
-    pub fn run<T: BobaRunner>(self) {
-        let mut runner = T::init();
-        runner.run(self);
+        self.resources.time_mut().reset();
     }
 }
