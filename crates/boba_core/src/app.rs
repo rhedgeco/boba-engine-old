@@ -28,6 +28,6 @@ impl BobaApp {
             stage.run(&mut self.controllers, &mut self.resources);
         }
 
-        self.resources.time.reset();
+        self.resources.time().reset();
     }
 }
