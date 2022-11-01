@@ -11,20 +11,20 @@ use crate::{stages::MilkTeaUpdate, MilkTeaRender, MilkTeaWindows};
 pub struct MilkTeaRunner {}
 
 impl BobaRunner for MilkTeaRunner {
+    fn add_stages_and_resources(&mut self, app: &mut boba_core::BobaApp) {
+        app.stages().add(MilkTeaUpdate);
+    }
+
     fn run(&mut self, mut app: boba_core::BobaApp) {
-        env_logger::init();
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new().build(&event_loop).unwrap();
         let main_id = window.id();
 
-        let renderer = pollster::block_on(MilkTeaRender::new(&window));
-
-        app.stages().add(MilkTeaUpdate);
+        app.resources().add(MilkTeaRender::new(&window));
         app.resources().add(MilkTeaWindows::new(window));
-        app.resources().add(renderer);
 
         event_loop.run(move |event, _, control_flow| {
-            // control_flow.set_poll();
+            control_flow.set_poll();
 
             match event {
                 Event::WindowEvent {

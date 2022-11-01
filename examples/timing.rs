@@ -13,10 +13,8 @@ impl ControllerStage<MilkTeaUpdate> for TimeTestController {
 register_controller_with_stages!(TimeTestController: MilkTeaUpdate);
 
 fn main() {
-    let mut app = BobaApp::default();
-    let controller = BobaController::build(TimeTestController);
-    app.controllers().add(controller);
-
-    let mut runner = MilkTeaRunner::default();
-    runner.run(app);
+    let mut app = BobaApp::new(MilkTeaRunner::default());
+    app.controllers()
+        .add(BobaController::build(TimeTestController));
+    app.run();
 }
