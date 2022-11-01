@@ -1,6 +1,6 @@
 use crate::{
     storage::{controller_storage::ControllerStorage, stage_storage::StageStorage},
-    BobaResources, BobaRunner,
+    BobaResources,
 };
 
 #[derive(Default)]

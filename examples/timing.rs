@@ -17,6 +17,6 @@ fn main() {
     let controller = BobaController::build(TimeTestController);
     app.controllers().add(controller);
 
-    let mut runner = MilkTeaRunner::new();
+    let mut runner = MilkTeaRunner::default();
     runner.run(app);
 }
