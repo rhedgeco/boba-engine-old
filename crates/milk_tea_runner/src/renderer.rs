@@ -55,7 +55,7 @@ impl MilkTeaRender {
     }
 
     pub fn device(&self) -> &wgpu::Device {
-        &&self.device
+        &self.device
     }
 
     pub fn queue(&self) -> &wgpu::Queue {
