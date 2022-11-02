@@ -5,7 +5,10 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::{stages::MilkTeaUpdate, MilkTeaRender, MilkTeaWindows};
+use crate::{
+    stages::{MilkTeaRenderStage, MilkTeaUpdate},
+    MilkTeaRender, MilkTeaWindows,
+};
 
 #[derive(Default)]
 pub struct MilkTeaRunner {}
@@ -13,6 +16,7 @@ pub struct MilkTeaRunner {}
 impl BobaRunner for MilkTeaRunner {
     fn add_stages_and_resources(&mut self, app: &mut boba_core::BobaApp) {
         app.stages().add(MilkTeaUpdate);
+        app.stages().add(MilkTeaRenderStage);
     }
 
     fn run(&mut self, mut app: boba_core::BobaApp) {
@@ -46,10 +50,6 @@ impl BobaRunner for MilkTeaRunner {
                 },
                 Event::MainEventsCleared => {
                     app.update();
-                    app.resources()
-                        .get_mut::<MilkTeaRender>()
-                        .expect("Renderer was not in resources")
-                        .clear();
                 }
                 _ => (),
             }
