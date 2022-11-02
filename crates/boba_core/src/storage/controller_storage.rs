@@ -12,9 +12,9 @@ impl ControllerStorage {
         self.controllers.push(Box::new(controller))
     }
 
-    pub fn update<StageData: 'static + BobaStage>(
+    pub fn update<'a, Stage: 'static + BobaStage>(
         &mut self,
-        data: &mut StageData,
+        data: &mut Stage::StageData<'a>,
         resources: &mut BobaResources,
     ) {
         for controller in self.controllers.iter_mut() {
@@ -23,13 +23,11 @@ impl ControllerStorage {
             };
 
             unsafe {
-                if let Some(updater) = registered_stages
-                    .transmute_trait(TypeId::of::<dyn ControllerStage<StageData>>())
+                if let Some(updater) =
+                    registered_stages.transmute_trait(TypeId::of::<dyn ControllerStage<Stage>>())
                 {
-                    transmute::<&mut dyn RegisteredStages, &mut dyn ControllerStage<StageData>>(
-                        updater,
-                    )
-                    .update(data, resources)
+                    transmute::<&mut dyn RegisteredStages, &mut dyn ControllerStage<Stage>>(updater)
+                        .update(data, resources)
                 }
             }
         }

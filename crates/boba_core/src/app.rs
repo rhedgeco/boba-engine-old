@@ -38,9 +38,8 @@ impl BobaApp {
     }
 
     pub fn update(&mut self) {
-        for stage in self.stages.iter_mut() {
-            stage.run(&mut self.controllers, &mut self.resources);
-        }
+        self.stages
+            .run_stages(&mut self.controllers, &mut self.resources);
 
         self.resources.time_mut().reset();
     }

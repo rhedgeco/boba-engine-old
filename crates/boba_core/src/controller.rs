@@ -42,8 +42,8 @@ impl<T: 'static + RegisteredStages> BobaController<T> {
     }
 }
 
-pub trait ControllerStage<StageData: 'static + BobaStage>: RegisteredStages {
-    fn update(&mut self, data: &mut StageData, resources: &mut BobaResources);
+pub trait ControllerStage<Stage: 'static + BobaStage>: RegisteredStages {
+    fn update<'a>(&'a mut self, data: &mut Stage::StageData<'a>, resources: &mut BobaResources);
 }
 
 pub trait RegisteredStages {

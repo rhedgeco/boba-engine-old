@@ -4,7 +4,7 @@ use milk_tea_runner::{stages::MilkTeaUpdate, *};
 struct TimeTestController;
 
 impl ControllerStage<MilkTeaUpdate> for TimeTestController {
-    fn update(&mut self, _: &mut MilkTeaUpdate, resources: &mut BobaResources) {
+    fn update<'a>(&'a mut self, _: &mut MilkTeaUpdate, resources: &mut BobaResources) {
         let delta = resources.time().delta();
         println!("FPS: {:?}", 1. / delta);
     }
