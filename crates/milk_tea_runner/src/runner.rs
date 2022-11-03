@@ -5,7 +5,7 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::MilkTeaWindows;
+use crate::{events::MilkTeaResize, MilkTeaWindows};
 
 #[derive(Default)]
 pub struct MilkTeaRunner {}
@@ -29,16 +29,14 @@ impl BobaRunner for MilkTeaRunner {
                     window_id,
                 } if window_id == main_id => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
-                    // WindowEvent::Resized(physical_size) => app
-                    //     .resources()
-                    //     .get_mut::<MilkTeaRender>()
-                    //     .expect("Renderer was not in resources")
-                    //     .resize(*physical_size),
-                    // WindowEvent::ScaleFactorChanged { new_inner_size, .. } => app
-                    //     .resources()
-                    //     .get_mut::<MilkTeaRender>()
-                    //     .expect("Renderer was not in resources")
-                    //     .resize(**new_inner_size),
+                    WindowEvent::Resized(physical_size) => app.trigger_event(MilkTeaResize {
+                        size: *physical_size,
+                    }),
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                        app.trigger_event(MilkTeaResize {
+                            size: **new_inner_size,
+                        })
+                    }
                     _ => (),
                 },
                 Event::MainEventsCleared => {

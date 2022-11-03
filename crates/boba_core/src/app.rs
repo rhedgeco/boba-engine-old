@@ -1,6 +1,6 @@
 use crate::{
     storage::{controller_storage::ControllerStorage, stage_storage::StageStorage},
-    BobaPlugin, BobaResources, BobaRunner,
+    BobaEvent, BobaPlugin, BobaResources, BobaRunner, BobaStage,
 };
 
 pub struct BobaApp {
@@ -13,15 +13,13 @@ pub struct BobaApp {
 
 impl BobaApp {
     pub fn new<Runner: 'static + BobaRunner>(runner: Runner) -> Self {
-        let app = Self {
+        Self {
             resources: Default::default(),
             controllers: Default::default(),
             startup_stages: Default::default(),
             stages: Default::default(),
             runner: Some(Box::new(runner)),
-        };
-
-        app
+        }
     }
 
     pub fn resources(&mut self) -> &mut BobaResources {
@@ -52,6 +50,11 @@ impl BobaApp {
     pub fn execute_stages(&mut self) {
         self.stages
             .run_stages(&mut self.controllers, &mut self.resources);
+    }
+
+    pub fn trigger_event<Data: 'static>(&mut self, data: Data) {
+        let mut event = BobaEvent::<Data>::new(data);
+        event.run(&mut self.controllers, &mut self.resources);
     }
 
     pub fn run(mut self) {

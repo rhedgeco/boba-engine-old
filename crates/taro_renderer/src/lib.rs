@@ -1,13 +1,16 @@
 mod renderer;
+mod resize_controller;
 
 pub mod stages;
 
 pub use renderer::*;
 
 pub mod prelude {
-    use boba_core::BobaPlugin;
-
-    use crate::stages::{TaroRenderStage, TaroStartup};
+    use crate::{
+        resize_controller::ResizeController,
+        stages::{TaroRenderStage, TaroStartup},
+    };
+    use boba_core::*;
 
     pub struct TaroRenderPlugin;
 
@@ -15,6 +18,8 @@ pub mod prelude {
         fn setup(&self, app: &mut boba_core::BobaApp) {
             app.startup_stages().add(TaroStartup);
             app.stages().add(TaroRenderStage);
+            app.controllers()
+                .add(BobaController::build(ResizeController));
         }
     }
 }
