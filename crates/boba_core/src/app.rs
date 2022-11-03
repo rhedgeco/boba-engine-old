@@ -1,32 +1,35 @@
 use crate::{
     storage::{controller_storage::ControllerStorage, stage_storage::StageStorage},
-    BobaResources, BobaRunner,
+    BobaPlugin, BobaResources, BobaRunner,
 };
 
-#[derive(Default)]
 pub struct BobaApp {
     resources: BobaResources,
     controllers: ControllerStorage,
+    startup_stages: StageStorage,
     stages: StageStorage,
     runner: Option<Box<dyn BobaRunner>>,
 }
 
 impl BobaApp {
-    pub fn new<T: 'static + BobaRunner>(mut runner: T) -> Self {
-        let mut app = Self {
+    pub fn new<Runner: 'static + BobaRunner>(runner: Runner) -> Self {
+        let app = Self {
             resources: Default::default(),
             controllers: Default::default(),
+            startup_stages: Default::default(),
             stages: Default::default(),
-            runner: None,
+            runner: Some(Box::new(runner)),
         };
 
-        runner.add_stages_and_resources(&mut app);
-        app.runner = Some(Box::new(runner));
         app
     }
 
     pub fn resources(&mut self) -> &mut BobaResources {
         &mut self.resources
+    }
+
+    pub fn startup_stages(&mut self) -> &mut StageStorage {
+        &mut self.startup_stages
     }
 
     pub fn stages(&mut self) -> &mut StageStorage {
@@ -37,18 +40,23 @@ impl BobaApp {
         &mut self.controllers
     }
 
-    pub fn update(&mut self) {
+    pub fn add_plugin<Plugin: BobaPlugin>(&mut self, plugin: &Plugin) {
+        plugin.setup(self)
+    }
+
+    pub fn execute_startup_stages(&mut self) {
+        self.startup_stages
+            .run_stages(&mut self.controllers, &mut self.resources);
+    }
+
+    pub fn execute_stages(&mut self) {
         self.stages
             .run_stages(&mut self.controllers, &mut self.resources);
-
-        self.resources.time_mut().reset();
     }
 
     pub fn run(mut self) {
-        if let Some(mut runner) = std::mem::replace(&mut self.runner, None) {
-            runner.run(self);
-        } else {
-            self.update();
-        }
+        let mut runner = std::mem::replace(&mut self.runner, None)
+            .expect("Runner should not be None at this point");
+        runner.run(self);
     }
 }

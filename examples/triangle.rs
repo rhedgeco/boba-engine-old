@@ -1,5 +1,6 @@
 use boba_core::*;
-use milk_tea_runner::{stages::MilkTeaRenderStage, *};
+use milk_tea_runner::*;
+use taro_renderer::{prelude::TaroRenderPlugin, stages::TaroRenderStage, TaroRenderer};
 use wgpu::{include_wgsl, RenderPass, RenderPipeline};
 
 #[derive(Default)]
@@ -9,7 +10,7 @@ struct TriangleController {
 
 impl TriangleController {
     fn init(&mut self, resources: &mut BobaResources) {
-        let renderer = resources.get::<MilkTeaRender>().unwrap();
+        let renderer = resources.get::<TaroRenderer>().unwrap();
 
         let shader = renderer
             .device()
@@ -66,7 +67,7 @@ impl TriangleController {
     }
 }
 
-impl ControllerStage<MilkTeaRenderStage> for TriangleController {
+impl ControllerStage<TaroRenderStage> for TriangleController {
     fn update<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, resources: &mut BobaResources) {
         if self.render_pipeline.is_none() {
             self.init(resources);
@@ -77,11 +78,11 @@ impl ControllerStage<MilkTeaRenderStage> for TriangleController {
     }
 }
 
-register_controller_with_stages!(TriangleController: MilkTeaRenderStage);
+register_controller_with_stages!(TriangleController: TaroRenderStage);
 
 fn main() {
     let mut app = BobaApp::new(MilkTeaRunner::default());
-
+    app.add_plugin(&TaroRenderPlugin);
     app.controllers()
         .add(BobaController::build(TriangleController::default()));
     app.run();

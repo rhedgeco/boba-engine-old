@@ -1,11 +1,11 @@
 use boba_core::BobaStage;
 use wgpu::RenderPass;
 
-use crate::MilkTeaRender;
+use crate::TaroRenderer;
 
-pub struct MilkTeaRenderStage;
+pub struct TaroRenderStage;
 
-impl BobaStage for MilkTeaRenderStage {
+impl BobaStage for TaroRenderStage {
     type StageData<'a> = RenderPass<'a>;
 
     fn run(
@@ -14,7 +14,7 @@ impl BobaStage for MilkTeaRenderStage {
         resources: &mut boba_core::BobaResources,
     ) {
         let renderer = resources
-            .get::<MilkTeaRender>()
+            .get::<TaroRenderer>()
             .expect("Renderer not found in resources");
 
         let Ok(output) = renderer.surface().get_current_texture() else {
@@ -50,12 +50,12 @@ impl BobaStage for MilkTeaRenderStage {
             depth_stencil_attachment: None,
         });
 
-        controllers.update::<MilkTeaRenderStage>(&mut render_pass, resources);
+        controllers.update::<TaroRenderStage>(&mut render_pass, resources);
 
         // drop and re-access renderer to appease borrow gods
         drop(render_pass);
         let renderer = resources
-            .get::<MilkTeaRender>()
+            .get::<TaroRenderer>()
             .expect("Renderer not found in resources");
 
         renderer.queue().submit(std::iter::once(encoder.finish()));

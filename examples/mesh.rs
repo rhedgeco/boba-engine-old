@@ -1,6 +1,7 @@
 use boba_core::*;
 use boba_mesh::*;
-use milk_tea_runner::{stages::MilkTeaRenderStage, *};
+use milk_tea_runner::MilkTeaRunner;
+use taro_renderer::{prelude::TaroRenderPlugin, stages::TaroRenderStage, TaroRenderer};
 use wgpu::{include_wgsl, RenderPass, RenderPipeline};
 
 struct MeshController<'mesh> {
@@ -19,7 +20,7 @@ impl<'mesh> MeshController<'mesh> {
 
 impl<'mesh> MeshController<'mesh> {
     fn init(&mut self, resources: &mut BobaResources) {
-        let renderer = resources.get::<MilkTeaRender>().unwrap();
+        let renderer = resources.get::<TaroRenderer>().unwrap();
 
         let shader = renderer
             .device()
@@ -77,7 +78,7 @@ impl<'mesh> MeshController<'mesh> {
     }
 }
 
-impl<'mesh> ControllerStage<MilkTeaRenderStage> for MeshController<'mesh> {
+impl<'mesh> ControllerStage<TaroRenderStage> for MeshController<'mesh> {
     fn update<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, resources: &mut BobaResources) {
         if self.render_pipeline.is_none() {
             self.init(resources);
@@ -93,7 +94,7 @@ impl<'mesh> ControllerStage<MilkTeaRenderStage> for MeshController<'mesh> {
     }
 }
 
-register_controller_with_stages!(MeshController<'mesh>: MilkTeaRenderStage);
+register_controller_with_stages!(MeshController<'mesh>: TaroRenderStage);
 
 #[rustfmt::skip]
 const VERTICES: &[Vertex] = &[
@@ -113,6 +114,7 @@ const INDICES: &[u16] = &[
 
 fn main() {
     let mut app = BobaApp::new(MilkTeaRunner::default());
+    app.add_plugin(&TaroRenderPlugin);
     let mesh = BobaMesh::new(VERTICES, INDICES);
     app.controllers()
         .add(BobaController::build(MeshController::new(mesh)));

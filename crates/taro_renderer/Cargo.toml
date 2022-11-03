@@ -1,0 +1,12 @@
+[package]
+name = "taro_renderer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+boba_core = { path = "../boba_core" }
+milk_tea_runner = { path = "../milk_tea_runner" }
+
+winit = "0.27"
+wgpu = "0.14"
+pollster = "0.2"

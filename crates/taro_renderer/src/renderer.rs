@@ -1,6 +1,6 @@
 use winit::{dpi::PhysicalSize, window::Window};
 
-pub struct MilkTeaRender {
+pub struct TaroRenderer {
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -8,7 +8,7 @@ pub struct MilkTeaRender {
     size: winit::dpi::PhysicalSize<u32>,
 }
 
-impl MilkTeaRender {
+impl TaroRenderer {
     pub fn new(window: &Window) -> Self {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::Backends::all());
@@ -32,7 +32,7 @@ impl MilkTeaRender {
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: surface.get_supported_formats(&adapter)[0],
+            format: *surface.get_supported_formats(&adapter).get(0).unwrap(),
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::AutoNoVsync,

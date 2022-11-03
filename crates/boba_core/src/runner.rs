@@ -1,6 +1,7 @@
 use crate::BobaApp;
 
+#[allow(unused_variables)]
 pub trait BobaRunner {
-    fn add_stages_and_resources(&mut self, app: &mut BobaApp);
     fn run(&mut self, app: BobaApp);
+    fn setup(&mut self, app: &mut BobaApp) {}
 }
