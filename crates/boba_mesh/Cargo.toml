@@ -1,0 +1,8 @@
+[package]
+name = "boba_mesh"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wgpu = "0.14"
+bytemuck = { version = "1.4", features = [ "derive" ] }

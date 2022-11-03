@@ -56,7 +56,7 @@ pub trait RegisteredStages {
 
 #[macro_export]
 macro_rules! register_controller_with_stages {
-    ($type:ty: $($item:ty),+ $(,)?) => {
+    ($type:ident $(< $($gen:tt),+ >)?: $($item:ty),+ $(,)?) => {
 
         // weird hack to check if type implements all provided traits
         // uses trait bounds to prevent compilation and show error message
@@ -65,7 +65,7 @@ macro_rules! register_controller_with_stages {
             assert_impl_all::<$type>();
         };
 
-        impl RegisteredStages for $type {
+        impl$(<$($gen),+>)? RegisteredStages for $type$(<$($gen),+>)? {
             unsafe fn transmute_trait(&mut self, trait_id: std::any::TypeId) -> Option<&mut dyn RegisteredStages> {
                 match trait_id {
                     $(
