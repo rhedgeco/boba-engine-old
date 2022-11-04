@@ -1,7 +1,7 @@
 use boba_core::*;
 use boba_mesh::*;
-use milk_tea_runner::MilkTeaRunner;
-use taro_renderer::{prelude::TaroRenderPlugin, renderers::TaroMeshRenderer};
+use milk_tea_runner::*;
+use taro_renderer::{prelude::*, renderers::*};
 
 #[rustfmt::skip]
 const VERTICES: &[Vertex] = &[
