@@ -1,10 +1,12 @@
 mod renderer;
 mod resize_controller;
+mod texture;
 
 pub mod renderers;
 pub mod stages;
 
 pub use renderer::*;
+pub use texture::*;
 
 pub mod prelude {
     use crate::{
