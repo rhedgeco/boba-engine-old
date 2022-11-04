@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 boba_core = { path = "../boba_core" }
+boba_mesh = { path = "../boba_mesh" }
 milk_tea_runner = { path = "../milk_tea_runner" }
 
 winit = "0.27"

@@ -1,6 +1,7 @@
 mod renderer;
 mod resize_controller;
 
+pub mod renderers;
 pub mod stages;
 
 pub use renderer::*;

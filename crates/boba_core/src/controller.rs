@@ -61,17 +61,17 @@ macro_rules! register_controller_with_stages {
         // weird hack to check if type implements all provided traits
         // uses trait bounds to prevent compilation and show error message
         const _: fn() = || {
-            fn assert_impl_all<T: ?Sized $(+ ControllerStage<$item>)+>() {}
+            fn assert_impl_all<T: ?Sized $(+ $crate::ControllerStage<$item>)+>() {}
             assert_impl_all::<$type>();
         };
 
-        impl$(<$($gen),+>)? RegisteredStages for $type$(<$($gen),+>)? {
-            unsafe fn transmute_trait(&mut self, trait_id: std::any::TypeId) -> Option<&mut dyn RegisteredStages> {
+        impl$(<$($gen),+>)? $crate::RegisteredStages for $type$(<$($gen),+>)? {
+            unsafe fn transmute_trait(&mut self, trait_id: std::any::TypeId) -> Option<&mut dyn $crate::RegisteredStages> {
                 match trait_id {
                     $(
-                        id if id == std::any::TypeId::of::<dyn ControllerStage<$item>>() => {
-                            Some(std::mem::transmute::<&mut dyn ControllerStage<$item>, &mut dyn RegisteredStages>(
-                                self as &mut dyn ControllerStage<$item>
+                        id if id == std::any::TypeId::of::<dyn $crate::ControllerStage<$item>>() => {
+                            Some(std::mem::transmute::<&mut dyn $crate::ControllerStage<$item>, &mut dyn $crate::RegisteredStages>(
+                                self as &mut dyn $crate::ControllerStage<$item>
                             ))
                         },
                     )*
