@@ -21,10 +21,11 @@ const INDICES: &[u16] = &[
 fn main() {
     let mut app = BobaApp::new(MilkTeaRunner::default());
     app.add_plugin(&TaroRenderPlugin);
-    app.controllers()
-        .add(BobaController::build(TaroMeshRenderer::new(
-            BobaMesh::new(VERTICES, INDICES),
-            include_str!("mesh_shader.wgsl"),
-        )));
+
+    let mesh = TaroMesh::new(BobaMesh::new(VERTICES, INDICES));
+    let shader_code = include_str!("mesh_shader.wgsl");
+    let mesh_renderer = TaroMeshRenderer::new(mesh, shader_code);
+    app.controllers().add(BobaController::build(mesh_renderer));
+
     app.run();
 }

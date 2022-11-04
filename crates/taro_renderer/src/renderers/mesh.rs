@@ -1,17 +1,61 @@
 use boba_core::*;
 use boba_mesh::{BobaMesh, Vertex};
-use wgpu::{RenderPass, RenderPipeline, ShaderModuleDescriptor, ShaderSource};
+use wgpu::{util::DeviceExt, RenderPass, RenderPipeline, ShaderModuleDescriptor, ShaderSource};
 
 use crate::{stages::TaroRenderStage, TaroRenderer};
 
-pub struct TaroMeshRenderer<'mesh> {
+const VERTEX_LAYOUT: wgpu::VertexBufferLayout = wgpu::VertexBufferLayout {
+    array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+    step_mode: wgpu::VertexStepMode::Vertex,
+    attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3],
+};
+
+struct TaroMeshBuffers {
+    pub vertex_buffer: wgpu::Buffer,
+    pub index_buffer: wgpu::Buffer,
+}
+
+pub struct TaroMesh<'mesh> {
     mesh: BobaMesh<'mesh>,
+    buffers: Option<TaroMeshBuffers>,
+}
+
+impl<'mesh> TaroMesh<'mesh> {
+    pub fn new(mesh: BobaMesh<'mesh>) -> Self {
+        Self {
+            mesh,
+            buffers: None,
+        }
+    }
+
+    pub fn index_length(&self) -> u32 {
+        self.mesh.index_length()
+    }
+
+    pub fn upload(&mut self, device: &wgpu::Device) {
+        self.buffers = Some(TaroMeshBuffers {
+            vertex_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(self.mesh.vertices()),
+                usage: wgpu::BufferUsages::VERTEX,
+            }),
+            index_buffer: device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(self.mesh.indices()),
+                usage: wgpu::BufferUsages::INDEX,
+            }),
+        })
+    }
+}
+
+pub struct TaroMeshRenderer<'mesh> {
+    mesh: TaroMesh<'mesh>,
     shader_code: &'mesh str,
     render_pipeline: Option<RenderPipeline>,
 }
 
 impl<'mesh> TaroMeshRenderer<'mesh> {
-    pub fn new(mesh: BobaMesh<'mesh>, shader_code: &'mesh str) -> Self {
+    pub fn new(mesh: TaroMesh<'mesh>, shader_code: &'mesh str) -> Self {
         Self {
             mesh,
             shader_code,
@@ -47,7 +91,7 @@ impl<'mesh> TaroMeshRenderer<'mesh> {
                     vertex: wgpu::VertexState {
                         module: &shader,
                         entry_point: "vs_main",
-                        buffers: &[Vertex::desc()],
+                        buffers: &[VERTEX_LAYOUT],
                     },
                     fragment: Some(wgpu::FragmentState {
                         module: &shader,
@@ -87,12 +131,15 @@ impl<'mesh> ControllerStage<TaroRenderStage> for TaroMeshRenderer<'mesh> {
             self.init(resources);
         }
 
+        let buffers = self
+            .mesh
+            .buffers
+            .as_ref()
+            .expect("Buffers should be uploaded by this point");
+
         render_pass.set_pipeline(&self.render_pipeline.as_ref().unwrap());
-        render_pass.set_vertex_buffer(0, self.mesh.vertex_buffer().as_ref().unwrap().slice(..));
-        render_pass.set_index_buffer(
-            self.mesh.index_buffer().as_ref().unwrap().slice(..),
-            wgpu::IndexFormat::Uint16,
-        );
+        render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
+        render_pass.set_index_buffer(buffers.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
         render_pass.draw_indexed(0..self.mesh.index_length(), 0, 0..1);
     }
 }

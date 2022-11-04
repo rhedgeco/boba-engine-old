@@ -11,3 +11,4 @@ milk_tea_runner = { path = "../milk_tea_runner" }
 winit = "0.27"
 wgpu = "0.14"
 pollster = "0.2"
+bytemuck = { version = "1.4", features = [ "derive" ] }
