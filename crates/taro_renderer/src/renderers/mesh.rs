@@ -178,7 +178,7 @@ impl ControllerStage<TaroRenderStage> for TaroMeshRenderer<'_> {
             buffers.index_buffer.raw_buffer().slice(..),
             wgpu::IndexFormat::Uint16,
         );
-        render_pass.draw_indexed(0..buffers.index_buffer.len(), 0, 0..1);
+        render_pass.draw_indexed(0..buffers.index_buffer.buffer_length(), 0, 0..1);
     }
 }
 

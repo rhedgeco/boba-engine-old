@@ -20,7 +20,7 @@ impl TaroBuffer {
         &self.raw_buffer
     }
 
-    pub fn len(&self) -> u32 {
+    pub fn buffer_length(&self) -> u32 {
         self.length
     }
 }
