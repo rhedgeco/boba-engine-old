@@ -115,13 +115,13 @@ impl<'a> TaroMeshRenderer<'a> {
                     label: Some("Render Pipeline"),
                     layout: Some(&pipeline_layout),
                     vertex: wgpu::VertexState {
-                        module: &shader,
+                        module: shader,
                         entry_point: "vs_main",              // 1.
                         buffers: &[TaroMesh::VERTEX_LAYOUT], // 2.
                     },
                     fragment: Some(wgpu::FragmentState {
                         // 3.
-                        module: &shader,
+                        module: shader,
                         entry_point: "fs_main",
                         targets: &[Some(wgpu::ColorTargetState {
                             // 4.

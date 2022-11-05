@@ -62,7 +62,7 @@ impl<'a> TaroTexture<'a> {
 
         let descriptor = TextureDescriptor {
             label,
-            size: size,
+            size,
             mip_level_count: 1,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,

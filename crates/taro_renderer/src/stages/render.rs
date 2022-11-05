@@ -60,7 +60,6 @@ impl BobaStage for TaroRenderStage {
             depth_stencil_attachment: None,
         });
 
-        drop(renderer);
         controllers.update::<TaroRenderStage>(&mut render_pass, resources);
         drop(render_pass);
 
