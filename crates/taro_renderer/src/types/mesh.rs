@@ -10,29 +10,24 @@ pub struct Vertex {
     pub uv: [f32; 2],
 }
 
-pub struct CompiledTaroMesh {
-    pub(self) vertex_buffer: Buffer,
-    pub(self) index_buffer: Buffer,
-    pub(self) vertex_count: u32,
-    pub(self) index_count: u32,
+pub struct TaroBuffer {
+    raw_buffer: Buffer,
+    length: u32,
 }
 
-impl CompiledTaroMesh {
-    pub fn vertex_buffer(&self) -> &Buffer {
-        &self.vertex_buffer
+impl TaroBuffer {
+    pub fn raw_buffer(&self) -> &Buffer {
+        &self.raw_buffer
     }
 
-    pub fn index_buffer(&self) -> &Buffer {
-        &self.index_buffer
+    pub fn len(&self) -> u32 {
+        self.length
     }
+}
 
-    pub fn vertex_count(&self) -> u32 {
-        self.vertex_count
-    }
-
-    pub fn index_count(&self) -> u32 {
-        self.index_count
-    }
+pub struct CompiledTaroMesh {
+    pub vertex_buffer: TaroBuffer,
+    pub index_buffer: TaroBuffer,
 }
 
 pub struct TaroMesh<'a> {
@@ -70,22 +65,26 @@ impl<'a> TaroCompiler for TaroMesh<'a> {
         }
 
         self.buffers = Some(CompiledTaroMesh {
-            vertex_buffer: renderer.device().create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
-                    label: Some("Vertex Buffer"),
-                    contents: bytemuck::cast_slice(self.vertices),
-                    usage: wgpu::BufferUsages::VERTEX,
-                },
-            ),
-            index_buffer: renderer
-                .device()
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Index Buffer"),
-                    contents: bytemuck::cast_slice(self.indices),
-                    usage: wgpu::BufferUsages::INDEX,
-                }),
-            vertex_count: self.vertices.len() as u32,
-            index_count: self.indices.len() as u32,
+            vertex_buffer: TaroBuffer {
+                length: self.vertices.len() as u32,
+                raw_buffer: renderer.device().create_buffer_init(
+                    &wgpu::util::BufferInitDescriptor {
+                        label: Some("Vertex Buffer"),
+                        contents: bytemuck::cast_slice(self.vertices),
+                        usage: wgpu::BufferUsages::VERTEX,
+                    },
+                ),
+            },
+            index_buffer: TaroBuffer {
+                length: self.indices.len() as u32,
+                raw_buffer: renderer.device().create_buffer_init(
+                    &wgpu::util::BufferInitDescriptor {
+                        label: Some("Index Buffer"),
+                        contents: bytemuck::cast_slice(self.indices),
+                        usage: wgpu::BufferUsages::INDEX,
+                    },
+                ),
+            },
         });
     }
 }
