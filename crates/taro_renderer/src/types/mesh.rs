@@ -1,6 +1,6 @@
 use wgpu::{util::DeviceExt, Buffer};
 
-use super::TaroUploader;
+use super::TaroCompiler;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -10,14 +10,14 @@ pub struct Vertex {
     pub uv: [f32; 2],
 }
 
-pub struct TaroMeshBuffers {
+pub struct CompiledTaroMesh {
     pub(self) vertex_buffer: Buffer,
     pub(self) index_buffer: Buffer,
     pub(self) vertex_count: u32,
     pub(self) index_count: u32,
 }
 
-impl TaroMeshBuffers {
+impl CompiledTaroMesh {
     pub fn vertex_buffer(&self) -> &Buffer {
         &self.vertex_buffer
     }
@@ -38,7 +38,7 @@ impl TaroMeshBuffers {
 pub struct TaroMesh<'a> {
     vertices: &'a [Vertex],
     indices: &'a [u16],
-    buffers: Option<TaroMeshBuffers>,
+    buffers: Option<CompiledTaroMesh>,
 }
 
 impl<'a> TaroMesh<'a> {
@@ -57,19 +57,19 @@ impl<'a> TaroMesh<'a> {
     }
 }
 
-impl<'a> TaroUploader for TaroMesh<'a> {
-    type UploadedData = TaroMeshBuffers;
+impl<'a> TaroCompiler for TaroMesh<'a> {
+    type CompiledData = CompiledTaroMesh;
 
-    fn get_data(&self) -> &Option<Self::UploadedData> {
+    fn get_data(&self) -> &Option<Self::CompiledData> {
         &self.buffers
     }
 
-    fn upload(&mut self, renderer: &crate::TaroRenderer) {
+    fn compile(&mut self, renderer: &crate::TaroRenderer) {
         if self.buffers.is_some() {
             return;
         }
 
-        self.buffers = Some(TaroMeshBuffers {
+        self.buffers = Some(CompiledTaroMesh {
             vertex_buffer: renderer.device().create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {
                     label: Some("Vertex Buffer"),

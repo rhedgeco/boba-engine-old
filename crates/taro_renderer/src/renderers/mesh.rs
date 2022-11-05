@@ -4,7 +4,7 @@ use wgpu::{BindGroup, BindGroupLayoutDescriptor, RenderPass, RenderPipeline};
 
 use crate::{
     stages::TaroRenderStage,
-    types::{TaroMesh, TaroMeshBuffers, TaroShader, TaroTexture, TaroUploader},
+    types::{CompiledTaroMesh, TaroCompiler, TaroMesh, TaroShader, TaroTexture},
     TaroRenderer,
 };
 
@@ -33,15 +33,15 @@ impl<'a> TaroMeshRenderer<'a> {
     fn get_render_data(
         &mut self,
         renderer: &TaroRenderer,
-    ) -> (&TaroMeshBuffers, &TaroMeshPipelineData) {
+    ) -> (&CompiledTaroMesh, &TaroMeshPipelineData) {
         if self.pipeline.is_some() {
             return (
-                self.mesh.get_uploaded(renderer),
+                self.mesh.get_compiled_data(renderer),
                 self.pipeline.as_ref().unwrap(),
             );
         }
 
-        let texture = self.main_texture.get_uploaded(renderer);
+        let texture = self.main_texture.get_compiled_data(renderer);
 
         let bind_group_layout =
             renderer
@@ -88,7 +88,7 @@ impl<'a> TaroMeshRenderer<'a> {
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&texture.1),
+                        resource: wgpu::BindingResource::TextureView(&texture.view),
                     },
                     wgpu::BindGroupEntry {
                         binding: 1,
@@ -106,7 +106,7 @@ impl<'a> TaroMeshRenderer<'a> {
                     push_constant_ranges: &[],
                 });
 
-        let shader = self.shader.get_uploaded(renderer);
+        let shader = self.shader.get_compiled_data(renderer);
 
         let render_pipeline =
             renderer
@@ -115,13 +115,13 @@ impl<'a> TaroMeshRenderer<'a> {
                     label: Some("Render Pipeline"),
                     layout: Some(&pipeline_layout),
                     vertex: wgpu::VertexState {
-                        module: shader,
+                        module: &shader.module,
                         entry_point: "vs_main",              // 1.
                         buffers: &[TaroMesh::VERTEX_LAYOUT], // 2.
                     },
                     fragment: Some(wgpu::FragmentState {
                         // 3.
-                        module: shader,
+                        module: &shader.module,
                         entry_point: "fs_main",
                         targets: &[Some(wgpu::ColorTargetState {
                             // 4.
@@ -157,7 +157,7 @@ impl<'a> TaroMeshRenderer<'a> {
         });
 
         (
-            self.mesh.get_uploaded(renderer),
+            self.mesh.get_compiled_data(renderer),
             self.pipeline.as_ref().unwrap(),
         )
     }

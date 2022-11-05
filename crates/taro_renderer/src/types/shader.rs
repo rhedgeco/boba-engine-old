@@ -2,28 +2,33 @@ use wgpu::{ShaderModule, ShaderModuleDescriptor};
 
 use crate::TaroRenderer;
 
-use super::TaroUploader;
+use super::TaroCompiler;
 
-pub struct TaroShader<'a> {
-    module: Option<ShaderModule>,
-    descriptor: Option<ShaderModuleDescriptor<'a>>,
+pub struct CompiledTaroShader {
+    pub module: ShaderModule,
 }
 
-impl<'a> TaroUploader for TaroShader<'a> {
-    type UploadedData = ShaderModule;
+pub struct TaroShader<'a> {
+    descriptor: Option<ShaderModuleDescriptor<'a>>,
+    compiled: Option<CompiledTaroShader>,
+}
 
-    fn get_data(&self) -> &Option<Self::UploadedData> {
-        &self.module
+impl<'a> TaroCompiler for TaroShader<'a> {
+    type CompiledData = CompiledTaroShader;
+
+    fn get_data(&self) -> &Option<Self::CompiledData> {
+        &self.compiled
     }
 
-    fn upload(&mut self, renderer: &TaroRenderer) {
-        if self.module.is_some() {
+    fn compile(&mut self, renderer: &TaroRenderer) {
+        if self.compiled.is_some() {
             return;
         }
 
         let descriptor = std::mem::replace(&mut self.descriptor, None)
             .expect("Shader descriptor should be Some at this point");
-        self.module = Some(renderer.device().create_shader_module(descriptor));
+        let module = renderer.device().create_shader_module(descriptor);
+        self.compiled = Some(CompiledTaroShader { module });
     }
 }
 
@@ -35,7 +40,7 @@ impl<'a> TaroShader<'a> {
         };
 
         TaroShader::<'a> {
-            module: None,
+            compiled: None,
             descriptor: Some(descriptor),
         }
     }

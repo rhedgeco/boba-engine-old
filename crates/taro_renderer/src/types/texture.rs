@@ -3,23 +3,28 @@ use wgpu::{Extent3d, Texture, TextureDescriptor, TextureView};
 
 use crate::TaroRenderer;
 
-use super::TaroUploader;
+use super::TaroCompiler;
+
+pub struct CompiledTaroTexture {
+    pub texture: Texture,
+    pub view: TextureView,
+}
 
 pub struct TaroTexture<'a> {
     rgba: RgbaImage,
     descriptor: TextureDescriptor<'a>,
-    texture: Option<(Texture, TextureView)>,
+    compiled: Option<CompiledTaroTexture>,
 }
 
-impl<'a> TaroUploader for TaroTexture<'a> {
-    type UploadedData = (Texture, TextureView);
+impl<'a> TaroCompiler for TaroTexture<'a> {
+    type CompiledData = CompiledTaroTexture;
 
-    fn get_data(&self) -> &Option<Self::UploadedData> {
-        &self.texture
+    fn get_data(&self) -> &Option<Self::CompiledData> {
+        &self.compiled
     }
 
-    fn upload(&mut self, renderer: &TaroRenderer) {
-        if self.texture.is_none() {
+    fn compile(&mut self, renderer: &TaroRenderer) {
+        if self.compiled.is_none() {
             let texture = renderer.device().create_texture(&self.descriptor);
             let size = self.descriptor.size;
 
@@ -40,7 +45,7 @@ impl<'a> TaroUploader for TaroTexture<'a> {
             );
 
             let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-            self.texture = Some((texture, view));
+            self.compiled = Some(CompiledTaroTexture { texture, view });
         }
     }
 }
@@ -73,7 +78,7 @@ impl<'a> TaroTexture<'a> {
         Self {
             rgba,
             descriptor,
-            texture: None,
+            compiled: None,
         }
     }
 }

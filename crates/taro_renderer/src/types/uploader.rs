@@ -1,17 +1,17 @@
 use crate::TaroRenderer;
 
-pub trait TaroUploader {
-    type UploadedData;
+pub trait TaroCompiler {
+    type CompiledData;
 
-    fn upload(&mut self, renderer: &TaroRenderer);
-    fn get_data(&self) -> &Option<Self::UploadedData>;
+    fn compile(&mut self, renderer: &TaroRenderer);
+    fn get_data(&self) -> &Option<Self::CompiledData>;
 
-    fn get_uploaded(&mut self, renderer: &TaroRenderer) -> &Self::UploadedData {
+    fn get_compiled_data(&mut self, renderer: &TaroRenderer) -> &Self::CompiledData {
         if self.get_data().is_some() {
             return self.get_data().as_ref().unwrap();
         }
 
-        self.upload(renderer);
+        self.compile(renderer);
         self.get_data().as_ref().unwrap()
     }
 }
