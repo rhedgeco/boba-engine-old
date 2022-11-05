@@ -1,5 +1,6 @@
-use boba_core::BobaRunner;
+use boba_core::BobaApp;
 use winit::{
+    error::OsError,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
     window::WindowBuilder,
@@ -7,19 +8,21 @@ use winit::{
 
 use crate::{events::MilkTeaResize, MilkTeaWindows};
 
-#[derive(Default)]
-pub struct MilkTeaRunner {}
+pub struct MilkTeaRunner;
 
-impl BobaRunner for MilkTeaRunner {
-    fn run(&mut self, mut app: boba_core::BobaApp) {
+impl MilkTeaRunner {
+    pub fn run<'a>(mut app: BobaApp) -> Result<(), OsError> {
         let event_loop = EventLoop::new();
-        let window = WindowBuilder::new().build(&event_loop).unwrap();
-        let main_id = window.id();
+        let window = WindowBuilder::new().build(&event_loop)?;
+        let main_window_id = window.id();
 
+        // add window manager to app resources
         app.resources().add(MilkTeaWindows::new(window));
 
+        // run startup stages
         app.execute_startup_stages();
 
+        // run main loop
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
 
@@ -27,7 +30,7 @@ impl BobaRunner for MilkTeaRunner {
                 Event::WindowEvent {
                     ref event,
                     window_id,
-                } if window_id == main_id => match event {
+                } if window_id == main_window_id => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
                     WindowEvent::Resized(physical_size) => app.trigger_event(MilkTeaResize {
                         size: *physical_size,

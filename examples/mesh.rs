@@ -1,7 +1,10 @@
 use boba_core::*;
-use boba_mesh::*;
 use milk_tea_runner::*;
-use taro_renderer::{prelude::*, renderers::*, TaroTexture};
+use taro_renderer::{
+    prelude::*,
+    renderers::TaroMeshRenderer,
+    types::{TaroMesh, TaroShader, TaroTexture, Vertex},
+};
 
 #[rustfmt::skip]
 const VERTICES: &[Vertex] = &[
@@ -18,16 +21,15 @@ const INDICES: &[u16] = &[
 ];
 
 fn main() {
-    let mut app = BobaApp::new(MilkTeaRunner::default());
-    app.add_plugin(&TaroRenderPlugin);
+    let mut app = BobaApp::default();
+    app.add_plugin(TaroRenderPlugin);
 
-    let mesh = TaroMesh::new(BobaMesh::new(VERTICES, INDICES));
-    let shader_code = include_str!("mesh_shader.wgsl");
+    let shader = TaroShader::from_str(Some("Mesh Shader"), include_str!("mesh_shader.wgsl"));
+    let texture =
+        TaroTexture::from_bytes(Some("Mesh Texture"), include_bytes!("happy-tree.png")).unwrap();
+    let mesh = TaroMesh::new(VERTICES, INDICES);
+    let renderer = TaroMeshRenderer::new(mesh, shader, texture);
+    app.controllers().add(BobaController::build(renderer));
 
-    let mut mesh_renderer = TaroMeshRenderer::new(mesh, shader_code);
-    let texture = TaroTexture::new(include_bytes!("happy-tree.png"));
-    mesh_renderer.set_main_texture(texture);
-    app.controllers().add(BobaController::build(mesh_renderer));
-
-    app.run();
+    MilkTeaRunner::run(app).unwrap();
 }

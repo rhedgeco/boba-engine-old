@@ -1,5 +1,5 @@
+mod init;
 mod render;
-mod startup;
 
+pub(crate) use init::*;
 pub use render::*;
-pub use startup::*;

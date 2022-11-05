@@ -1,27 +1,17 @@
 use crate::{
     storage::{controller_storage::ControllerStorage, stage_storage::StageStorage},
-    BobaEvent, BobaPlugin, BobaResources, BobaRunner, BobaStage,
+    BobaEvent, BobaPlugin, BobaResources, BobaStage,
 };
 
+#[derive(Default)]
 pub struct BobaApp {
     resources: BobaResources,
     controllers: ControllerStorage,
     startup_stages: StageStorage,
     stages: StageStorage,
-    runner: Option<Box<dyn BobaRunner>>,
 }
 
 impl BobaApp {
-    pub fn new<Runner: 'static + BobaRunner>(runner: Runner) -> Self {
-        Self {
-            resources: Default::default(),
-            controllers: Default::default(),
-            startup_stages: Default::default(),
-            stages: Default::default(),
-            runner: Some(Box::new(runner)),
-        }
-    }
-
     pub fn resources(&mut self) -> &mut BobaResources {
         &mut self.resources
     }
@@ -38,8 +28,9 @@ impl BobaApp {
         &mut self.controllers
     }
 
-    pub fn add_plugin<Plugin: BobaPlugin>(&mut self, plugin: &Plugin) {
-        plugin.setup(self)
+    pub fn add_plugin<Plugin: BobaPlugin>(&mut self, plugin: Plugin) -> &mut Self {
+        plugin.setup(self);
+        self
     }
 
     pub fn execute_startup_stages(&mut self) {
@@ -55,11 +46,5 @@ impl BobaApp {
     pub fn trigger_event<Data: 'static>(&mut self, data: Data) {
         let mut event = BobaEvent::<Data>::new(data);
         event.run(&mut self.controllers, &mut self.resources);
-    }
-
-    pub fn run(mut self) {
-        let mut runner = std::mem::replace(&mut self.runner, None)
-            .expect("Runner should not be None at this point");
-        runner.run(self);
     }
 }

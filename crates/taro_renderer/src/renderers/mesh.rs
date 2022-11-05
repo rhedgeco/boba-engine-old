@@ -1,115 +1,112 @@
-use boba_core::*;
-use boba_mesh::{BobaMesh, Vertex};
-use wgpu::{util::DeviceExt, RenderPass, RenderPipeline, ShaderModuleDescriptor, ShaderSource};
+use boba_core::{register_controller_with_stages, BobaResources, ControllerStage};
+use log::warn;
+use wgpu::{BindGroup, BindGroupLayoutDescriptor, RenderPass, RenderPipeline};
 
-use crate::{stages::TaroRenderStage, TaroRenderer, TaroTexture};
-
-const VERTEX_LAYOUT: wgpu::VertexBufferLayout = wgpu::VertexBufferLayout {
-    array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-    step_mode: wgpu::VertexStepMode::Vertex,
-    attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2],
+use crate::{
+    stages::TaroRenderStage,
+    types::{TaroMesh, TaroMeshBuffers, TaroShader, TaroTexture, TaroUploader},
+    TaroRenderer,
 };
 
-struct TaroMeshBuffers {
-    pub vertex_buffer: wgpu::Buffer,
-    pub index_buffer: wgpu::Buffer,
+struct TaroMeshPipelineData {
+    bind_group: BindGroup,
+    render_pipeline: RenderPipeline,
 }
 
-pub struct TaroMesh<'mesh> {
-    mesh: BobaMesh<'mesh>,
-    buffers: Option<TaroMeshBuffers>,
+pub struct TaroMeshRenderer<'a> {
+    mesh: TaroMesh<'a>,
+    shader: TaroShader<'a>,
+    main_texture: TaroTexture<'a>,
+    pipeline: Option<TaroMeshPipelineData>,
 }
 
-impl<'mesh> TaroMesh<'mesh> {
-    pub fn new(mesh: BobaMesh<'mesh>) -> Self {
+impl<'a> TaroMeshRenderer<'a> {
+    pub fn new(mesh: TaroMesh<'a>, shader: TaroShader<'a>, main_texture: TaroTexture<'a>) -> Self {
         Self {
             mesh,
-            buffers: None,
+            shader,
+            main_texture,
+            pipeline: None,
         }
     }
 
-    pub fn index_length(&self) -> u32 {
-        self.mesh.index_length()
-    }
+    fn get_render_data(
+        &mut self,
+        renderer: &TaroRenderer,
+    ) -> (&TaroMeshBuffers, &TaroMeshPipelineData) {
+        if self.pipeline.is_some() {
+            return (
+                self.mesh.get_uploaded(renderer),
+                self.pipeline.as_ref().unwrap(),
+            );
+        }
 
-    pub fn upload(&mut self, renderer: &TaroRenderer) {
-        self.buffers = Some(TaroMeshBuffers {
-            vertex_buffer: renderer.device().create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
-                    label: Some("Vertex Buffer"),
-                    contents: bytemuck::cast_slice(self.mesh.vertices()),
-                    usage: wgpu::BufferUsages::VERTEX,
-                },
-            ),
-            index_buffer: renderer
+        let texture = self.main_texture.get_uploaded(renderer);
+
+        let bind_group_layout =
+            renderer
                 .device()
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Index Buffer"),
-                    contents: bytemuck::cast_slice(self.mesh.indices()),
-                    usage: wgpu::BufferUsages::INDEX,
-                }),
-        })
-    }
-}
+                .create_bind_group_layout(&BindGroupLayoutDescriptor {
+                    label: Some("Render Bind Group Layout"),
+                    entries: &[
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            ty: wgpu::BindingType::Texture {
+                                multisampled: false,
+                                view_dimension: wgpu::TextureViewDimension::D2,
+                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                            },
+                            count: None,
+                        },
+                        wgpu::BindGroupLayoutEntry {
+                            binding: 1,
+                            visibility: wgpu::ShaderStages::FRAGMENT,
+                            // This should match the filterable field of the
+                            // corresponding Texture entry above.
+                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                            count: None,
+                        },
+                    ],
+                });
 
-pub struct TaroMeshRenderer<'mesh> {
-    mesh: TaroMesh<'mesh>,
-    shader_code: &'mesh str,
-    main_texture: Option<TaroTexture>,
-    render_pipeline: Option<RenderPipeline>,
-}
+        let sampler = renderer.device().create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
 
-impl<'mesh> TaroMeshRenderer<'mesh> {
-    pub fn new(mesh: TaroMesh<'mesh>, shader_code: &'mesh str) -> Self {
-        Self {
-            mesh,
-            shader_code,
-            main_texture: None,
-            render_pipeline: None,
-        }
-    }
-
-    pub fn set_main_texture(&mut self, texture: TaroTexture) {
-        self.main_texture = Some(texture);
-    }
-
-    fn init(&mut self, resources: &mut BobaResources) {
-        let renderer = resources.get::<TaroRenderer>().unwrap();
-
-        let shader = renderer
+        let bind_group = renderer
             .device()
-            .create_shader_module(ShaderModuleDescriptor {
-                label: Some("Shader"),
-                source: ShaderSource::Wgsl(self.shader_code.into()),
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Render Bind Group"),
+                layout: &bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(&texture.1),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::Sampler(&sampler),
+                    },
+                ],
             });
 
-        if let Some(texture) = self.main_texture.as_mut() {
-            texture.upload(renderer);
-        }
+        let pipeline_layout =
+            renderer
+                .device()
+                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                    label: Some("Render Pipeline Layout"),
+                    bind_group_layouts: &[&bind_group_layout],
+                    push_constant_ranges: &[],
+                });
 
-        let pipeline_layout = if self.main_texture.is_none() {
-            renderer
-                .device()
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: &[],
-                    push_constant_ranges: &[],
-                })
-        } else {
-            renderer
-                .device()
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: &[self
-                        .main_texture
-                        .as_ref()
-                        .expect("texture should be uploaded")
-                        .bind_layout()
-                        .as_ref()
-                        .expect("texture should be uploaded")],
-                    push_constant_ranges: &[],
-                })
-        };
+        let shader = self.shader.get_uploaded(renderer);
 
         let render_pipeline =
             renderer
@@ -119,67 +116,67 @@ impl<'mesh> TaroMeshRenderer<'mesh> {
                     layout: Some(&pipeline_layout),
                     vertex: wgpu::VertexState {
                         module: &shader,
-                        entry_point: "vs_main",
-                        buffers: &[VERTEX_LAYOUT],
+                        entry_point: "vs_main",              // 1.
+                        buffers: &[TaroMesh::VERTEX_LAYOUT], // 2.
                     },
                     fragment: Some(wgpu::FragmentState {
+                        // 3.
                         module: &shader,
                         entry_point: "fs_main",
                         targets: &[Some(wgpu::ColorTargetState {
+                            // 4.
                             format: renderer.config().format,
                             blend: Some(wgpu::BlendState::REPLACE),
                             write_mask: wgpu::ColorWrites::ALL,
                         })],
                     }),
                     primitive: wgpu::PrimitiveState {
-                        topology: wgpu::PrimitiveTopology::TriangleList,
+                        topology: wgpu::PrimitiveTopology::TriangleList, // 1.
                         strip_index_format: None,
-                        front_face: wgpu::FrontFace::Ccw,
+                        front_face: wgpu::FrontFace::Ccw, // 2.
                         cull_mode: Some(wgpu::Face::Back),
+                        // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
                         polygon_mode: wgpu::PolygonMode::Fill,
+                        // Requires Features::DEPTH_CLIP_CONTROL
                         unclipped_depth: false,
+                        // Requires Features::CONSERVATIVE_RASTERIZATION
                         conservative: false,
                     },
-                    depth_stencil: None,
+                    depth_stencil: None, // 1.
                     multisample: wgpu::MultisampleState {
-                        count: 1,
-                        mask: !0,
-                        alpha_to_coverage_enabled: false,
+                        count: 1,                         // 2.
+                        mask: !0,                         // 3.
+                        alpha_to_coverage_enabled: false, // 4.
                     },
-                    multiview: None,
+                    multiview: None, // 5.
                 });
 
-        self.render_pipeline = Some(render_pipeline);
-        self.mesh.upload(renderer);
+        self.pipeline = Some(TaroMeshPipelineData {
+            bind_group,
+            render_pipeline,
+        });
+
+        (
+            self.mesh.get_uploaded(renderer),
+            self.pipeline.as_ref().unwrap(),
+        )
     }
 }
 
-impl<'mesh> ControllerStage<TaroRenderStage> for TaroMeshRenderer<'mesh> {
+impl ControllerStage<TaroRenderStage> for TaroMeshRenderer<'_> {
     fn update<'a>(&'a mut self, render_pass: &mut RenderPass<'a>, resources: &mut BobaResources) {
-        if self.render_pipeline.is_none() {
-            self.init(resources);
-        }
+        let Some(renderer) = resources.get::<TaroRenderer>() else {
+            warn!("Skipping MeshRendering. Could not find TaroRenderer");
+            return;
+        };
 
-        let buffers = self
-            .mesh
-            .buffers
-            .as_ref()
-            .expect("Buffers should be uploaded by this point");
-
-        render_pass.set_pipeline(&self.render_pipeline.as_ref().unwrap());
-
-        if let Some(texture) = self.main_texture.as_ref() {
-            let bind_group = texture
-                .bind_group()
-                .as_ref()
-                .expect("texture should be uploaded by this point");
-            render_pass.set_bind_group(0, &bind_group, &[])
-        }
-
-        render_pass.set_vertex_buffer(0, buffers.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(buffers.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        render_pass.draw_indexed(0..self.mesh.index_length(), 0, 0..1);
+        let (buffers, pipeline) = self.get_render_data(renderer);
+        render_pass.set_pipeline(&pipeline.render_pipeline);
+        render_pass.set_bind_group(0, &pipeline.bind_group, &[]);
+        render_pass.set_vertex_buffer(0, buffers.vertex_buffer().slice(..));
+        render_pass.set_index_buffer(buffers.index_buffer().slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.draw_indexed(0..buffers.index_count(), 0, 0..1);
     }
 }
 
-register_controller_with_stages!(TaroMeshRenderer<'mesh>: TaroRenderStage);
+register_controller_with_stages!(TaroMeshRenderer<'a>: TaroRenderStage);

@@ -1,4 +1,5 @@
 use boba_core::BobaStage;
+use log::{error, warn};
 use wgpu::RenderPass;
 
 use crate::TaroRenderer;
@@ -13,13 +14,22 @@ impl BobaStage for TaroRenderStage {
         controllers: &mut boba_core::controller_storage::ControllerStorage,
         resources: &mut boba_core::BobaResources,
     ) {
-        let renderer = resources
-            .get::<TaroRenderer>()
-            .expect("Renderer not found in resources");
-
-        let Ok(output) = renderer.surface().get_current_texture() else {
+        let Some(renderer) = resources
+            .get::<TaroRenderer>() else {
+                warn!("Skipping TaroRenderStage. No TaroRenderer found.");
                 return;
             };
+
+        let output = match renderer.surface().get_current_texture() {
+            Ok(surface) => surface,
+            Err(surface_error) => {
+                error!(
+                    "Skipping TaroRenderStage. Could not get current surface texture. Error: {:?}",
+                    surface_error
+                );
+                return;
+            }
+        };
 
         let view = output
             .texture
@@ -50,13 +60,17 @@ impl BobaStage for TaroRenderStage {
             depth_stencil_attachment: None,
         });
 
+        drop(renderer);
         controllers.update::<TaroRenderStage>(&mut render_pass, resources);
-
-        // drop and re-access renderer to appease borrow gods
         drop(render_pass);
-        let renderer = resources
-            .get::<TaroRenderer>()
-            .expect("Renderer not found in resources");
+
+        // re-access renderer after passing resources to controllers
+        // renderer could have been removed or changed
+        let Some(renderer) = resources
+            .get::<TaroRenderer>() else {
+                warn!("Cannot submit rendered frame to TaroRenderer. No TaroRenderer found.");
+                return;
+            };
 
         renderer.queue().submit(std::iter::once(encoder.finish()));
         output.present();

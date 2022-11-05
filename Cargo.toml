@@ -15,7 +15,6 @@ members = [
 boba_core = { path = "./crates/boba_core" }
 milk_tea_runner = { path = "./crates/milk_tea_runner" }
 taro_renderer = { path = "./crates/taro_renderer" }
-boba_mesh = { path = "./crates/boba_mesh"}
 
 winit = "0.27"
 env_logger = "0.9"
