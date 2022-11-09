@@ -21,6 +21,7 @@ const INDICES: &[u16] = &[
 ];
 
 fn main() {
+    env_logger::init();
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
 
@@ -29,7 +30,7 @@ fn main() {
         TaroTexture::from_bytes(Some("Mesh Texture"), include_bytes!("happy-tree.png")).unwrap();
     let mesh = TaroMesh::new(VERTICES, INDICES);
     let renderer = TaroMeshRenderer::new(mesh, shader, texture);
-    app.controllers().add(BobaController::build(renderer));
+    app.stages().add_controller(BobaController::build(renderer));
 
     MilkTeaRunner::run(app).unwrap();
 }

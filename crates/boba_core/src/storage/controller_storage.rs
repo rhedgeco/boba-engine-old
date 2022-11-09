@@ -1,49 +1,54 @@
-use std::{any::TypeId, cell::RefMut, mem::transmute};
+use hashbrown::HashMap;
+use uuid::Uuid;
 
-use crate::{BobaController, BobaResources, BobaStage, ControllerStage, RegisteredStages};
+use crate::{BobaController, BobaResources, BobaStage, ControllerData, ControllerStage};
 
-#[derive(Default)]
-pub struct ControllerStorage {
-    controllers: Vec<Box<dyn AnyController>>,
+pub struct ControllerStorage<Stage: 'static + ?Sized + BobaStage> {
+    controllers: HashMap<Uuid, Box<dyn GenericControllerStage<Stage>>>,
 }
 
-impl ControllerStorage {
-    pub fn add<T: 'static + RegisteredStages>(&mut self, controller: BobaController<T>) {
-        self.controllers.push(Box::new(controller))
-    }
-
-    pub fn update<'a, Stage: 'static + BobaStage>(
-        &mut self,
-        data: &mut Stage::StageData<'a>,
-        resources: &mut BobaResources,
-    ) {
-        for controller in self.controllers.iter_mut() {
-            let Some(mut registered_stages) = controller.data_mut() else {
-                continue;
-            };
-
-            unsafe {
-                if let Some(updater) =
-                    registered_stages.transmute_trait(TypeId::of::<dyn ControllerStage<Stage>>())
-                {
-                    transmute::<&mut dyn RegisteredStages, &mut dyn ControllerStage<Stage>>(updater)
-                        .update(data, resources)
-                }
-            }
+impl<Stage: 'static + BobaStage> Default for ControllerStorage<Stage> {
+    fn default() -> Self {
+        Self {
+            controllers: Default::default(),
         }
     }
 }
 
-trait AnyController {
-    fn data_mut(&mut self) -> Option<RefMut<dyn RegisteredStages>>;
+impl<Stage: 'static + BobaStage> ControllerStorage<Stage> {
+    pub fn insert<Controller>(&mut self, controller: BobaController<Controller>)
+    where
+        Controller: 'static + ControllerData + ControllerStage<Stage>,
+    {
+        self.controllers
+            .insert(controller.uuid(), Box::new(controller));
+    }
+
+    pub fn remove(&mut self, uuid: &Uuid) -> bool {
+        self.controllers.remove(uuid).is_some()
+    }
+
+    pub fn update<'a>(
+        &'a mut self,
+        data: &mut Stage::StageData<'a>,
+        resources: &mut BobaResources,
+    ) {
+        for controller in self.controllers.values_mut() {
+            controller.update(data, resources);
+        }
+    }
 }
 
-impl<T: 'static + RegisteredStages> AnyController for BobaController<T> {
-    fn data_mut(&mut self) -> Option<RefMut<dyn RegisteredStages>> {
-        let Some(data) = self.data_mut() else {
-            return None;
-        };
+trait GenericControllerStage<Stage: 'static + BobaStage> {
+    fn update<'a>(&'a mut self, data: &mut Stage::StageData<'a>, resources: &mut BobaResources);
+}
 
-        Some(data)
+impl<Stage, Controller> GenericControllerStage<Stage> for BobaController<Controller>
+where
+    Stage: 'static + BobaStage,
+    Controller: ControllerStage<Stage>,
+{
+    fn update<'a>(&'a mut self, data: &mut Stage::StageData<'a>, resources: &mut BobaResources) {
+        self.data_mut().update(data, resources);
     }
 }

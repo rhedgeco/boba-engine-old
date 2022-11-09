@@ -1,14 +1,14 @@
 use crate::{
-    storage::{controller_storage::ControllerStorage, stage_storage::StageStorage},
-    BobaEvent, BobaPlugin, BobaResources, BobaStage,
+    storage::{EventStorage, StageStorage},
+    BobaEvent, BobaPlugin, BobaResources,
 };
 
 #[derive(Default)]
 pub struct BobaApp {
     resources: BobaResources,
-    controllers: ControllerStorage,
     startup_stages: StageStorage,
     stages: StageStorage,
+    events: EventStorage,
 }
 
 impl BobaApp {
@@ -24,8 +24,8 @@ impl BobaApp {
         &mut self.stages
     }
 
-    pub fn controllers(&mut self) -> &mut ControllerStorage {
-        &mut self.controllers
+    pub fn events(&mut self) -> &mut EventStorage {
+        &mut self.events
     }
 
     pub fn add_plugin<Plugin: BobaPlugin>(&mut self, plugin: Plugin) -> &mut Self {
@@ -33,18 +33,20 @@ impl BobaApp {
         self
     }
 
-    pub fn execute_startup_stages(&mut self) {
-        self.startup_stages
-            .run_stages(&mut self.controllers, &mut self.resources);
+    pub fn run_startup_stages(&mut self) {
+        self.startup_stages.run(&mut self.resources);
     }
 
-    pub fn execute_stages(&mut self) {
-        self.stages
-            .run_stages(&mut self.controllers, &mut self.resources);
+    pub fn run_stages(&mut self) {
+        self.stages.run(&mut self.resources);
     }
 
-    pub fn trigger_event<Data: 'static>(&mut self, data: Data) {
-        let mut event = BobaEvent::<Data>::new(data);
-        event.run(&mut self.controllers, &mut self.resources);
+    pub fn trigger_event<Data>(&mut self, data: Data)
+    where
+        Data: 'static,
+    {
+        let mut event = BobaEvent::new(data);
+        self.events
+            .trigger_event::<Data>(&mut event, &mut self.resources);
     }
 }

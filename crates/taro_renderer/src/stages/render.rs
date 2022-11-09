@@ -1,4 +1,4 @@
-use boba_core::BobaStage;
+use boba_core::{storage::ControllerStorage, BobaStage};
 use log::{error, warn};
 use wgpu::RenderPass;
 
@@ -11,7 +11,7 @@ impl BobaStage for TaroRenderStage {
 
     fn run(
         &mut self,
-        controllers: &mut boba_core::controller_storage::ControllerStorage,
+        controllers: &mut ControllerStorage<Self>,
         resources: &mut boba_core::BobaResources,
     ) {
         let Some(renderer) = resources
@@ -60,7 +60,7 @@ impl BobaStage for TaroRenderStage {
             depth_stencil_attachment: None,
         });
 
-        controllers.update::<TaroRenderStage>(&mut render_pass, resources);
+        controllers.update(&mut render_pass, resources);
         drop(render_pass);
 
         // re-access renderer after passing resources to controllers

@@ -1,4 +1,4 @@
-use crate::BobaStage;
+use crate::{storage::ControllerStorage, BobaStage};
 
 pub struct BobaEvent<Data: 'static> {
     data: Data,
@@ -12,20 +12,20 @@ impl<Data: 'static> BobaEvent<Data> {
     pub fn data(&self) -> &Data {
         &self.data
     }
-}
 
-impl<Data: 'static> BobaStage for BobaEvent<Data> {
-    type StageData<'a> = Self;
-
-    fn run(
-        &mut self,
-        controllers: &mut crate::controller_storage::ControllerStorage,
-        resources: &mut crate::BobaResources,
-    ) {
-        controllers.update::<Self>(self, resources);
+    pub fn data_mut(&mut self) -> &mut Data {
+        &mut self.data
     }
 }
 
-pub trait BobaEventListener<Data> {
-    fn on_trigger(&mut self, data: &Data);
+impl<Data: 'static> BobaStage for BobaEvent<Data> {
+    type StageData<'a> = BobaEvent<Data>;
+
+    fn run(&mut self, _: &mut ControllerStorage<Self>, _: &mut crate::BobaResources)
+    where
+        Self: 'static,
+    {
+        // do nothing
+        // events implement boba stage to take advantage of existing architecture
+    }
 }

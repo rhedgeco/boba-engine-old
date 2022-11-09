@@ -20,7 +20,7 @@ impl MilkTeaRunner {
         app.resources().add(MilkTeaWindows::new(window));
 
         // run startup stages
-        app.execute_startup_stages();
+        app.run_startup_stages();
 
         // run main loop
         event_loop.run(move |event, _, control_flow| {
@@ -32,19 +32,15 @@ impl MilkTeaRunner {
                     window_id,
                 } if window_id == main_window_id => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
-                    WindowEvent::Resized(physical_size) => app.trigger_event(MilkTeaResize {
-                        size: *physical_size,
-                    }),
+                    WindowEvent::Resized(physical_size) => {
+                        app.trigger_event(MilkTeaResize::new(*physical_size))
+                    }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        app.trigger_event(MilkTeaResize {
-                            size: **new_inner_size,
-                        })
+                        app.trigger_event(MilkTeaResize::new(**new_inner_size))
                     }
                     _ => (),
                 },
-                Event::MainEventsCleared => {
-                    app.execute_stages();
-                }
+                Event::MainEventsCleared => app.run_stages(),
                 _ => (),
             }
         });

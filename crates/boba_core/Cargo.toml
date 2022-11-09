@@ -4,5 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+log = "0.4"
 anymap = "0.12"
 hashbrown = "0.12"
+indexmap = "1.9"
+downcast-rs = "1.2"
+uuid = { version = "1.2", features = ["v4", "fast-rng"] }

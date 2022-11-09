@@ -1,4 +1,4 @@
-use boba_core::BobaStage;
+use boba_core::{storage::ControllerStorage, BobaStage};
 use log::warn;
 use milk_tea_runner::MilkTeaWindows;
 
@@ -9,11 +9,7 @@ pub struct TaroInitStage;
 impl BobaStage for TaroInitStage {
     type StageData<'a> = Self;
 
-    fn run(
-        &mut self,
-        _: &mut boba_core::controller_storage::ControllerStorage,
-        resources: &mut boba_core::BobaResources,
-    ) {
+    fn run(&mut self, _: &mut ControllerStorage<Self>, resources: &mut boba_core::BobaResources) {
         let Some(window) = resources.get::<MilkTeaWindows>() else {
             warn!("Could not create TaroRenderer. No MilkTeaWindows found.");
             return;
