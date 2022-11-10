@@ -49,6 +49,8 @@ where
     Controller: ControllerStage<Stage>,
 {
     fn update<'a>(&'a mut self, data: &mut Stage::StageData<'a>, resources: &mut BobaResources) {
-        self.data_mut().update(data, resources);
+        unsafe {
+            self.direct_mut().update(data, resources);
+        }
     }
 }

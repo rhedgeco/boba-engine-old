@@ -1,3 +1,8 @@
+use std::{
+    cell::{RefCell, RefMut},
+    rc::Rc,
+};
+
 use uuid::Uuid;
 
 use crate::{BobaResources, BobaStage};
@@ -5,14 +10,14 @@ use crate::{BobaResources, BobaStage};
 #[derive(Debug, Clone)]
 pub struct BobaController<T: ControllerData> {
     uuid: Uuid,
-    data: T,
+    data: Rc<RefCell<T>>,
 }
 
 impl<T: ControllerData> BobaController<T> {
     pub fn build(data: T) -> Self {
         Self {
             uuid: Uuid::new_v4(),
-            data,
+            data: Rc::new(RefCell::new(data)),
         }
     }
 
@@ -20,12 +25,12 @@ impl<T: ControllerData> BobaController<T> {
         self.uuid
     }
 
-    pub fn data(&self) -> &T {
-        &self.data
+    pub fn data_mut(&mut self) -> RefMut<T> {
+        self.data.borrow_mut()
     }
 
-    pub fn data_mut(&mut self) -> &mut T {
-        &mut self.data
+    pub(crate) unsafe fn direct_mut(&mut self) -> &mut T {
+        self.data.as_ptr().as_mut().unwrap()
     }
 }
 

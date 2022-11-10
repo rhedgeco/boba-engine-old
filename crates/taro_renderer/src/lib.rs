@@ -20,8 +20,9 @@ pub mod prelude {
         fn setup(self, app: &mut boba_core::BobaApp) {
             app.startup_stages().add(TaroInitStage);
             app.stages().add(TaroRenderStage);
-            app.events()
-                .add_listener(BobaController::build(ResizeController));
+
+            let resize = BobaController::build(ResizeController);
+            app.events().add_listener(resize);
         }
     }
 }
