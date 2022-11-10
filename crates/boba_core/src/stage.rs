@@ -16,7 +16,7 @@ where
     Stage: 'static + BobaStage,
 {
     stage: Stage,
-    pub(crate) controllers: ControllerStorage<Stage>,
+    controllers: ControllerStorage<Stage>,
 }
 
 impl<Stage> StageRunner<Stage>
