@@ -13,7 +13,9 @@ pub struct MilkTeaRunner;
 impl MilkTeaRunner {
     pub fn run(mut app: BobaApp) -> Result<(), OsError> {
         let event_loop = EventLoop::new();
-        let window = WindowBuilder::new().build(&event_loop)?;
+        let window = WindowBuilder::new()
+            .with_title("Milk Tea Window")
+            .build(&event_loop)?;
         let main_window_id = window.id();
 
         // add window manager to app resources
