@@ -49,6 +49,9 @@ where
     Controller: ControllerStage<Stage>,
 {
     fn update<'a>(&'a mut self, data: &mut Stage::StageData<'a>, resources: &mut BobaResources) {
+        /// SAFTEY
+        ///
+        /// direct mutation is only used to update the controller once and the reference is discarded
         unsafe {
             self.direct_mut().update(data, resources);
         }
