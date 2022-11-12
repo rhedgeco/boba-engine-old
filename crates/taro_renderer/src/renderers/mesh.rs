@@ -1,6 +1,6 @@
 use boba_core::{BobaResources, ControllerData, ControllerStage};
 use log::warn;
-use wgpu::{BindGroup, BindGroupLayoutDescriptor, RenderPass, RenderPipeline};
+use wgpu::{BindGroup, BindGroupLayoutDescriptor, RenderPipeline};
 
 use crate::{
     stages::TaroRenderStage,
