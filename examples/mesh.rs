@@ -34,7 +34,7 @@ fn main() {
     app.stages().add_controller(mesh_renderer.clone());
 
     let mut renderer = TaroRenderer::default();
-    renderer.add_controller(mesh_renderer);
+    renderer.render_controllers().add(mesh_renderer);
     app.resources().add(renderer);
     MilkTeaRunner::run(app).unwrap();
 }

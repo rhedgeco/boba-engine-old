@@ -1,3 +1,4 @@
+mod render_stage;
 mod renderer;
 mod resize_controller;
 
@@ -6,6 +7,7 @@ pub mod stages;
 pub mod storage;
 pub mod types;
 
+pub use render_stage::*;
 pub use renderer::*;
 
 pub mod prelude {

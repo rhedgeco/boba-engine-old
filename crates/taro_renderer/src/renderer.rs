@@ -14,18 +14,57 @@ pub struct RenderResources {
     pub size: winit::dpi::PhysicalSize<u32>,
 }
 
-pub struct TaroRenderer {
-    resources: Option<RenderResources>,
+pub struct RenderControllers {
     controllers: AnyMap,
 }
 
-impl Default for TaroRenderer {
+impl Default for RenderControllers {
     fn default() -> Self {
         Self {
-            resources: None,
             controllers: AnyMap::new(),
         }
     }
+}
+
+impl RenderControllers {
+    pub fn add<T>(&mut self, controller: BobaController<T>)
+    where
+        T: 'static + ControllerData,
+    {
+        match self.controllers.get_mut::<TaroStorage<T>>() {
+            Some(storage) => storage.add(controller),
+            None => {
+                let mut storage = TaroStorage::default();
+                storage.add(controller);
+                self.controllers.insert(storage);
+            }
+        }
+    }
+
+    pub fn remove<T>(&mut self, controller: BobaController<T>)
+    where
+        T: 'static + ControllerData,
+    {
+        if let Some(storage) = self.controllers.get_mut::<TaroStorage<T>>() {
+            storage.remove(controller.uuid());
+        }
+    }
+
+    pub fn collect<T>(&mut self) -> Vec<Ref<T>>
+    where
+        T: 'static + ControllerData,
+    {
+        match self.controllers.get_mut::<TaroStorage<T>>() {
+            Some(storage) => storage.collect(),
+            None => Vec::new(),
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct TaroRenderer {
+    resources: Option<RenderResources>,
+    controllers: RenderControllers,
 }
 
 impl TaroRenderer {
@@ -79,37 +118,8 @@ impl TaroRenderer {
         &self.resources
     }
 
-    pub fn add_controller<T>(&mut self, controller: BobaController<T>)
-    where
-        T: 'static + ControllerData,
-    {
-        match self.controllers.get_mut::<TaroStorage<T>>() {
-            Some(storage) => storage.add(controller),
-            None => {
-                let mut storage = TaroStorage::default();
-                storage.add(controller);
-                self.controllers.insert(storage);
-            }
-        }
-    }
-
-    pub fn remove_controller<T>(&mut self, controller: BobaController<T>)
-    where
-        T: 'static + ControllerData,
-    {
-        if let Some(storage) = self.controllers.get_mut::<TaroStorage<T>>() {
-            storage.remove(controller.uuid());
-        }
-    }
-
-    pub fn collect_controllers<T>(&mut self) -> Vec<Ref<T>>
-    where
-        T: 'static + ControllerData,
-    {
-        match self.controllers.get_mut::<TaroStorage<T>>() {
-            Some(storage) => storage.collect(),
-            None => Vec::new(),
-        }
+    pub fn render_controllers(&mut self) -> &mut RenderControllers {
+        &mut self.controllers
     }
 
     pub(crate) fn resize(&mut self, new_size: PhysicalSize<u32>) {

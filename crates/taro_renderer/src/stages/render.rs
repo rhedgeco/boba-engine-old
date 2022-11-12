@@ -57,7 +57,7 @@ impl BobaStage for TaroRenderStage {
 
         // TODO: MAKE THIS HARDCODED PASS INTO A PROGRAMMABLE STAGE
         {
-            let meshes = renderer.collect_controllers::<TaroMeshRenderer>();
+            let meshes = renderer.render_controllers().collect::<TaroMeshRenderer>();
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
