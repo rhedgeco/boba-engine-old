@@ -1,8 +1,4 @@
-use uuid::Uuid;
-
-use crate::{
-    storage::ControllerStorage, BobaController, BobaResources, ControllerData, ControllerStage,
-};
+use crate::{storage::ControllerStorage, BobaResources};
 
 pub trait BobaStage {
     type StageData;
@@ -43,15 +39,8 @@ where
         }
     }
 
-    pub fn add_controller<Controller>(&mut self, controller: BobaController<Controller>)
-    where
-        Controller: 'static + ControllerData + ControllerStage<Stage>,
-    {
-        self.controllers.insert(controller);
-    }
-
-    pub fn delete_controller(&mut self, uuid: Uuid) -> bool {
-        self.controllers.remove(&uuid)
+    pub fn controllers(&mut self) -> &mut ControllerStorage<Stage> {
+        &mut self.controllers
     }
 
     pub fn run(&mut self, resources: &mut BobaResources) {

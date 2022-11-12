@@ -22,10 +22,10 @@ impl EventStorage {
             Some(stage) => stage
                 .downcast_mut::<ControllerStorage<BobaEvent<Data>>>()
                 .unwrap()
-                .insert(controller),
+                .add(controller),
             None => {
                 let mut storage = ControllerStorage::<BobaEvent<Data>>::default();
-                storage.insert(controller);
+                storage.add(controller);
                 self.stages
                     .insert(TypeId::of::<BobaEvent<Data>>(), Box::new(storage));
             }

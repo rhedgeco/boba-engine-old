@@ -52,7 +52,8 @@ impl StageStorage {
         stage_box
             .downcast_mut::<StageRunner<Stage>>()
             .expect("Stage runner should be valid at this point")
-            .add_controller(controller);
+            .controllers()
+            .add(controller);
     }
 
     pub fn delete<Stage>(&mut self)
