@@ -1,16 +1,21 @@
-use std::{
-    cell::{RefCell, RefMut},
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 
 use uuid::Uuid;
 
 use crate::{BobaResources, BobaStage};
 
-#[derive(Debug, Clone)]
 pub struct BobaController<T: ControllerData> {
     uuid: Uuid,
     data: Rc<RefCell<T>>,
+}
+
+impl<T: ControllerData> Clone for BobaController<T> {
+    fn clone(&self) -> Self {
+        Self {
+            uuid: self.uuid,
+            data: self.data.clone(),
+        }
+    }
 }
 
 impl<T: ControllerData> BobaController<T> {
@@ -21,21 +26,17 @@ impl<T: ControllerData> BobaController<T> {
         }
     }
 
-    pub fn uuid(&self) -> Uuid {
-        self.uuid
+    pub fn uuid(&self) -> &Uuid {
+        &self.uuid
     }
 
-    pub fn data_mut(&mut self) -> RefMut<T> {
-        self.data.borrow_mut()
-    }
-
-    pub(crate) unsafe fn direct_mut(&mut self) -> &mut T {
-        self.data.as_ptr().as_mut().unwrap()
+    pub fn data(&self) -> &RefCell<T> {
+        self.data.as_ref()
     }
 }
 
 pub trait ControllerData {}
 
 pub trait ControllerStage<Stage: 'static + BobaStage>: ControllerData {
-    fn update<'a>(&'a mut self, data: &mut Stage::StageData<'a>, resources: &mut BobaResources);
+    fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources);
 }

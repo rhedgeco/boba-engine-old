@@ -4,6 +4,7 @@ use taro_renderer::{
     prelude::*,
     renderers::TaroMeshRenderer,
     types::{TaroMesh, TaroShader, TaroTexture, Vertex},
+    TaroRenderer,
 };
 
 #[rustfmt::skip]
@@ -29,8 +30,11 @@ fn main() {
     let texture =
         TaroTexture::from_bytes(Some("Mesh Texture"), include_bytes!("happy-tree.png")).unwrap();
     let mesh = TaroMesh::new(VERTICES, INDICES);
-    let renderer = TaroMeshRenderer::new(mesh, shader, texture);
-    app.stages().add_controller(BobaController::build(renderer));
+    let mesh_renderer = BobaController::build(TaroMeshRenderer::new(mesh, shader, texture));
+    app.stages().add_controller(mesh_renderer.clone());
 
+    let mut renderer = TaroRenderer::default();
+    renderer.add_controller(mesh_renderer);
+    app.resources().add(renderer);
     MilkTeaRunner::run(app).unwrap();
 }

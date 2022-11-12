@@ -10,7 +10,7 @@ impl ControllerData for ResizeController {}
 impl ControllerStage<BobaEvent<MilkTeaResize>> for ResizeController {
     fn update<'a>(
         &mut self,
-        data: &mut BobaEvent<MilkTeaResize>,
+        data: &BobaEvent<MilkTeaResize>,
         resources: &mut boba_core::BobaResources,
     ) {
         let Some(renderer) = resources.get_mut::<TaroRenderer>() else {

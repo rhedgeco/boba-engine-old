@@ -19,7 +19,7 @@ impl<Data: 'static> BobaEvent<Data> {
 }
 
 impl<Data: 'static> BobaStage for BobaEvent<Data> {
-    type StageData<'a> = BobaEvent<Data>;
+    type StageData = BobaEvent<Data>;
 
     fn run(&mut self, _: &mut ControllerStorage<Self>, _: &mut crate::BobaResources)
     where

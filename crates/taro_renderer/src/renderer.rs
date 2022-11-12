@@ -1,15 +1,35 @@
+use std::cell::Ref;
+
+use anymap::AnyMap;
+use boba_core::{BobaController, ControllerData};
 use winit::{dpi::PhysicalSize, window::Window};
 
+use crate::storage::TaroStorage;
+
+pub struct RenderResources {
+    pub surface: wgpu::Surface,
+    pub device: wgpu::Device,
+    pub queue: wgpu::Queue,
+    pub config: wgpu::SurfaceConfiguration,
+    pub size: winit::dpi::PhysicalSize<u32>,
+}
+
 pub struct TaroRenderer {
-    surface: wgpu::Surface,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    config: wgpu::SurfaceConfiguration,
-    size: winit::dpi::PhysicalSize<u32>,
+    resources: Option<RenderResources>,
+    controllers: AnyMap,
+}
+
+impl Default for TaroRenderer {
+    fn default() -> Self {
+        Self {
+            resources: None,
+            controllers: AnyMap::new(),
+        }
+    }
 }
 
 impl TaroRenderer {
-    pub fn new(window: &Window) -> Self {
+    pub fn initialize(&mut self, window: &Window) {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(wgpu::Backends::all());
         let surface = unsafe { instance.create_surface(window) };
@@ -32,7 +52,10 @@ impl TaroRenderer {
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: *surface.get_supported_formats(&adapter).get(0).unwrap(),
+            format: *surface
+                .get_supported_formats(&adapter)
+                .get(0)
+                .expect("There were no supported adapter formats"),
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::AutoNoVsync,
@@ -41,41 +64,66 @@ impl TaroRenderer {
 
         surface.configure(&device, &config);
 
-        Self {
+        let resources = RenderResources {
             surface,
             device,
             queue,
             config,
             size,
+        };
+
+        self.resources = Some(resources);
+    }
+
+    pub fn resources(&self) -> &Option<RenderResources> {
+        &self.resources
+    }
+
+    pub fn add_controller<T>(&mut self, controller: BobaController<T>)
+    where
+        T: 'static + ControllerData,
+    {
+        match self.controllers.get_mut::<TaroStorage<T>>() {
+            Some(storage) => storage.add(controller),
+            None => {
+                let mut storage = TaroStorage::default();
+                storage.add(controller);
+                self.controllers.insert(storage);
+            }
         }
     }
 
-    pub fn surface(&self) -> &wgpu::Surface {
-        &self.surface
+    pub fn remove_controller<T>(&mut self, controller: BobaController<T>)
+    where
+        T: 'static + ControllerData,
+    {
+        if let Some(storage) = self.controllers.get_mut::<TaroStorage<T>>() {
+            storage.remove(controller.uuid());
+        }
     }
 
-    pub fn device(&self) -> &wgpu::Device {
-        &self.device
-    }
-
-    pub fn queue(&self) -> &wgpu::Queue {
-        &self.queue
-    }
-
-    pub fn config(&self) -> &wgpu::SurfaceConfiguration {
-        &self.config
-    }
-
-    pub fn size(&self) -> &winit::dpi::PhysicalSize<u32> {
-        &self.size
+    pub fn collect_controllers<T>(&mut self) -> Vec<Ref<T>>
+    where
+        T: 'static + ControllerData,
+    {
+        match self.controllers.get_mut::<TaroStorage<T>>() {
+            Some(storage) => storage.collect(),
+            None => Vec::new(),
+        }
     }
 
     pub(crate) fn resize(&mut self, new_size: PhysicalSize<u32>) {
+        let Some(resources) = &mut self.resources else {
+            return;
+        };
+
         if new_size.width > 0 && new_size.height > 0 {
-            self.size = new_size;
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
-            self.surface.configure(&self.device, &self.config);
+            resources.size = new_size;
+            resources.config.width = new_size.width;
+            resources.config.height = new_size.height;
+            resources
+                .surface
+                .configure(&resources.device, &resources.config);
         }
     }
 }

@@ -1,4 +1,5 @@
 use image::{DynamicImage, ImageError, RgbaImage};
+use log::warn;
 use wgpu::{Extent3d, Texture, TextureDescriptor, TextureView};
 
 use crate::TaroRenderer;
@@ -24,29 +25,36 @@ impl<'a> TaroCompiler for TaroTexture<'a> {
     }
 
     fn compile(&mut self, renderer: &TaroRenderer) {
-        if self.compiled.is_none() {
-            let texture = renderer.device().create_texture(&self.descriptor);
-            let size = self.descriptor.size;
-
-            renderer.queue().write_texture(
-                wgpu::ImageCopyTexture {
-                    aspect: wgpu::TextureAspect::All,
-                    texture: &texture,
-                    mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
-                },
-                &self.rgba,
-                wgpu::ImageDataLayout {
-                    offset: 0,
-                    bytes_per_row: std::num::NonZeroU32::new(4 * size.width),
-                    rows_per_image: std::num::NonZeroU32::new(size.height),
-                },
-                size,
-            );
-
-            let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-            self.compiled = Some(CompiledTaroTexture { texture, view });
+        if self.compiled.is_some() {
+            return;
         }
+
+        let Some(render_resources) = renderer.resources() else {
+            warn!("Could not compile/upload mesh. TaroRenderer has not been initialized");
+            return;
+        };
+
+        let texture = render_resources.device.create_texture(&self.descriptor);
+        let size = self.descriptor.size;
+
+        render_resources.queue.write_texture(
+            wgpu::ImageCopyTexture {
+                aspect: wgpu::TextureAspect::All,
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &self.rgba,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: std::num::NonZeroU32::new(4 * size.width),
+                rows_per_image: std::num::NonZeroU32::new(size.height),
+            },
+            size,
+        );
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        self.compiled = Some(CompiledTaroTexture { texture, view });
     }
 }
 

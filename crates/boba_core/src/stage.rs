@@ -5,7 +5,7 @@ use crate::{
 };
 
 pub trait BobaStage {
-    type StageData<'a>;
+    type StageData;
     fn run(&mut self, controllers: &mut ControllerStorage<Self>, resources: &mut BobaResources)
     where
         Self: 'static;

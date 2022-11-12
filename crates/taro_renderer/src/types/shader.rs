@@ -1,3 +1,4 @@
+use log::warn;
 use wgpu::{ShaderModule, ShaderModuleDescriptor};
 
 use crate::TaroRenderer;
@@ -25,9 +26,14 @@ impl<'a> TaroCompiler for TaroShader<'a> {
             return;
         }
 
+        let Some(render_resources) = renderer.resources() else {
+            warn!("Could not compile/upload mesh. TaroRenderer has not been initialized");
+            return;
+        };
+
         let descriptor = std::mem::replace(&mut self.descriptor, None)
             .expect("Shader descriptor should be Some at this point");
-        let module = renderer.device().create_shader_module(descriptor);
+        let module = render_resources.device.create_shader_module(descriptor);
         self.compiled = Some(CompiledTaroShader { module });
     }
 }

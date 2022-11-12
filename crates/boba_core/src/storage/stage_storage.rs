@@ -1,7 +1,7 @@
 use std::any::TypeId;
 
 use indexmap::IndexMap;
-use log::{debug, warn};
+use log::warn;
 
 use crate::{BobaController, BobaResources, BobaStage, ControllerStage, StageRunner};
 
@@ -68,13 +68,6 @@ impl dyn AnyStageRunner {
     pub fn is<T: 'static + AnyStageRunner>(&self) -> bool {
         let t = TypeId::of::<T>();
         let concrete = self.type_id();
-        debug!(
-            "{:?}:{:?}, {:?}:{:?}",
-            std::any::type_name::<T>(),
-            t,
-            std::any::type_name::<Self>(),
-            concrete
-        );
         t == concrete
     }
 
