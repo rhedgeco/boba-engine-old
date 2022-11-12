@@ -2,7 +2,7 @@ use std::cell::Ref;
 
 use anymap::AnyMap;
 use boba_core::{BobaController, ControllerData};
-use wgpu::CommandEncoder;
+use wgpu::{CommandEncoder, TextureView};
 use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{storage::TaroStorage, RenderPhaseStorage};
@@ -128,8 +128,9 @@ impl TaroRenderer {
         &mut self.phases
     }
 
-    pub fn execute_render_phases(&mut self, encoder: &mut CommandEncoder) {
-        self.phases.execute_phases(encoder, &mut self.controllers);
+    pub fn execute_render_phases(&mut self, view: &TextureView, encoder: &mut CommandEncoder) {
+        self.phases
+            .execute_phases(view, encoder, &mut self.controllers);
     }
 
     pub(crate) fn resize(&mut self, new_size: PhysicalSize<u32>) {

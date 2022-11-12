@@ -2,6 +2,7 @@ mod render_phase;
 mod renderer;
 mod resize_controller;
 
+pub mod phases;
 pub mod renderers;
 pub mod stages;
 pub mod storage;
