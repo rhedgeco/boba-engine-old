@@ -2,6 +2,7 @@ use std::cell::Ref;
 
 use boba_core::{BobaController, ControllerData};
 use indexmap::IndexMap;
+use log::error;
 use uuid::Uuid;
 
 pub struct TaroStorage<T>
@@ -42,7 +43,18 @@ where
 
         self.controllers
             .values()
-            .map(|f| f.data().borrow())
+            .filter_map(|f| match f.data().try_borrow() {
+                Ok(borrow) => Some(borrow),
+                Err(e) => {
+                    error!(
+                        "Could not collect item BobaController<{:?}> because it is currently mutable borrowed. BorrowError: {:?}",
+                        std::any::type_name::<T>(),
+                        e,
+                    );
+
+                    None
+                }
+            })
             .collect()
     }
 }
