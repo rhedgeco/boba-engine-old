@@ -27,7 +27,7 @@ impl BobaStage for OnTaroRender {
             Ok(surface) => surface,
             Err(surface_error) => {
                 error!(
-                    "Skipping TaroRenderStage. Could not get current surface texture. Error: {:?}",
+                    "Skipping TaroRenderStage. Could not get current surface texture. SurfaceError: {:?}",
                     surface_error
                 );
                 return;

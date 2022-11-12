@@ -3,7 +3,7 @@ use std::any::TypeId;
 use indexmap::IndexMap;
 use wgpu::{CommandEncoder, TextureView};
 
-use crate::RenderControllers;
+use crate::{phases::DefaultTaroPhase, RenderControllers};
 
 pub trait TaroRenderPhase {
     fn render(
@@ -14,9 +14,20 @@ pub trait TaroRenderPhase {
     );
 }
 
-#[derive(Default)]
 pub struct RenderPhaseStorage {
     phases: IndexMap<TypeId, Box<dyn TaroRenderPhase>>,
+}
+
+impl Default for RenderPhaseStorage {
+    fn default() -> Self {
+        let mut storage = Self {
+            phases: Default::default(),
+        };
+
+        storage.add(DefaultTaroPhase);
+
+        storage
+    }
 }
 
 impl RenderPhaseStorage {
