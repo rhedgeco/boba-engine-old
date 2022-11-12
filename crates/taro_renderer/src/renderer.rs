@@ -51,11 +51,11 @@ impl RenderControllers {
         }
     }
 
-    pub fn collect<T>(&mut self) -> Vec<Ref<T>>
+    pub fn collect<T>(&self) -> Vec<Ref<T>>
     where
         T: 'static + ControllerData,
     {
-        match self.controllers.get_mut::<TaroStorage<T>>() {
+        match self.controllers.get::<TaroStorage<T>>() {
             Some(storage) => storage.collect(),
             None => Vec::new(),
         }

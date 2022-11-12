@@ -10,7 +10,7 @@ pub trait TaroRenderPhase {
         &mut self,
         view: &TextureView,
         encoder: &mut CommandEncoder,
-        controllers: &mut RenderControllers,
+        controllers: &RenderControllers,
     );
 }
 

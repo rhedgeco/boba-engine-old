@@ -34,14 +34,14 @@ where
         self.controllers.remove(uuid);
     }
 
-    pub fn collect(&mut self) -> Vec<Ref<T>> {
+    pub fn collect(&self) -> Vec<Ref<T>> {
         let length = self.controllers.len();
         if length == 0 {
             return Vec::new();
         }
 
         self.controllers
-            .values_mut()
+            .values()
             .map(|f| f.data().borrow())
             .collect()
     }

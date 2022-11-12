@@ -1,6 +1,6 @@
-use wgpu::TextureView;
+use wgpu::{CommandEncoder, TextureView};
 
-use crate::{renderers::TaroMeshRenderer, types::TaroCompiler, TaroRenderPhase};
+use crate::{renderers::TaroMeshRenderer, types::TaroCompiler, RenderControllers, TaroRenderPhase};
 
 pub struct DefaultTaroPhase;
 
@@ -8,8 +8,8 @@ impl TaroRenderPhase for DefaultTaroPhase {
     fn render(
         &mut self,
         view: &TextureView,
-        encoder: &mut wgpu::CommandEncoder,
-        controllers: &mut crate::RenderControllers,
+        encoder: &mut CommandEncoder,
+        controllers: &RenderControllers,
     ) {
         let meshes = controllers.collect::<TaroMeshRenderer>();
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
