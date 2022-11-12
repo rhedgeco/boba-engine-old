@@ -2,9 +2,10 @@ use std::cell::Ref;
 
 use anymap::AnyMap;
 use boba_core::{BobaController, ControllerData};
+use wgpu::CommandEncoder;
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::storage::TaroStorage;
+use crate::{storage::TaroStorage, RenderPhaseStorage};
 
 pub struct RenderResources {
     pub surface: wgpu::Surface,
@@ -65,6 +66,7 @@ impl RenderControllers {
 pub struct TaroRenderer {
     resources: Option<RenderResources>,
     controllers: RenderControllers,
+    phases: RenderPhaseStorage,
 }
 
 impl TaroRenderer {
@@ -120,6 +122,14 @@ impl TaroRenderer {
 
     pub fn render_controllers(&mut self) -> &mut RenderControllers {
         &mut self.controllers
+    }
+
+    pub fn render_phases(&mut self) -> &mut RenderPhaseStorage {
+        &mut self.phases
+    }
+
+    pub fn execute_render_phases(&mut self, encoder: &mut CommandEncoder) {
+        self.phases.execute_phases(encoder, &mut self.controllers);
     }
 
     pub(crate) fn resize(&mut self, new_size: PhysicalSize<u32>) {

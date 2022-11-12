@@ -91,6 +91,8 @@ impl BobaStage for OnTaroRender {
             }
         }
 
+        renderer.execute_render_phases(&mut encoder);
+
         // re-access renderer after passing resources to controllers
         // renderer could have been removed or changed
         let Some(renderer) = resources
