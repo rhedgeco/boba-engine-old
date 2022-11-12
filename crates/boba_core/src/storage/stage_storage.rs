@@ -3,11 +3,22 @@ use std::any::TypeId;
 use indexmap::IndexMap;
 use log::warn;
 
-use crate::{BobaController, BobaResources, BobaStage, ControllerStage, StageRunner};
+use crate::{BobaController, BobaResources, BobaStage, BobaUpdate, ControllerStage, StageRunner};
 
-#[derive(Default)]
 pub struct StageStorage {
     stages: IndexMap<TypeId, Box<dyn AnyStageRunner>>,
+}
+
+impl Default for StageStorage {
+    fn default() -> Self {
+        let mut storage = Self {
+            stages: Default::default(),
+        };
+
+        storage.add(BobaUpdate);
+
+        storage
+    }
 }
 
 impl StageStorage {

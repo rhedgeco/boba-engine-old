@@ -11,6 +11,19 @@ pub trait BobaStage {
         Self: 'static;
 }
 
+pub struct BobaUpdate;
+
+impl BobaStage for BobaUpdate {
+    type StageData = ();
+
+    fn run(&mut self, controllers: &mut ControllerStorage<Self>, resources: &mut BobaResources)
+    where
+        Self: 'static,
+    {
+        controllers.update(&(), resources);
+    }
+}
+
 pub struct StageRunner<Stage>
 where
     Stage: 'static + BobaStage,
