@@ -5,9 +5,9 @@ use crate::TaroRenderer;
 
 pub struct ResizeController;
 
-impl ControllerData for ResizeController {}
+impl BobaController for ResizeController {}
 
-impl ControllerStage<BobaEvent<MilkTeaResize>> for ResizeController {
+impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizeController {
     fn update<'a>(
         &mut self,
         data: &BobaEvent<MilkTeaResize>,

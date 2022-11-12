@@ -3,7 +3,7 @@ use std::any::TypeId;
 use indexmap::IndexMap;
 use log::warn;
 
-use crate::{BobaController, BobaResources, BobaStage, BobaUpdate, ControllerStage, StageRunner};
+use crate::{BobaContainer, BobaResources, BobaStage, BobaUpdate, MainBobaUpdate, StageRunner};
 
 pub struct StageStorage {
     stages: IndexMap<TypeId, Box<dyn AnyStageRunner>>,
@@ -15,7 +15,7 @@ impl Default for StageStorage {
             stages: Default::default(),
         };
 
-        storage.add(BobaUpdate);
+        storage.add(MainBobaUpdate);
 
         storage
     }
@@ -39,10 +39,10 @@ impl StageStorage {
             .insert(TypeId::of::<Stage>(), Box::new(StageRunner::build(stage)));
     }
 
-    pub fn add_controller<Stage, Controller>(&mut self, controller: BobaController<Controller>)
+    pub fn add_controller<Stage, Controller>(&mut self, controller: BobaContainer<Controller>)
     where
         Stage: 'static + BobaStage,
-        Controller: 'static + ControllerStage<Stage>,
+        Controller: 'static + BobaUpdate<Stage>,
     {
         let Some(stage_box) = self.stages.get_mut(&TypeId::of::<Stage>()) else {
             warn!("Controller not added. Stage {:?} was not found", std::any::type_name::<Stage>());

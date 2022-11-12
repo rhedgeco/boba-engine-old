@@ -16,9 +16,9 @@ impl Default for Time {
     }
 }
 
-impl ControllerData for Time {}
+impl BobaController for Time {}
 
-impl ControllerStage<BobaUpdate> for Time {
+impl BobaUpdate<MainBobaUpdate> for Time {
     fn update(&mut self, _: &(), _: &mut BobaResources) {
         println!("FPS: {:?}", 1. / self.instant.elapsed().as_secs_f32());
         self.instant = Instant::now();
@@ -29,7 +29,7 @@ fn main() {
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
     app.stages()
-        .add_controller(BobaController::build(Time::default()));
+        .add_controller(BobaContainer::build(Time::default()));
     app.resources().add(TaroRenderer::default());
     MilkTeaRunner::run(app).unwrap();
 }

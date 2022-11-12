@@ -25,7 +25,7 @@ pub mod prelude {
             app.startup_stages().add(TaroRendererInitStage);
             app.stages().add(OnTaroRender);
             app.events()
-                .add_listener(BobaController::build(ResizeController));
+                .add_listener(BobaContainer::build(ResizeController));
         }
     }
 }

@@ -2,7 +2,7 @@ use hashbrown::HashMap;
 use log::error;
 use uuid::Uuid;
 
-use crate::{BobaController, BobaResources, BobaStage, ControllerData, ControllerStage};
+use crate::{BobaContainer, BobaController, BobaResources, BobaStage, BobaUpdate};
 
 /// A storage solution for `BobaController` objects.
 ///
@@ -26,9 +26,9 @@ impl<Stage: 'static + BobaStage> Default for ControllerStorage<Stage> {
 
 impl<Stage: 'static + BobaStage> ControllerStorage<Stage> {
     /// Adds a controller to the storage system.
-    pub fn add<Controller>(&mut self, controller: BobaController<Controller>)
+    pub fn add<Controller>(&mut self, controller: BobaContainer<Controller>)
     where
-        Controller: 'static + ControllerData + ControllerStage<Stage>,
+        Controller: 'static + BobaController + BobaUpdate<Stage>,
     {
         self.controllers
             .insert(*controller.uuid(), Box::new(controller));
@@ -51,10 +51,10 @@ trait GenericControllerStage<Stage: 'static + BobaStage> {
     fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources);
 }
 
-impl<Stage, Controller> GenericControllerStage<Stage> for BobaController<Controller>
+impl<Stage, Controller> GenericControllerStage<Stage> for BobaContainer<Controller>
 where
     Stage: 'static + BobaStage,
-    Controller: ControllerStage<Stage>,
+    Controller: BobaUpdate<Stage>,
 {
     fn update<'a>(&'a mut self, data: &Stage::StageData, resources: &mut BobaResources) {
         let Ok(mut controller) = self.data().try_borrow_mut() else {

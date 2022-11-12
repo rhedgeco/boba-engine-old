@@ -1,20 +1,20 @@
 use std::cell::Ref;
 
-use boba_core::{BobaController, ControllerData};
+use boba_core::{BobaContainer, BobaController};
 use indexmap::IndexMap;
 use log::error;
 use uuid::Uuid;
 
 pub struct TaroStorage<T>
 where
-    T: ControllerData,
+    T: BobaController,
 {
-    controllers: IndexMap<Uuid, BobaController<T>>,
+    controllers: IndexMap<Uuid, BobaContainer<T>>,
 }
 
 impl<T> Default for TaroStorage<T>
 where
-    T: ControllerData,
+    T: BobaController,
 {
     fn default() -> Self {
         Self {
@@ -25,9 +25,9 @@ where
 
 impl<T> TaroStorage<T>
 where
-    T: ControllerData,
+    T: BobaController,
 {
-    pub fn add(&mut self, controller: BobaController<T>) {
+    pub fn add(&mut self, controller: BobaContainer<T>) {
         self.controllers.insert(*controller.uuid(), controller);
     }
 

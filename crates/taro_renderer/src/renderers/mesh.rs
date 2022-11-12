@@ -1,4 +1,4 @@
-use boba_core::{BobaResources, ControllerData, ControllerStage};
+use boba_core::{BobaController, BobaResources, BobaUpdate};
 use log::warn;
 use wgpu::{BindGroup, BindGroupLayoutDescriptor, RenderPipeline};
 
@@ -173,9 +173,9 @@ impl<'a> TaroMeshRenderer<'a> {
     }
 }
 
-impl ControllerData for TaroMeshRenderer<'_> {}
+impl BobaController for TaroMeshRenderer<'_> {}
 
-impl ControllerStage<OnTaroRender> for TaroMeshRenderer<'_> {
+impl BobaUpdate<OnTaroRender> for TaroMeshRenderer<'_> {
     fn update(&mut self, _: &(), resources: &mut BobaResources) {
         if self.compiled() {
             return;

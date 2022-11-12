@@ -4,12 +4,12 @@ use uuid::Uuid;
 
 use crate::{BobaResources, BobaStage};
 
-pub struct BobaController<T: ControllerData> {
+pub struct BobaContainer<T: BobaController> {
     uuid: Uuid,
     data: Rc<RefCell<T>>,
 }
 
-impl<T: ControllerData> Clone for BobaController<T> {
+impl<T: BobaController> Clone for BobaContainer<T> {
     fn clone(&self) -> Self {
         Self {
             uuid: self.uuid,
@@ -18,7 +18,7 @@ impl<T: ControllerData> Clone for BobaController<T> {
     }
 }
 
-impl<T: ControllerData> BobaController<T> {
+impl<T: BobaController> BobaContainer<T> {
     pub fn build(data: T) -> Self {
         Self {
             uuid: Uuid::new_v4(),
@@ -35,8 +35,8 @@ impl<T: ControllerData> BobaController<T> {
     }
 }
 
-pub trait ControllerData {}
+pub trait BobaController {}
 
-pub trait ControllerStage<Stage: 'static + BobaStage>: ControllerData {
+pub trait BobaUpdate<Stage: 'static + BobaStage>: BobaController {
     fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources);
 }

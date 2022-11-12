@@ -7,9 +7,9 @@ pub trait BobaStage {
         Self: 'static;
 }
 
-pub struct BobaUpdate;
+pub struct MainBobaUpdate;
 
-impl BobaStage for BobaUpdate {
+impl BobaStage for MainBobaUpdate {
     type StageData = ();
 
     fn run(&mut self, controllers: &mut ControllerStorage<Self>, resources: &mut BobaResources)

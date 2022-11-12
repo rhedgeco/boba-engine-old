@@ -30,7 +30,7 @@ fn main() {
     let texture =
         TaroTexture::from_bytes(Some("Mesh Texture"), include_bytes!("happy-tree.png")).unwrap();
     let mesh = TaroMesh::new(VERTICES, INDICES);
-    let mesh_renderer = BobaController::build(TaroMeshRenderer::new(mesh, shader, texture));
+    let mesh_renderer = BobaContainer::build(TaroMeshRenderer::new(mesh, shader, texture));
     app.stages().add_controller(mesh_renderer.clone());
 
     let mut renderer = TaroRenderer::default();

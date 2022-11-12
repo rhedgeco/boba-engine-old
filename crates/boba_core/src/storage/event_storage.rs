@@ -3,7 +3,7 @@ use std::any::{Any, TypeId};
 use indexmap::IndexMap;
 use log::info;
 
-use crate::{BobaController, BobaEvent, BobaResources, ControllerStage};
+use crate::{BobaContainer, BobaEvent, BobaResources, BobaUpdate};
 
 use super::ControllerStorage;
 
@@ -13,10 +13,10 @@ pub struct EventStorage {
 }
 
 impl EventStorage {
-    pub fn add_listener<Data, Controller>(&mut self, controller: BobaController<Controller>)
+    pub fn add_listener<Data, Controller>(&mut self, controller: BobaContainer<Controller>)
     where
         Data: 'static,
-        Controller: 'static + ControllerStage<BobaEvent<Data>>,
+        Controller: 'static + BobaUpdate<BobaEvent<Data>>,
     {
         match self.stages.get_mut(&TypeId::of::<BobaEvent<Data>>()) {
             Some(stage) => stage

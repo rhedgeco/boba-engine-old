@@ -1,7 +1,7 @@
 use std::cell::Ref;
 
 use anymap::AnyMap;
-use boba_core::{BobaController, ControllerData};
+use boba_core::{BobaContainer, BobaController};
 use wgpu::{CommandEncoder, TextureView};
 use winit::{dpi::PhysicalSize, window::Window};
 
@@ -28,9 +28,9 @@ impl Default for RenderControllers {
 }
 
 impl RenderControllers {
-    pub fn add<T>(&mut self, controller: BobaController<T>)
+    pub fn add<T>(&mut self, controller: BobaContainer<T>)
     where
-        T: 'static + ControllerData,
+        T: 'static + BobaController,
     {
         match self.controllers.get_mut::<TaroStorage<T>>() {
             Some(storage) => storage.add(controller),
@@ -42,9 +42,9 @@ impl RenderControllers {
         }
     }
 
-    pub fn remove<T>(&mut self, controller: BobaController<T>)
+    pub fn remove<T>(&mut self, controller: BobaContainer<T>)
     where
-        T: 'static + ControllerData,
+        T: 'static + BobaController,
     {
         if let Some(storage) = self.controllers.get_mut::<TaroStorage<T>>() {
             storage.remove(controller.uuid());
@@ -53,7 +53,7 @@ impl RenderControllers {
 
     pub fn collect<T>(&self) -> Vec<Ref<T>>
     where
-        T: 'static + ControllerData,
+        T: 'static + BobaController,
     {
         match self.controllers.get::<TaroStorage<T>>() {
             Some(storage) => storage.collect(),
