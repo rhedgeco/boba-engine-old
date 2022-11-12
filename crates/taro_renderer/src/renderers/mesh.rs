@@ -3,7 +3,7 @@ use log::warn;
 use wgpu::{BindGroup, BindGroupLayoutDescriptor, RenderPipeline};
 
 use crate::{
-    stages::TaroRenderStage,
+    stages::OnTaroRender,
     types::{TaroCompiler, TaroMesh, TaroShader, TaroTexture},
     TaroRenderer,
 };
@@ -175,7 +175,7 @@ impl<'a> TaroMeshRenderer<'a> {
 
 impl ControllerData for TaroMeshRenderer<'_> {}
 
-impl ControllerStage<TaroRenderStage> for TaroMeshRenderer<'_> {
+impl ControllerStage<OnTaroRender> for TaroMeshRenderer<'_> {
     fn update(&mut self, _: &(), resources: &mut BobaResources) {
         if self.compiled() {
             return;

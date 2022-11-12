@@ -3,9 +3,9 @@ use log::{error, warn};
 
 use crate::{renderers::TaroMeshRenderer, types::TaroCompiler, TaroRenderer};
 
-pub struct TaroRenderStage;
+pub struct OnTaroRender;
 
-impl BobaStage for TaroRenderStage {
+impl BobaStage for OnTaroRender {
     type StageData = ();
 
     fn run(

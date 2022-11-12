@@ -1,4 +1,4 @@
-mod render_stage;
+mod render_phase;
 mod renderer;
 mod resize_controller;
 
@@ -7,13 +7,13 @@ pub mod stages;
 pub mod storage;
 pub mod types;
 
-pub use render_stage::*;
+pub use render_phase::*;
 pub use renderer::*;
 
 pub mod prelude {
     use crate::{
         resize_controller::ResizeController,
-        stages::{TaroRenderStage, TaroRendererInitStage},
+        stages::{OnTaroRender, TaroRendererInitStage},
     };
     use boba_core::*;
 
@@ -22,7 +22,7 @@ pub mod prelude {
     impl BobaPlugin for TaroRenderPlugin {
         fn setup(self, app: &mut boba_core::BobaApp) {
             app.startup_stages().add(TaroRendererInitStage);
-            app.stages().add(TaroRenderStage);
+            app.stages().add(OnTaroRender);
             app.events()
                 .add_listener(BobaController::build(ResizeController));
         }
