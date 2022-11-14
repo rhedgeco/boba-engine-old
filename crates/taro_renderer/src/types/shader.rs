@@ -1,4 +1,7 @@
+use std::borrow::Cow;
+
 use log::warn;
+use naga::{front::wgsl::ParseError, Module};
 use wgpu::{ShaderModule, ShaderModuleDescriptor};
 
 use crate::TaroRenderer;
@@ -9,12 +12,13 @@ pub struct CompiledTaroShader {
     pub module: ShaderModule,
 }
 
-pub struct TaroShader<'a> {
-    descriptor: Option<ShaderModuleDescriptor<'a>>,
+pub struct TaroShader {
+    label: Box<str>,
+    module: Module,
     compiled: Option<CompiledTaroShader>,
 }
 
-impl<'a> TaroCompiler for TaroShader<'a> {
+impl<'a> TaroCompiler for TaroShader {
     type CompiledData = CompiledTaroShader;
 
     fn get_data(&self) -> &Option<Self::CompiledData> {
@@ -31,23 +35,22 @@ impl<'a> TaroCompiler for TaroShader<'a> {
             return;
         };
 
-        let descriptor = std::mem::replace(&mut self.descriptor, None)
-            .expect("Shader descriptor should be Some at this point");
+        let descriptor = ShaderModuleDescriptor {
+            label: Some(&self.label),
+            source: wgpu::ShaderSource::Naga(Cow::Owned(self.module.clone())),
+        };
+
         let module = render_resources.device.create_shader_module(descriptor);
         self.compiled = Some(CompiledTaroShader { module });
     }
 }
 
-impl<'a> TaroShader<'a> {
-    pub fn from_str(label: Option<&'a str>, shader_code: &'a str) -> Self {
-        let descriptor = ShaderModuleDescriptor {
-            label,
-            source: wgpu::ShaderSource::Wgsl(shader_code.into()),
-        };
-
-        TaroShader::<'a> {
+impl TaroShader {
+    pub fn from_wgsl(label: &str, source: &str) -> Result<Self, ParseError> {
+        Ok(Self {
+            label: Box::<str>::from(label),
+            module: naga::front::wgsl::parse_str(source)?,
             compiled: None,
-            descriptor: Some(descriptor),
-        }
+        })
     }
 }

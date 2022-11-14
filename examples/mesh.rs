@@ -26,9 +26,9 @@ fn main() {
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
 
-    let shader = TaroShader::from_str(Some("Mesh Shader"), include_str!("mesh_shader.wgsl"));
+    let shader = TaroShader::from_wgsl("Mesh Shader", include_str!("mesh_shader.wgsl")).unwrap();
     let texture =
-        TaroTexture::from_bytes(Some("Mesh Texture"), include_bytes!("happy-tree.png")).unwrap();
+        TaroTexture::from_bytes("Mesh Texture", include_bytes!("happy-tree.png")).unwrap();
     let mesh = TaroMesh::new(VERTICES, INDICES);
     let mesh_renderer = BobaContainer::build(TaroMeshRenderer::new(mesh, shader, texture));
     app.stages().add_controller(mesh_renderer.clone());

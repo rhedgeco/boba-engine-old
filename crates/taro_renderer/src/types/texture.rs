@@ -11,13 +11,14 @@ pub struct CompiledTaroTexture {
     pub view: TextureView,
 }
 
-pub struct TaroTexture<'a> {
+pub struct TaroTexture {
+    label: Box<str>,
     rgba: RgbaImage,
-    descriptor: TextureDescriptor<'a>,
+    size: Extent3d,
     compiled: Option<CompiledTaroTexture>,
 }
 
-impl<'a> TaroCompiler for TaroTexture<'a> {
+impl TaroCompiler for TaroTexture {
     type CompiledData = CompiledTaroTexture;
 
     fn get_data(&self) -> &Option<Self::CompiledData> {
@@ -34,8 +35,17 @@ impl<'a> TaroCompiler for TaroTexture<'a> {
             return;
         };
 
-        let texture = render_resources.device.create_texture(&self.descriptor);
-        let size = self.descriptor.size;
+        let descriptor = TextureDescriptor {
+            label: Some(&self.label),
+            size: self.size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        };
+
+        let texture = render_resources.device.create_texture(&descriptor);
 
         render_resources.queue.write_texture(
             wgpu::ImageCopyTexture {
@@ -47,10 +57,10 @@ impl<'a> TaroCompiler for TaroTexture<'a> {
             &self.rgba,
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: std::num::NonZeroU32::new(4 * size.width),
-                rows_per_image: std::num::NonZeroU32::new(size.height),
+                bytes_per_row: std::num::NonZeroU32::new(4 * self.size.width),
+                rows_per_image: std::num::NonZeroU32::new(self.size.height),
             },
-            size,
+            self.size,
         );
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
@@ -58,13 +68,13 @@ impl<'a> TaroCompiler for TaroTexture<'a> {
     }
 }
 
-impl<'a> TaroTexture<'a> {
-    pub fn from_bytes(label: Option<&'a str>, bytes: &[u8]) -> Result<Self, ImageError> {
+impl TaroTexture {
+    pub fn from_bytes(label: &str, bytes: &[u8]) -> Result<Self, ImageError> {
         let image = image::load_from_memory(bytes)?;
         Ok(Self::from_image(label, &image))
     }
 
-    pub fn from_image(label: Option<&'a str>, image: &DynamicImage) -> Self {
+    pub fn from_image(label: &str, image: &DynamicImage) -> Self {
         let rgba = image.to_rgba8();
         let dimensions = rgba.dimensions();
         let size = Extent3d {
@@ -73,19 +83,10 @@ impl<'a> TaroTexture<'a> {
             depth_or_array_layers: 1,
         };
 
-        let descriptor = TextureDescriptor {
-            label,
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-        };
-
         Self {
+            label: Box::<str>::from(label),
             rgba,
-            descriptor,
+            size,
             compiled: None,
         }
     }

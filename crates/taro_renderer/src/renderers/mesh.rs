@@ -13,15 +13,15 @@ pub struct TaroMeshPipelineData {
     pub render_pipeline: RenderPipeline,
 }
 
-pub struct TaroMeshRenderer<'a> {
+pub struct TaroMeshRenderer {
     mesh: TaroMesh,
-    shader: TaroShader<'a>,
-    main_texture: TaroTexture<'a>,
+    shader: TaroShader,
+    main_texture: TaroTexture,
     pipeline: Option<TaroMeshPipelineData>,
 }
 
-impl<'a> TaroMeshRenderer<'a> {
-    pub fn new(mesh: TaroMesh, shader: TaroShader<'a>, main_texture: TaroTexture<'a>) -> Self {
+impl TaroMeshRenderer {
+    pub fn new(mesh: TaroMesh, shader: TaroShader, main_texture: TaroTexture) -> Self {
         Self {
             mesh,
             shader,
@@ -173,9 +173,9 @@ impl<'a> TaroMeshRenderer<'a> {
     }
 }
 
-impl BobaController for TaroMeshRenderer<'_> {}
+impl BobaController for TaroMeshRenderer {}
 
-impl BobaUpdate<OnTaroRender> for TaroMeshRenderer<'_> {
+impl BobaUpdate<OnTaroRender> for TaroMeshRenderer {
     fn update(&mut self, _: &(), resources: &mut BobaResources) {
         if self.compiled() {
             return;
