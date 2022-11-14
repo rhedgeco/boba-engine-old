@@ -14,14 +14,14 @@ pub struct TaroMeshPipelineData {
 }
 
 pub struct TaroMeshRenderer<'a> {
-    mesh: TaroMesh<'a>,
+    mesh: TaroMesh,
     shader: TaroShader<'a>,
     main_texture: TaroTexture<'a>,
     pipeline: Option<TaroMeshPipelineData>,
 }
 
 impl<'a> TaroMeshRenderer<'a> {
-    pub fn new(mesh: TaroMesh<'a>, shader: TaroShader<'a>, main_texture: TaroTexture<'a>) -> Self {
+    pub fn new(mesh: TaroMesh, shader: TaroShader<'a>, main_texture: TaroTexture<'a>) -> Self {
         Self {
             mesh,
             shader,

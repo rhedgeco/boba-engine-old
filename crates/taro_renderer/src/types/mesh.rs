@@ -33,29 +33,29 @@ pub struct CompiledTaroMesh {
     pub index_buffer: TaroBuffer,
 }
 
-pub struct TaroMesh<'a> {
-    vertices: &'a [Vertex],
-    indices: &'a [u16],
+pub struct TaroMesh {
+    vertices: Box<[Vertex]>,
+    indices: Box<[u16]>,
     buffers: Option<CompiledTaroMesh>,
 }
 
-impl<'a> TaroMesh<'a> {
+impl TaroMesh {
     pub const VERTEX_LAYOUT: wgpu::VertexBufferLayout<'_> = wgpu::VertexBufferLayout {
         array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2],
     };
 
-    pub fn new(vertices: &'a [Vertex], indices: &'a [u16]) -> Self {
+    pub fn new(vertices: &[Vertex], indices: &[u16]) -> Self {
         Self {
-            vertices,
-            indices,
+            vertices: Box::<[Vertex]>::from(vertices),
+            indices: Box::<[u16]>::from(indices),
             buffers: None,
         }
     }
 }
 
-impl<'a> TaroCompiler for TaroMesh<'a> {
+impl TaroCompiler for TaroMesh {
     type CompiledData = CompiledTaroMesh;
 
     fn get_data(&self) -> &Option<Self::CompiledData> {
@@ -78,7 +78,7 @@ impl<'a> TaroCompiler for TaroMesh<'a> {
                 raw_buffer: render_resources.device.create_buffer_init(
                     &wgpu::util::BufferInitDescriptor {
                         label: Some("Vertex Buffer"),
-                        contents: bytemuck::cast_slice(self.vertices),
+                        contents: bytemuck::cast_slice(self.vertices.as_ref()),
                         usage: wgpu::BufferUsages::VERTEX,
                     },
                 ),
@@ -88,7 +88,7 @@ impl<'a> TaroCompiler for TaroMesh<'a> {
                 raw_buffer: render_resources.device.create_buffer_init(
                     &wgpu::util::BufferInitDescriptor {
                         label: Some("Index Buffer"),
-                        contents: bytemuck::cast_slice(self.indices),
+                        contents: bytemuck::cast_slice(self.indices.as_ref()),
                         usage: wgpu::BufferUsages::INDEX,
                     },
                 ),
