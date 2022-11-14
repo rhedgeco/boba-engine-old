@@ -5,7 +5,7 @@ use boba_core::{BobaContainer, BobaController};
 use wgpu::{CommandEncoder, TextureView};
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{storage::TaroStorage, RenderPhaseStorage};
+use crate::{storage::TaroStorage, RenderPhaseStorage, TaroCamera};
 
 pub struct RenderResources {
     pub surface: wgpu::Surface,
@@ -128,9 +128,14 @@ impl TaroRenderer {
         &mut self.phases
     }
 
-    pub fn execute_render_phases(&mut self, view: &TextureView, encoder: &mut CommandEncoder) {
+    pub fn execute_render_phases(
+        &mut self,
+        view: &TextureView,
+        camera: &TaroCamera,
+        encoder: &mut CommandEncoder,
+    ) {
         self.phases
-            .execute_phases(view, encoder, &mut self.controllers);
+            .execute_phases(view, camera, encoder, &mut self.controllers);
     }
 
     pub(crate) fn resize(&mut self, new_size: PhysicalSize<u32>) {

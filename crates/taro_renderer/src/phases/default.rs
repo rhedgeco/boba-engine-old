@@ -1,6 +1,9 @@
 use wgpu::{CommandEncoder, TextureView};
 
-use crate::{renderers::TaroMeshRenderer, types::TaroCompiler, RenderControllers, TaroRenderPhase};
+use crate::{
+    renderers::TaroMeshRenderer, types::TaroCompiler, RenderControllers, TaroCamera,
+    TaroRenderPhase,
+};
 
 pub struct DefaultTaroPhase;
 
@@ -8,6 +11,7 @@ impl TaroRenderPhase for DefaultTaroPhase {
     fn render(
         &mut self,
         view: &TextureView,
+        camera: &TaroCamera,
         encoder: &mut CommandEncoder,
         controllers: &RenderControllers,
     ) {
@@ -32,16 +36,18 @@ impl TaroRenderPhase for DefaultTaroPhase {
 
         for mesh in meshes.iter() {
             let pipeline = mesh.pipeline().as_ref().unwrap();
-            let buffers = mesh.mesh().get_data().as_ref().unwrap();
+            let mesh_buffers = mesh.mesh().get_data().as_ref().unwrap();
+            let texture = mesh.texture().get_data().as_ref().unwrap();
 
             render_pass.set_pipeline(&pipeline.render_pipeline);
-            render_pass.set_bind_group(0, &pipeline.bind_group, &[]);
-            render_pass.set_vertex_buffer(0, buffers.vertex_buffer.raw_buffer().slice(..));
+            render_pass.set_bind_group(0, &texture.bind_group, &[]);
+            render_pass.set_bind_group(1, &camera.bind_group(), &[]);
+            render_pass.set_vertex_buffer(0, mesh_buffers.vertex_buffer.raw_buffer().slice(..));
             render_pass.set_index_buffer(
-                buffers.index_buffer.raw_buffer().slice(..),
+                mesh_buffers.index_buffer.raw_buffer().slice(..),
                 wgpu::IndexFormat::Uint16,
             );
-            render_pass.draw_indexed(0..buffers.index_buffer.buffer_length(), 0, 0..1);
+            render_pass.draw_indexed(0..mesh_buffers.index_buffer.buffer_length(), 0, 0..1);
         }
     }
 }

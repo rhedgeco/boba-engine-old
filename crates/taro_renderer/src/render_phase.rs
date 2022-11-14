@@ -3,12 +3,13 @@ use std::any::TypeId;
 use indexmap::IndexMap;
 use wgpu::{CommandEncoder, TextureView};
 
-use crate::{phases::DefaultTaroPhase, RenderControllers};
+use crate::{phases::DefaultTaroPhase, RenderControllers, TaroCamera};
 
 pub trait TaroRenderPhase {
     fn render(
         &mut self,
         view: &TextureView,
+        camera: &TaroCamera,
         encoder: &mut CommandEncoder,
         controllers: &RenderControllers,
     );
@@ -42,11 +43,12 @@ impl RenderPhaseStorage {
     pub fn execute_phases(
         &mut self,
         view: &TextureView,
+        camera: &TaroCamera,
         encoder: &mut CommandEncoder,
         controllers: &mut RenderControllers,
     ) {
         for phase in self.phases.values_mut() {
-            phase.render(view, encoder, controllers);
+            phase.render(view, camera, encoder, controllers);
         }
     }
 }

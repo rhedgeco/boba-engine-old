@@ -14,6 +14,7 @@ indexmap = "1.2"
 pollster = "0.2"
 anymap = "0.12"
 naga = "0.10"
+cgmath = "0.18"
 wgpu = { version="0.14", features = ["spirv", "naga"]}
 bytemuck = { version = "1.4", features = [ "derive" ] }
 image = { version = "0.24", default-features = false, features = ["png", "jpeg"]}

@@ -1,7 +1,6 @@
-use log::warn;
 use wgpu::{util::DeviceExt, Buffer};
 
-use crate::TaroRenderer;
+use crate::RenderResources;
 
 use super::TaroCompiler;
 
@@ -62,20 +61,15 @@ impl TaroCompiler for TaroMesh {
         &self.buffers
     }
 
-    fn compile(&mut self, renderer: &TaroRenderer) {
+    fn compile(&mut self, resources: &RenderResources) {
         if self.buffers.is_some() {
             return;
         }
 
-        let Some(render_resources) = renderer.resources() else {
-            warn!("Could not compile/upload mesh. TaroRenderer has not been initialized");
-            return;
-        };
-
         self.buffers = Some(CompiledTaroMesh {
             vertex_buffer: TaroBuffer {
                 length: self.vertices.len() as u32,
-                raw_buffer: render_resources.device.create_buffer_init(
+                raw_buffer: resources.device.create_buffer_init(
                     &wgpu::util::BufferInitDescriptor {
                         label: Some("Vertex Buffer"),
                         contents: bytemuck::cast_slice(self.vertices.as_ref()),
@@ -85,7 +79,7 @@ impl TaroCompiler for TaroMesh {
             },
             index_buffer: TaroBuffer {
                 length: self.indices.len() as u32,
-                raw_buffer: render_resources.device.create_buffer_init(
+                raw_buffer: resources.device.create_buffer_init(
                     &wgpu::util::BufferInitDescriptor {
                         label: Some("Index Buffer"),
                         contents: bytemuck::cast_slice(self.indices.as_ref()),

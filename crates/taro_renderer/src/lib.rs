@@ -1,3 +1,4 @@
+mod camera;
 mod render_phase;
 mod renderer;
 mod resize_controller;
@@ -8,6 +9,7 @@ pub mod stages;
 pub mod storage;
 pub mod types;
 
+pub use camera::*;
 pub use render_phase::*;
 pub use renderer::*;
 

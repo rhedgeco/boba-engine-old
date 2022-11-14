@@ -1,7 +1,7 @@
 use boba_core::{storage::ControllerStorage, BobaStage};
 use log::{error, warn};
 
-use crate::TaroRenderer;
+use crate::{TaroCamera, TaroRenderer};
 
 pub struct OnTaroRender;
 
@@ -65,7 +65,18 @@ impl BobaStage for OnTaroRender {
             }
         };
 
-        renderer.execute_render_phases(&view, &mut encoder);
+        let camera = match resources.borrow_mut::<TaroCamera>() {
+            Ok(item) => item,
+            Err(e) => {
+                warn!(
+                    "Skipping TaroRenderStage. TaroCamera Resource Error: {:?}",
+                    e
+                );
+                return;
+            }
+        };
+
+        renderer.execute_render_phases(&view, &camera, &mut encoder);
 
         let Some(render_resources) = renderer.resources() else {
                 warn!("Cannot submit rendered frame to TaroRenderer. TaroRenderer is unitialized.");
