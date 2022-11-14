@@ -84,7 +84,10 @@ impl dyn AnyStageRunner {
     }
 
     #[inline]
-    pub fn downcast_mut<T: 'static + AnyStageRunner>(&mut self) -> Option<&mut T> {
+    pub fn downcast_mut<T>(&mut self) -> Option<&mut T>
+    where
+        T: 'static + AnyStageRunner,
+    {
         if self.is::<T>() {
             // SAFETY: just checked whether we are pointing to the correct type, and we can rely on
             // that check for memory safety because we have implemented Any for all types; no other
@@ -96,7 +99,10 @@ impl dyn AnyStageRunner {
     }
 
     #[inline]
-    pub unsafe fn downcast_mut_unchecked<T: 'static + AnyStageRunner>(&mut self) -> &mut T {
+    pub unsafe fn downcast_mut_unchecked<T>(&mut self) -> &mut T
+    where
+        T: 'static + AnyStageRunner,
+    {
         debug_assert!(self.is::<T>());
         // SAFETY: caller guarantees that T is the correct type
         unsafe { &mut *(self as *mut dyn AnyStageRunner as *mut T) }
