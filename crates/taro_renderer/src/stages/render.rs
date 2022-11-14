@@ -13,9 +13,15 @@ impl BobaStage for OnTaroRender {
         controllers: &mut ControllerStorage<Self>,
         resources: &mut boba_core::BobaResources,
     ) {
-        let Some(renderer) = resources.get::<TaroRenderer>() else {
-            warn!("Skipping TaroRenderStage. No TaroRenderer found in resources.");
-            return;
+        let renderer = match resources.borrow::<TaroRenderer>() {
+            Ok(item) => item,
+            Err(e) => {
+                warn!(
+                    "Skipping TaroRenderStage. TaroRenderer Resource Error: {:?}",
+                    e
+                );
+                return;
+            }
         };
 
         let Some(render_resources) = renderer.resources() else {
@@ -45,16 +51,19 @@ impl BobaStage for OnTaroRender {
                     label: Some("Render Encoder"),
                 });
 
+        drop(renderer); // drop renderer so that resources may be passed as mutable to controllers
         controllers.update(&(), resources);
 
-        // re-access renderer after passing resources to controllers
-        // renderer could have been removed or changed, so this is necessary
-        // to appease the borrow checker gods
-        let Some(renderer) = resources
-            .get_mut::<TaroRenderer>() else {
-                warn!("Skipping TaroRenderStage. No TaroRenderer found in resources.");
+        let mut renderer = match resources.borrow_mut::<TaroRenderer>() {
+            Ok(item) => item,
+            Err(e) => {
+                warn!(
+                    "Skipping TaroRenderStage. TaroRenderer Resource Error: {:?}",
+                    e
+                );
                 return;
-            };
+            }
+        };
 
         renderer.execute_render_phases(&view, &mut encoder);
 

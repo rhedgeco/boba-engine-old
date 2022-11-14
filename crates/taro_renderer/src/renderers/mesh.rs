@@ -181,8 +181,8 @@ impl BobaUpdate<OnTaroRender> for TaroMeshRenderer<'_> {
             return;
         }
 
-        if let Some(renderer) = resources.get::<TaroRenderer>() {
-            self.precompile(renderer);
+        if let Ok(renderer) = resources.borrow::<TaroRenderer>() {
+            self.precompile(&*renderer);
         }
     }
 }

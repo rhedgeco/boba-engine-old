@@ -13,24 +13,28 @@ impl BobaStage for TaroRendererInitStage {
     where
         Self: 'static,
     {
-        let Some(renderer) = resources.get::<TaroRenderer>() else {
-            warn!("Skipping TaroRenderer initialization. No TaroRenderer found.");
-            return;
+        let mut renderer = match resources.borrow_mut::<TaroRenderer>() {
+            Ok(item) => item,
+            Err(e) => {
+                warn!(
+                    "Skipping TaroRenderer initialization. TaroRenderer Resource Error: {:?}",
+                    e
+                );
+                return;
+            }
         };
 
-        let Some(windows) = resources.get::<MilkTeaWindows>() else {
-            warn!("Skipping TaroRenderer initialization. No MilkTeaWindows found.");
-            return;
+        let windows = match resources.borrow::<MilkTeaWindows>() {
+            Ok(item) => item,
+            Err(e) => {
+                warn!(
+                    "Skipping TaroRenderer initialization. MilkTeaWindows Resource Error: {:?}",
+                    e
+                );
+                return;
+            }
         };
 
-        // SAFTEY
-        //
-        // Converts renderer to mutable so that we can get both renderer and window out of resources.
-        // They are used once and dropped immediately after.
-        unsafe {
-            let const_ptr = renderer as *const TaroRenderer;
-            let mut_ptr = const_ptr as *mut TaroRenderer;
-            (*mut_ptr).initialize(windows.main());
-        }
+        renderer.initialize(windows.main());
     }
 }

@@ -13,7 +13,7 @@ impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizeController {
         data: &BobaEvent<MilkTeaResize>,
         resources: &mut boba_core::BobaResources,
     ) {
-        let Some(renderer) = resources.get_mut::<TaroRenderer>() else {
+        let Ok(mut renderer) = resources.borrow_mut::<TaroRenderer>() else {
                 return;
             };
 

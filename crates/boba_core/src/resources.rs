@@ -1,27 +1,48 @@
-use anymap::AnyMap;
+use std::{
+    any::{Any, TypeId},
+    cell::{Ref, RefCell, RefMut},
+};
 
-pub struct BobaResources {
-    resources: AnyMap,
+use hashbrown::HashMap;
+
+#[derive(Debug)]
+pub enum ResourceError {
+    NotFound,
+    BorrowedAsMut,
 }
 
-impl Default for BobaResources {
-    fn default() -> Self {
-        Self {
-            resources: AnyMap::new(),
-        }
-    }
+#[derive(Default)]
+pub struct BobaResources {
+    resources: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl BobaResources {
     pub fn add<T: 'static>(&mut self, item: T) {
-        self.resources.insert(item);
+        let typeid = TypeId::of::<T>();
+        self.resources.insert(typeid, Box::new(RefCell::new(item)));
     }
 
-    pub fn get<T: 'static>(&self) -> Option<&T> {
-        self.resources.get::<T>()
+    pub fn borrow<T: 'static>(&self) -> Result<Ref<T>, ResourceError> {
+        let Ok(item) = self.get_ref_cell::<T>()?.try_borrow() else {
+            return Err(ResourceError::BorrowedAsMut);
+        };
+        Ok(item)
     }
 
-    pub fn get_mut<T: 'static>(&mut self) -> Option<&mut T> {
-        self.resources.get_mut::<T>()
+    pub fn borrow_mut<T: 'static>(&self) -> Result<RefMut<T>, ResourceError> {
+        let Ok(item) = self.get_ref_cell::<T>()?.try_borrow_mut() else {
+            return Err(ResourceError::BorrowedAsMut);
+        };
+        Ok(item)
+    }
+
+    fn get_ref_cell<T: 'static>(&self) -> Result<&RefCell<T>, ResourceError> {
+        let typeid = TypeId::of::<T>();
+        let Some(any) = self.resources.get(&typeid) else {
+            return Err(ResourceError::NotFound);
+        };
+        Ok(any
+            .downcast_ref::<RefCell<T>>()
+            .expect("Downcast should always succeed if item exists"))
     }
 }
