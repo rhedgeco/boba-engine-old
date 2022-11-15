@@ -1,6 +1,7 @@
-use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer};
+use boba_core::{BobaContainer, BobaController};
+use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, TextureView};
 
-use crate::RenderResources;
+use crate::{RenderControllers, RenderPhaseStorage, RenderResources};
 
 #[derive(Clone)]
 pub struct TaroCameraSettings {
@@ -14,10 +15,13 @@ pub struct TaroCameraSettings {
 }
 
 pub struct TaroCamera {
+    pub phases: RenderPhaseStorage,
     pub settings: TaroCameraSettings,
     buffer: Buffer,
     bind_group: BindGroup,
 }
+
+impl BobaController for TaroCamera {}
 
 impl TaroCamera {
     #[rustfmt::skip]
@@ -35,6 +39,7 @@ impl TaroCamera {
         let bind_group = Self::build_bind_group(&buffer, &layout, resources);
 
         Self {
+            phases: Default::default(),
             settings,
             buffer,
             bind_group,
@@ -43,10 +48,6 @@ impl TaroCamera {
 
     pub fn buffer(&self) -> &Buffer {
         &self.buffer
-    }
-
-    pub fn bind_group(&self) -> &BindGroup {
-        &self.bind_group
     }
 
     pub fn rebuild_matrix(&mut self, resources: &RenderResources) {
@@ -72,6 +73,16 @@ impl TaroCamera {
                 }],
                 label: Some("camera_bind_group_layout"),
             })
+    }
+
+    pub fn execute_render_phases(
+        &mut self,
+        view: &TextureView,
+        encoder: &mut CommandEncoder,
+        controllers: &RenderControllers,
+    ) {
+        self.phases
+            .execute_phases(view, &self.bind_group, encoder, controllers);
     }
 
     fn build_matrix(settings: &TaroCameraSettings) -> CameraUniform {
@@ -120,4 +131,9 @@ impl TaroCamera {
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 struct CameraUniform {
     view_proj: [[f32; 4]; 4],
+}
+
+#[derive(Default)]
+pub struct CameraStorage {
+    pub main_camera: Option<BobaContainer<TaroCamera>>,
 }

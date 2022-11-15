@@ -2,9 +2,8 @@ use std::cell::Ref;
 
 use anymap::AnyMap;
 use boba_core::{BobaContainer, BobaController};
-use wgpu::{CommandEncoder, TextureView};
 
-use crate::{storage::TaroStorage, RenderPhaseStorage, TaroCamera};
+use crate::{storage::TaroStorage, CameraStorage};
 
 pub struct RenderResources {
     pub instance: wgpu::Instance,
@@ -62,8 +61,8 @@ impl RenderControllers {
 
 pub struct TaroRenderer {
     resources: RenderResources,
+    pub cameras: CameraStorage,
     pub controllers: RenderControllers,
-    pub phases: RenderPhaseStorage,
 }
 
 impl Default for TaroRenderer {
@@ -95,8 +94,8 @@ impl Default for TaroRenderer {
 
         Self {
             resources,
+            cameras: Default::default(),
             controllers: Default::default(),
-            phases: Default::default(),
         }
     }
 }
@@ -104,15 +103,5 @@ impl Default for TaroRenderer {
 impl TaroRenderer {
     pub fn resources(&self) -> &RenderResources {
         &self.resources
-    }
-
-    pub fn execute_render_phases(
-        &mut self,
-        view: &TextureView,
-        camera: &TaroCamera,
-        encoder: &mut CommandEncoder,
-    ) {
-        self.phases
-            .execute_phases(view, camera, encoder, &mut self.controllers);
     }
 }

@@ -2,7 +2,7 @@ use boba_core::{storage::ControllerStorage, BobaStage};
 use log::{error, warn};
 use milk_tea_runner::MilkTeaWindows;
 
-use crate::{TaroCamera, TaroRenderer, TaroWindowSurface};
+use crate::{TaroRenderer, TaroWindowSurface};
 
 pub struct OnTaroRender;
 
@@ -72,7 +72,7 @@ impl BobaStage for OnTaroRender {
         drop(renderer); // drop renderer so that resources may be passed as mutable to controllers
         controllers.update(&(), resources);
 
-        let mut renderer = match resources.borrow_mut::<TaroRenderer>() {
+        let renderer = match resources.borrow::<TaroRenderer>() {
             Ok(item) => item,
             Err(e) => {
                 warn!(
@@ -83,19 +83,14 @@ impl BobaStage for OnTaroRender {
             }
         };
 
-        let mut camera = match resources.borrow_mut::<TaroCamera>() {
-            Ok(item) => item,
-            Err(e) => {
-                warn!(
-                    "Skipping TaroRenderStage. TaroCamera Resource Error: {:?}",
-                    e
-                );
-                return;
+        if let Some(camera_container) = &renderer.cameras.main_camera {
+            if let Ok(mut camera) = camera_container.data().try_borrow_mut() {
+                camera.rebuild_matrix(renderer.resources());
+                camera.execute_render_phases(&view, &mut encoder, &renderer.controllers);
+            } else {
+                error!("Could not render main camera. It is currently borrowed as mutable.");
             }
-        };
-
-        camera.rebuild_matrix(renderer.resources());
-        renderer.execute_render_phases(&view, &camera, &mut encoder);
+        }
 
         renderer
             .resources()
