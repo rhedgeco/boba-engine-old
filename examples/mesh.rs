@@ -28,19 +28,19 @@ struct CameraRotator {
 
 impl Default for CameraRotator {
     fn default() -> Self {
-        Self { rotation: 0.002 }
+        Self { rotation: 1. }
     }
 }
 
 impl BobaController for CameraRotator {}
 
 impl BobaUpdate<MainBobaUpdate> for CameraRotator {
-    fn update(&mut self, _: &(), resources: &mut BobaResources) {
+    fn update(&mut self, delta: &f32, resources: &mut BobaResources) {
         let Ok(mut camera) = resources.borrow_mut::<TaroCamera>() else {
             return;
         };
 
-        let rotation = Quaternion::from_sv(1., (0., self.rotation, 0.).into());
+        let rotation = Quaternion::from_sv(1., (0., self.rotation * delta, 0.).into());
         camera.settings.eye = rotation.rotate_point(camera.settings.eye);
     }
 }

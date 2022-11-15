@@ -38,6 +38,7 @@ impl BobaApp {
     }
 
     pub fn run_stages(&mut self) {
+        self.resources().time.reset();
         self.stages.run(&mut self.resources);
     }
 

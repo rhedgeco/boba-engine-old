@@ -10,13 +10,13 @@ pub trait BobaStage {
 pub struct MainBobaUpdate;
 
 impl BobaStage for MainBobaUpdate {
-    type StageData = ();
+    type StageData = f32;
 
     fn run(&mut self, controllers: &mut ControllerStorage<Self>, resources: &mut BobaResources)
     where
         Self: 'static,
     {
-        controllers.update(&(), resources);
+        controllers.update(&resources.time().delta(), resources);
     }
 }
 
