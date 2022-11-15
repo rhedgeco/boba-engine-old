@@ -1,7 +1,7 @@
 use boba_core::*;
 use milk_tea_runner::events::MilkTeaResize;
 
-use crate::TaroRenderer;
+use crate::{TaroCamera, TaroRenderer};
 
 pub struct ResizeController;
 
@@ -13,10 +13,16 @@ impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizeController {
         data: &BobaEvent<MilkTeaResize>,
         resources: &mut boba_core::BobaResources,
     ) {
-        let Ok(mut renderer) = resources.borrow_mut::<TaroRenderer>() else {
-                return;
-            };
+        let size = *data.data().size();
 
-        renderer.resize(*data.data().size());
+        if let Ok(mut renderer) = resources.borrow_mut::<TaroRenderer>() {
+            renderer.resize(size);
+            return;
+        };
+
+        if let Ok(mut camera) = resources.borrow_mut::<TaroCamera>() {
+            camera.settings.aspect = size.width as f32 / size.height as f32;
+            return;
+        };
     }
 }
