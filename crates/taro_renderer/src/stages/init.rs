@@ -13,7 +13,7 @@ impl BobaStage for TaroRendererInitStage {
     where
         Self: 'static,
     {
-        let mut renderer = match resources.borrow_mut::<TaroRenderer>() {
+        let renderer = match resources.borrow::<TaroRenderer>() {
             Ok(item) => item,
             Err(e) => {
                 warn!(
@@ -35,28 +35,19 @@ impl BobaStage for TaroRendererInitStage {
             }
         };
 
-        renderer.initialize(windows.main());
-
-        let render_resources = renderer
-            .resources()
-            .as_ref()
-            .expect("Resources should be valid at this point");
-
         let camera = TaroCamera::new(
             TaroCameraSettings {
                 eye: (0.0, 1.0, 2.0).into(),
                 target: (0.0, 0.0, 0.0).into(),
                 up: cgmath::Vector3::unit_y(),
-                aspect: render_resources.config.width as f32
-                    / render_resources.config.height as f32,
+                aspect: 1.,
                 fovy: 45.0,
                 znear: 0.1,
                 zfar: 100.0,
             },
-            render_resources,
+            renderer.resources(),
         );
 
-        drop(render_resources);
         drop(windows);
         drop(renderer);
         resources.add(camera);

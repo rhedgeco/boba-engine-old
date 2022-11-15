@@ -3,19 +3,21 @@ use std::any::{Any, TypeId};
 use winit::window::Window;
 
 pub struct MilkTeaWindows {
-    main: Window,
+    main: MilkTeaWindow,
 }
 
 impl MilkTeaWindows {
     pub fn new(main_window: Window) -> Self {
-        Self { main: main_window }
+        Self {
+            main: MilkTeaWindow::new(main_window),
+        }
     }
 
-    pub fn main(&self) -> &Window {
+    pub fn main(&self) -> &MilkTeaWindow {
         &self.main
     }
 
-    pub fn main_mut(&mut self) -> &mut Window {
+    pub fn main_mut(&mut self) -> &mut MilkTeaWindow {
         &mut self.main
     }
 }
@@ -42,7 +44,7 @@ impl MilkTeaWindow {
         &self.window
     }
 
-    pub fn has_surface<T>(&mut self) -> bool
+    pub fn has_surface<T>(&self) -> bool
     where
         T: 'static + Sized,
     {
@@ -52,7 +54,7 @@ impl MilkTeaWindow {
         }
     }
 
-    pub fn set_surface<T>(&mut self, surface: T) -> &T
+    pub fn set_surface<T>(&mut self, surface: T) -> &mut T
     where
         T: 'static + Sized,
     {
@@ -64,12 +66,12 @@ impl MilkTeaWindow {
         self.get_surface::<T>().unwrap()
     }
 
-    pub fn get_surface<T>(&mut self) -> Option<&T>
+    pub fn get_surface<T>(&mut self) -> Option<&mut T>
     where
         T: 'static + Sized,
     {
-        match &self.surface {
-            Some(surface) => surface.manager.downcast_ref::<T>(),
+        match &mut self.surface {
+            Some(surface) => surface.manager.downcast_mut::<T>(),
             None => None,
         }
     }

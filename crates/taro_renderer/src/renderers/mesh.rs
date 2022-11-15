@@ -78,7 +78,7 @@ impl TaroMeshRenderer {
                         module: &shader.module,
                         entry_point: "fs_main",
                         targets: &[Some(wgpu::ColorTargetState {
-                            format: resources.config.format,
+                            format: wgpu::TextureFormat::Rgba8UnormSrgb,
                             blend: Some(wgpu::BlendState::REPLACE),
                             write_mask: wgpu::ColorWrites::ALL,
                         })],
@@ -116,9 +116,7 @@ impl BobaUpdate<OnTaroRender> for TaroMeshRenderer {
         }
 
         if let Ok(renderer) = resources.borrow::<TaroRenderer>() {
-            if let Some(resources) = renderer.resources() {
-                self.precompile(resources);
-            }
+            self.precompile(renderer.resources())
         }
     }
 }

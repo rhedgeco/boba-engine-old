@@ -3,16 +3,14 @@ use std::cell::Ref;
 use anymap::AnyMap;
 use boba_core::{BobaContainer, BobaController};
 use wgpu::{CommandEncoder, TextureView};
-use winit::{dpi::PhysicalSize, window::Window};
 
 use crate::{storage::TaroStorage, RenderPhaseStorage, TaroCamera};
 
 pub struct RenderResources {
-    pub surface: wgpu::Surface,
+    pub instance: wgpu::Instance,
+    pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
-    pub config: wgpu::SurfaceConfiguration,
-    pub size: winit::dpi::PhysicalSize<u32>,
 }
 
 pub struct RenderControllers {
@@ -62,21 +60,18 @@ impl RenderControllers {
     }
 }
 
-#[derive(Default)]
 pub struct TaroRenderer {
-    resources: Option<RenderResources>,
-    controllers: RenderControllers,
-    phases: RenderPhaseStorage,
+    resources: RenderResources,
+    pub controllers: RenderControllers,
+    pub phases: RenderPhaseStorage,
 }
 
-impl TaroRenderer {
-    pub fn initialize(&mut self, window: &Window) {
-        let size = window.inner_size();
+impl Default for TaroRenderer {
+    fn default() -> Self {
         let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let surface = unsafe { instance.create_surface(window) };
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::default(),
-            compatible_surface: Some(&surface),
+            compatible_surface: None,
             force_fallback_adapter: false,
         }))
         .unwrap();
@@ -91,41 +86,24 @@ impl TaroRenderer {
         ))
         .unwrap();
 
-        let config = wgpu::SurfaceConfiguration {
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            format: *surface
-                .get_supported_formats(&adapter)
-                .get(0)
-                .expect("There were no supported adapter formats"),
-            width: size.width,
-            height: size.height,
-            present_mode: wgpu::PresentMode::AutoNoVsync,
-            alpha_mode: wgpu::CompositeAlphaMode::Auto,
-        };
-
-        surface.configure(&device, &config);
-
         let resources = RenderResources {
-            surface,
+            instance,
+            adapter,
             device,
             queue,
-            config,
-            size,
         };
 
-        self.resources = Some(resources);
+        Self {
+            resources,
+            controllers: Default::default(),
+            phases: Default::default(),
+        }
     }
+}
 
-    pub fn resources(&self) -> &Option<RenderResources> {
+impl TaroRenderer {
+    pub fn resources(&self) -> &RenderResources {
         &self.resources
-    }
-
-    pub fn render_controllers(&mut self) -> &mut RenderControllers {
-        &mut self.controllers
-    }
-
-    pub fn render_phases(&mut self) -> &mut RenderPhaseStorage {
-        &mut self.phases
     }
 
     pub fn execute_render_phases(
@@ -136,20 +114,5 @@ impl TaroRenderer {
     ) {
         self.phases
             .execute_phases(view, camera, encoder, &mut self.controllers);
-    }
-
-    pub(crate) fn resize(&mut self, new_size: PhysicalSize<u32>) {
-        let Some(resources) = &mut self.resources else {
-            return;
-        };
-
-        if new_size.width > 0 && new_size.height > 0 {
-            resources.size = new_size;
-            resources.config.width = new_size.width;
-            resources.config.height = new_size.height;
-            resources
-                .surface
-                .configure(&resources.device, &resources.config);
-        }
     }
 }
