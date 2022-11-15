@@ -4,7 +4,7 @@ use taro_renderer::{
     prelude::*,
     renderers::TaroMeshRenderer,
     types::{TaroMesh, TaroShader, TaroTexture, Vertex},
-    TaroRenderer,
+    TaroCamera, TaroRenderer,
 };
 
 #[rustfmt::skip]
@@ -20,6 +20,18 @@ const INDICES: &[u16] = &[
     0, 1, 2,
     0, 2, 3,
 ];
+
+struct CameraRotator;
+
+impl BobaController for CameraRotator {}
+
+impl BobaUpdate<MainBobaUpdate> for CameraRotator {
+    fn update(&mut self, data: &(), resources: &mut BobaResources) {
+        let Ok(camera) = resources.borrow_mut::<TaroCamera>() else {
+            return;
+        };
+    }
+}
 
 fn main() {
     env_logger::init();

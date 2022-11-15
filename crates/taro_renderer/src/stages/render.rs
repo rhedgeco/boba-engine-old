@@ -65,7 +65,12 @@ impl BobaStage for OnTaroRender {
             }
         };
 
-        let camera = match resources.borrow_mut::<TaroCamera>() {
+        let Some(render_resources) = renderer.resources() else {
+            warn!("Skipping TaroRenderStage. Found TaroRenderer but it is not initialized to a window.");
+            return;
+        };
+
+        let mut camera = match resources.borrow_mut::<TaroCamera>() {
             Ok(item) => item,
             Err(e) => {
                 warn!(
@@ -76,6 +81,7 @@ impl BobaStage for OnTaroRender {
             }
         };
 
+        camera.rebuild_matrix(render_resources);
         renderer.execute_render_phases(&view, &camera, &mut encoder);
 
         let Some(render_resources) = renderer.resources() else {
