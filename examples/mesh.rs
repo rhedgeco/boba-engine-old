@@ -1,4 +1,5 @@
 use boba_core::*;
+use cgmath::{Quaternion, Rotation};
 use milk_tea_runner::*;
 use taro_renderer::{
     prelude::*,
@@ -21,15 +22,26 @@ const INDICES: &[u16] = &[
     0, 2, 3,
 ];
 
-struct CameraRotator;
+struct CameraRotator {
+    rotation: f32,
+}
+
+impl Default for CameraRotator {
+    fn default() -> Self {
+        Self { rotation: 0.002 }
+    }
+}
 
 impl BobaController for CameraRotator {}
 
 impl BobaUpdate<MainBobaUpdate> for CameraRotator {
-    fn update(&mut self, data: &(), resources: &mut BobaResources) {
-        let Ok(camera) = resources.borrow_mut::<TaroCamera>() else {
+    fn update(&mut self, _: &(), resources: &mut BobaResources) {
+        let Ok(mut camera) = resources.borrow_mut::<TaroCamera>() else {
             return;
         };
+
+        let rotation = Quaternion::from_sv(1., (0., self.rotation, 0.).into());
+        camera.settings.eye = rotation.rotate_point(camera.settings.eye);
     }
 }
 
@@ -37,6 +49,8 @@ fn main() {
     env_logger::init();
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
+    app.stages()
+        .add_controller(BobaContainer::build(CameraRotator::default()));
 
     let shader = TaroShader::from_wgsl("Mesh Shader", include_str!("mesh_shader.wgsl")).unwrap();
     let texture =
