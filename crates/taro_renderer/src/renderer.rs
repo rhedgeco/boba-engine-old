@@ -87,7 +87,7 @@ impl TaroRenderer {
                 limits: wgpu::Limits::default(),
                 label: None,
             },
-            None, // Trace path
+            None,
         ))
         .unwrap();
 
