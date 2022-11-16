@@ -1,4 +1,7 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
+    rc::Rc,
+};
 
 use uuid::Uuid;
 
@@ -19,7 +22,7 @@ impl<T> Clone for Pearl<T> {
 }
 
 impl<T> Pearl<T> {
-    pub fn build(data: T) -> Self {
+    pub fn wrap(data: T) -> Self {
         Self {
             uuid: Uuid::new_v4(),
             data: Rc::new(RefCell::new(data)),
@@ -30,8 +33,12 @@ impl<T> Pearl<T> {
         &self.uuid
     }
 
-    pub fn data(&self) -> &RefCell<T> {
-        self.data.as_ref()
+    pub fn data(&self) -> Result<Ref<T>, BorrowError> {
+        self.data.as_ref().try_borrow()
+    }
+
+    pub fn data_mut(&self) -> Result<RefMut<T>, BorrowMutError> {
+        self.data.as_ref().try_borrow_mut()
     }
 }
 

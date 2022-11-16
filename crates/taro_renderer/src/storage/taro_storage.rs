@@ -34,7 +34,7 @@ impl<T> TaroStorage<T> {
 
         self.pearls
             .values()
-            .filter_map(|f| match f.data().try_borrow() {
+            .filter_map(|f| match f.data() {
                 Ok(borrow) => Some(borrow),
                 Err(e) => {
                     error!(

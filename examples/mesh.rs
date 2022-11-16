@@ -27,7 +27,7 @@ fn main() {
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
     let mut renderer = TaroRenderer::default();
-    let camera = Pearl::build(TaroCamera::new(
+    let camera = Pearl::wrap(TaroCamera::new(
         TaroCameraSettings {
             eye: (0.0, 1.0, 2.0).into(),
             target: (0.0, 0.0, 0.0).into(),
@@ -46,7 +46,7 @@ fn main() {
     let texture =
         TaroTexture::from_bytes("Mesh Texture", include_bytes!("happy-tree.png")).unwrap();
     let mesh = TaroMesh::new(VERTICES, INDICES);
-    let mesh_renderer = Pearl::build(TaroMeshRenderer::new(mesh, shader, texture));
+    let mesh_renderer = Pearl::wrap(TaroMeshRenderer::new(mesh, shader, texture));
     app.stages.add_pearl(mesh_renderer.clone()); // we clone it so that it can be used later when attaching to renderer
     renderer.pearls.add(mesh_renderer);
 

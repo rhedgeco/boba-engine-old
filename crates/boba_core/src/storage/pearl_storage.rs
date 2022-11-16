@@ -56,7 +56,7 @@ where
     Update: BobaUpdate<Stage>,
 {
     fn update<'a>(&'a mut self, data: &Stage::StageData, resources: &mut BobaResources) {
-        let Ok(mut pearl) = self.data().try_borrow_mut() else {
+        let Ok(mut pearl) = self.data_mut() else {
             error!("Skipping update on Pearl<{:?}>: BorrowMutError. Already Borrowed", std::any::type_name::<Update>());
             return;
         };

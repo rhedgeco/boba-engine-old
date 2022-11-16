@@ -25,7 +25,7 @@ impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizePearl {
         }
 
         if let Some(camera_controller) = &renderer.cameras.main_camera {
-            if let Ok(mut camera) = camera_controller.data().try_borrow_mut() {
+            if let Ok(mut camera) = camera_controller.data_mut() {
                 camera.settings.aspect = size.width as f32 / size.height as f32;
             } else {
                 warn!("Could not resize camera. Camera is currenly borrowed as mutable.");
