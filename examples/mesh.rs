@@ -68,7 +68,7 @@ fn main() {
 
     // create the rotator and attach the camera to it
     let rotator = BobaContainer::build(CameraRotator::new(camera));
-    app.stages().add_controller(rotator);
+    app.stages.add_controller(rotator);
 
     // create an arbitrary mesh to show in the center of the screen
     let shader = TaroShader::from_wgsl("Mesh Shader", include_str!("mesh_shader.wgsl")).unwrap();
@@ -76,10 +76,10 @@ fn main() {
         TaroTexture::from_bytes("Mesh Texture", include_bytes!("happy-tree.png")).unwrap();
     let mesh = TaroMesh::new(VERTICES, INDICES);
     let mesh_renderer = BobaContainer::build(TaroMeshRenderer::new(mesh, shader, texture));
-    app.stages().add_controller(mesh_renderer.clone()); // we clone it so that it can be used later
+    app.stages.add_controller(mesh_renderer.clone()); // we clone it so that it can be used later
     renderer.controllers.add(mesh_renderer);
 
     // add the renderer and run the app
-    app.resources().add(renderer);
+    app.resources.add(renderer);
     MilkTeaRunner::run(app).unwrap();
 }

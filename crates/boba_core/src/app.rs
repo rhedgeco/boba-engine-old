@@ -5,29 +5,13 @@ use crate::{
 
 #[derive(Default)]
 pub struct BobaApp {
-    resources: BobaResources,
-    startup_stages: StageStorage,
-    stages: StageStorage,
-    events: EventStorage,
+    pub resources: BobaResources,
+    pub startup_stages: StageStorage,
+    pub stages: StageStorage,
+    pub events: EventStorage,
 }
 
 impl BobaApp {
-    pub fn resources(&mut self) -> &mut BobaResources {
-        &mut self.resources
-    }
-
-    pub fn startup_stages(&mut self) -> &mut StageStorage {
-        &mut self.startup_stages
-    }
-
-    pub fn stages(&mut self) -> &mut StageStorage {
-        &mut self.stages
-    }
-
-    pub fn events(&mut self) -> &mut EventStorage {
-        &mut self.events
-    }
-
     pub fn add_plugin<Plugin: BobaPlugin>(&mut self, plugin: Plugin) -> &mut Self {
         plugin.setup(self);
         self
@@ -38,7 +22,7 @@ impl BobaApp {
     }
 
     pub fn run_stages(&mut self) {
-        self.resources().time.reset();
+        self.resources.time.reset();
         self.stages.run(&mut self.resources);
     }
 

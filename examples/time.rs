@@ -15,7 +15,7 @@ impl BobaUpdate<MainBobaUpdate> for Time {
 fn main() {
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
-    app.stages().add_controller(BobaContainer::build(Time));
-    app.resources().add(TaroRenderer::default());
+    app.stages.add_controller(BobaContainer::build(Time));
+    app.resources.add(TaroRenderer::default());
     MilkTeaRunner::run(app).unwrap();
 }

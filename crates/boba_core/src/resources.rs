@@ -23,26 +23,38 @@ impl BobaResources {
         &self.time
     }
 
-    pub fn add<T: 'static>(&mut self, item: T) {
+    pub fn add<T>(&mut self, item: T)
+    where
+        T: 'static,
+    {
         let typeid = TypeId::of::<T>();
         self.resources.insert(typeid, Box::new(RefCell::new(item)));
     }
 
-    pub fn borrow<T: 'static>(&self) -> Result<Ref<T>, ResourceError> {
+    pub fn borrow<T>(&self) -> Result<Ref<T>, ResourceError>
+    where
+        T: 'static,
+    {
         let Ok(item) = self.get_ref_cell::<T>()?.try_borrow() else {
             return Err(ResourceError::BorrowedAsMut);
         };
         Ok(item)
     }
 
-    pub fn borrow_mut<T: 'static>(&self) -> Result<RefMut<T>, ResourceError> {
+    pub fn borrow_mut<T>(&self) -> Result<RefMut<T>, ResourceError>
+    where
+        T: 'static,
+    {
         let Ok(item) = self.get_ref_cell::<T>()?.try_borrow_mut() else {
             return Err(ResourceError::BorrowedAsMut);
         };
         Ok(item)
     }
 
-    fn get_ref_cell<T: 'static>(&self) -> Result<&RefCell<T>, ResourceError> {
+    fn get_ref_cell<T>(&self) -> Result<&RefCell<T>, ResourceError>
+    where
+        T: 'static,
+    {
         let typeid = TypeId::of::<T>();
         let Some(any) = self.resources.get(&typeid) else {
             return Err(ResourceError::NotFound);

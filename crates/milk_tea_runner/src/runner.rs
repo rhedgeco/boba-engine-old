@@ -19,7 +19,7 @@ impl MilkTeaRunner {
         let main_window_id = window.id();
 
         // add window manager to app resources
-        app.resources().add(MilkTeaWindows::new(window));
+        app.resources.add(MilkTeaWindows::new(window));
 
         // run startup stages
         app.run_startup_stages();
