@@ -1,7 +1,7 @@
 use std::cell::Ref;
 
 use anymap::AnyMap;
-use boba_core::{BobaContainer, BobaController};
+use boba_core::Pearl;
 
 use crate::{storage::TaroStorage, CameraStorage};
 
@@ -12,47 +12,47 @@ pub struct RenderResources {
     pub queue: wgpu::Queue,
 }
 
-pub struct RenderControllers {
-    controllers: AnyMap,
+pub struct RenderPearls {
+    pearls: AnyMap,
 }
 
-impl Default for RenderControllers {
+impl Default for RenderPearls {
     fn default() -> Self {
         Self {
-            controllers: AnyMap::new(),
+            pearls: AnyMap::new(),
         }
     }
 }
 
-impl RenderControllers {
-    pub fn add<T>(&mut self, controller: BobaContainer<T>)
+impl RenderPearls {
+    pub fn add<T>(&mut self, pearl: Pearl<T>)
     where
-        T: 'static + BobaController,
+        T: 'static,
     {
-        match self.controllers.get_mut::<TaroStorage<T>>() {
-            Some(storage) => storage.add(controller),
+        match self.pearls.get_mut::<TaroStorage<T>>() {
+            Some(storage) => storage.add(pearl),
             None => {
                 let mut storage = TaroStorage::default();
-                storage.add(controller);
-                self.controllers.insert(storage);
+                storage.add(pearl);
+                self.pearls.insert(storage);
             }
         }
     }
 
-    pub fn remove<T>(&mut self, controller: BobaContainer<T>)
+    pub fn remove<T>(&mut self, pearl: Pearl<T>)
     where
-        T: 'static + BobaController,
+        T: 'static,
     {
-        if let Some(storage) = self.controllers.get_mut::<TaroStorage<T>>() {
-            storage.remove(controller.uuid());
+        if let Some(storage) = self.pearls.get_mut::<TaroStorage<T>>() {
+            storage.remove(pearl.uuid());
         }
     }
 
     pub fn collect<T>(&self) -> Vec<Ref<T>>
     where
-        T: 'static + BobaController,
+        T: 'static,
     {
-        match self.controllers.get::<TaroStorage<T>>() {
+        match self.pearls.get::<TaroStorage<T>>() {
             Some(storage) => storage.collect(),
             None => Vec::new(),
         }
@@ -62,7 +62,7 @@ impl RenderControllers {
 pub struct TaroRenderer {
     resources: RenderResources,
     pub cameras: CameraStorage,
-    pub controllers: RenderControllers,
+    pub pearls: RenderPearls,
 }
 
 impl Default for TaroRenderer {
@@ -95,7 +95,7 @@ impl Default for TaroRenderer {
         Self {
             resources,
             cameras: Default::default(),
-            controllers: Default::default(),
+            pearls: Default::default(),
         }
     }
 }

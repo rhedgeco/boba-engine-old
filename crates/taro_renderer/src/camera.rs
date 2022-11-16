@@ -1,7 +1,7 @@
-use boba_core::{BobaContainer, BobaController};
+use boba_core::Pearl;
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, TextureView};
 
-use crate::{RenderControllers, RenderPhaseStorage, RenderResources};
+use crate::{RenderPearls, RenderPhaseStorage, RenderResources};
 
 #[derive(Clone)]
 pub struct TaroCameraSettings {
@@ -20,8 +20,6 @@ pub struct TaroCamera {
     buffer: Buffer,
     bind_group: BindGroup,
 }
-
-impl BobaController for TaroCamera {}
 
 impl TaroCamera {
     #[rustfmt::skip]
@@ -79,10 +77,10 @@ impl TaroCamera {
         &mut self,
         view: &TextureView,
         encoder: &mut CommandEncoder,
-        controllers: &RenderControllers,
+        pearls: &RenderPearls,
     ) {
         self.phases
-            .execute_phases(view, &self.bind_group, encoder, controllers);
+            .execute_phases(view, &self.bind_group, encoder, pearls);
     }
 
     fn build_matrix(settings: &TaroCameraSettings) -> CameraUniform {
@@ -135,5 +133,5 @@ struct CameraUniform {
 
 #[derive(Default)]
 pub struct CameraStorage {
-    pub main_camera: Option<BobaContainer<TaroCamera>>,
+    pub main_camera: Option<Pearl<TaroCamera>>,
 }

@@ -4,11 +4,9 @@ use milk_tea_runner::{events::MilkTeaResize, MilkTeaWindows};
 
 use crate::{TaroRenderer, TaroWindowSurface};
 
-pub struct ResizeController;
+pub struct ResizePearl;
 
-impl BobaController for ResizeController {}
-
-impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizeController {
+impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizePearl {
     fn update<'a>(
         &mut self,
         data: &BobaEvent<MilkTeaResize>,

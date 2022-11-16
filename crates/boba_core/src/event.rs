@@ -1,4 +1,4 @@
-use crate::{storage::ControllerStorage, BobaStage};
+use crate::{storage::PearlStorage, BobaStage};
 
 pub struct BobaEvent<Data: 'static> {
     data: Data,
@@ -21,7 +21,7 @@ impl<Data: 'static> BobaEvent<Data> {
 impl<Data: 'static> BobaStage for BobaEvent<Data> {
     type StageData = BobaEvent<Data>;
 
-    fn run(&mut self, _: &mut ControllerStorage<Self>, _: &mut crate::BobaResources)
+    fn run(&mut self, _: &mut PearlStorage<Self>, _: &mut crate::BobaResources)
     where
         Self: 'static,
     {

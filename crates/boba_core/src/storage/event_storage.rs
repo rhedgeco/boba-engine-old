@@ -3,9 +3,9 @@ use std::any::{Any, TypeId};
 use indexmap::IndexMap;
 use log::info;
 
-use crate::{BobaContainer, BobaEvent, BobaResources, BobaUpdate};
+use crate::{BobaEvent, BobaResources, BobaUpdate, Pearl};
 
-use super::ControllerStorage;
+use super::PearlStorage;
 
 #[derive(Default)]
 pub struct EventStorage {
@@ -13,19 +13,19 @@ pub struct EventStorage {
 }
 
 impl EventStorage {
-    pub fn add_listener<Data, Controller>(&mut self, controller: BobaContainer<Controller>)
+    pub fn add_listener<Data, Update>(&mut self, pearl: Pearl<Update>)
     where
         Data: 'static,
-        Controller: 'static + BobaUpdate<BobaEvent<Data>>,
+        Update: 'static + BobaUpdate<BobaEvent<Data>>,
     {
         match self.stages.get_mut(&TypeId::of::<BobaEvent<Data>>()) {
             Some(stage) => stage
-                .downcast_mut::<ControllerStorage<BobaEvent<Data>>>()
+                .downcast_mut::<PearlStorage<BobaEvent<Data>>>()
                 .unwrap()
-                .add(controller),
+                .add(pearl),
             None => {
-                let mut storage = ControllerStorage::<BobaEvent<Data>>::default();
-                storage.add(controller);
+                let mut storage = PearlStorage::<BobaEvent<Data>>::default();
+                storage.add(pearl);
                 self.stages
                     .insert(TypeId::of::<BobaEvent<Data>>(), Box::new(storage));
             }
@@ -45,8 +45,8 @@ impl EventStorage {
         };
 
         any_storage
-            .downcast_mut::<ControllerStorage<BobaEvent<Data>>>()
-            .expect("controller storage should be valid at this point")
+            .downcast_mut::<PearlStorage<BobaEvent<Data>>>()
+            .expect("pearl storage should be valid at this point")
             .update(event, resources);
     }
 }

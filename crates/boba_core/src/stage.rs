@@ -1,8 +1,8 @@
-use crate::{storage::ControllerStorage, BobaResources};
+use crate::{storage::PearlStorage, BobaResources};
 
 pub trait BobaStage {
     type StageData;
-    fn run(&mut self, controllers: &mut ControllerStorage<Self>, resources: &mut BobaResources)
+    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut BobaResources)
     where
         Self: 'static;
 }
@@ -12,11 +12,11 @@ pub struct MainBobaUpdate;
 impl BobaStage for MainBobaUpdate {
     type StageData = f32;
 
-    fn run(&mut self, controllers: &mut ControllerStorage<Self>, resources: &mut BobaResources)
+    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut BobaResources)
     where
         Self: 'static,
     {
-        controllers.update(&resources.time().delta(), resources);
+        pearls.update(&resources.time().delta(), resources);
     }
 }
 
@@ -25,7 +25,7 @@ where
     Stage: 'static + BobaStage,
 {
     stage: Stage,
-    controllers: ControllerStorage<Stage>,
+    pub pearls: PearlStorage<Stage>,
 }
 
 impl<Stage> StageRunner<Stage>
@@ -35,15 +35,11 @@ where
     pub fn build(stage: Stage) -> Self {
         Self {
             stage,
-            controllers: Default::default(),
+            pearls: Default::default(),
         }
     }
 
-    pub fn controllers(&mut self) -> &mut ControllerStorage<Stage> {
-        &mut self.controllers
-    }
-
     pub fn run(&mut self, resources: &mut BobaResources) {
-        self.stage.run(&mut self.controllers, resources);
+        self.stage.run(&mut self.pearls, resources);
     }
 }

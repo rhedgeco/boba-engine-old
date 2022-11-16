@@ -4,8 +4,6 @@ use taro_renderer::{prelude::*, TaroRenderer};
 
 struct Time;
 
-impl BobaController for Time {}
-
 impl BobaUpdate<MainBobaUpdate> for Time {
     fn update(&mut self, delta: &f32, _: &mut BobaResources) {
         println!("FPS: {:?}", 1. / delta);
@@ -15,7 +13,7 @@ impl BobaUpdate<MainBobaUpdate> for Time {
 fn main() {
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
-    app.stages.add_controller(BobaContainer::build(Time));
+    app.stages.add_pearl(Pearl::build(Time));
     app.resources.add(TaroRenderer::default());
     MilkTeaRunner::run(app).unwrap();
 }

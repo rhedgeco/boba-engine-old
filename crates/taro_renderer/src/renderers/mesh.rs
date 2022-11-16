@@ -1,4 +1,4 @@
-use boba_core::{BobaController, BobaResources, BobaUpdate};
+use boba_core::{BobaResources, BobaUpdate};
 use wgpu::RenderPipeline;
 
 use crate::{
@@ -106,8 +106,6 @@ impl TaroMeshRenderer {
         self.mesh.compile(resources);
     }
 }
-
-impl BobaController for TaroMeshRenderer {}
 
 impl BobaUpdate<OnTaroRender> for TaroMeshRenderer {
     fn update(&mut self, _: &(), resources: &mut BobaResources) {

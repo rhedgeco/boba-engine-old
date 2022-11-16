@@ -3,7 +3,7 @@ use std::any::TypeId;
 use indexmap::IndexMap;
 use log::warn;
 
-use crate::{BobaContainer, BobaResources, BobaStage, BobaUpdate, MainBobaUpdate, StageRunner};
+use crate::{BobaResources, BobaStage, BobaUpdate, MainBobaUpdate, Pearl, StageRunner};
 
 pub struct StageStorage {
     stages: IndexMap<TypeId, Box<dyn AnyStageRunner>>,
@@ -39,21 +39,21 @@ impl StageStorage {
             .insert(TypeId::of::<Stage>(), Box::new(StageRunner::build(stage)));
     }
 
-    pub fn add_controller<Stage, Controller>(&mut self, controller: BobaContainer<Controller>)
+    pub fn add_pearl<Stage, Update>(&mut self, pearl: Pearl<Update>)
     where
         Stage: 'static + BobaStage,
-        Controller: 'static + BobaUpdate<Stage>,
+        Update: 'static + BobaUpdate<Stage>,
     {
         let Some(stage_box) = self.stages.get_mut(&TypeId::of::<Stage>()) else {
-            warn!("Controller not added. Stage {:?} was not found", std::any::type_name::<Stage>());
+            warn!("Pearl not added. Stage {:?} was not found", std::any::type_name::<Stage>());
             return;
         };
 
         stage_box
             .downcast_mut::<StageRunner<Stage>>()
             .expect("Stage runner should be valid at this point")
-            .controllers()
-            .add(controller);
+            .pearls
+            .add(pearl);
     }
 
     pub fn delete<Stage>(&mut self)

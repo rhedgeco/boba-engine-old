@@ -1,7 +1,7 @@
 mod camera;
 mod render_phase;
 mod renderer;
-mod resize_controller;
+mod resize_pearl;
 mod window;
 
 pub mod phases;
@@ -16,7 +16,7 @@ pub use renderer::*;
 pub use window::*;
 
 pub mod prelude {
-    use crate::{resize_controller::ResizeController, stages::OnTaroRender};
+    use crate::{resize_pearl::ResizePearl, stages::OnTaroRender};
     use boba_core::*;
 
     pub struct TaroRenderPlugin;
@@ -24,8 +24,7 @@ pub mod prelude {
     impl BobaPlugin for TaroRenderPlugin {
         fn setup(self, app: &mut boba_core::BobaApp) {
             app.stages.add(OnTaroRender);
-            app.events
-                .add_listener(BobaContainer::build(ResizeController));
+            app.events.add_listener(Pearl::build(ResizePearl));
         }
     }
 }

@@ -1,4 +1,4 @@
-use boba_core::{storage::ControllerStorage, BobaStage};
+use boba_core::{storage::PearlStorage, BobaStage};
 use log::{error, warn};
 use milk_tea_runner::MilkTeaWindows;
 
@@ -9,11 +9,7 @@ pub struct OnTaroRender;
 impl BobaStage for OnTaroRender {
     type StageData = ();
 
-    fn run(
-        &mut self,
-        controllers: &mut ControllerStorage<Self>,
-        resources: &mut boba_core::BobaResources,
-    ) {
+    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut boba_core::BobaResources) {
         let renderer = match resources.borrow::<TaroRenderer>() {
             Ok(item) => item,
             Err(e) => {
@@ -69,8 +65,8 @@ impl BobaStage for OnTaroRender {
                 });
 
         drop(windows);
-        drop(renderer); // drop renderer so that resources may be passed as mutable to controllers
-        controllers.update(&(), resources);
+        drop(renderer); // drop renderer so that resources may be passed as mutable to pearls
+        pearls.update(&(), resources);
 
         let renderer = match resources.borrow::<TaroRenderer>() {
             Ok(item) => item,
@@ -86,7 +82,7 @@ impl BobaStage for OnTaroRender {
         if let Some(camera_container) = &renderer.cameras.main_camera {
             if let Ok(mut camera) = camera_container.data().try_borrow_mut() {
                 camera.rebuild_matrix(renderer.resources());
-                camera.execute_render_phases(&view, &mut encoder, &renderer.controllers);
+                camera.execute_render_phases(&view, &mut encoder, &renderer.pearls);
             } else {
                 error!("Could not render main camera. It is currently borrowed as mutable.");
             }
