@@ -1,8 +1,9 @@
+use anyhow::Result;
+use log::error;
 use std::{
     cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
     rc::Rc,
 };
-
 use uuid::Uuid;
 
 use crate::{storage::StageRunners, BobaResources, BobaStage};
@@ -42,11 +43,41 @@ impl<T> Pearl<T> {
     }
 }
 
+pub trait PearlRunner<Stage>
+where
+    Stage: 'static + BobaStage,
+{
+    fn run(&mut self, data: &Stage::StageData, resources: &mut BobaResources);
+}
+
+impl<Stage, Update> PearlRunner<Stage> for Pearl<Update>
+where
+    Stage: 'static + BobaStage,
+    Update: 'static + BobaUpdate<Stage>,
+{
+    fn run(&mut self, data: &<Stage as BobaStage>::StageData, resources: &mut BobaResources) {
+        match Update::update(data, self, resources) {
+            Ok(_) => {}
+            Err(error) => error!(
+                "There was a(n) {:?} when updating pearl: {:?}",
+                error,
+                self.uuid()
+            ),
+        }
+    }
+}
+
+pub type BobaResult = Result<()>;
+
 pub trait BobaUpdate<Stage>: StageRegister
 where
     Stage: 'static + BobaStage,
 {
-    fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources);
+    fn update(
+        data: &Stage::StageData,
+        pearl: &mut Pearl<Self>,
+        resources: &mut BobaResources,
+    ) -> BobaResult;
 }
 
 pub trait StageRegister

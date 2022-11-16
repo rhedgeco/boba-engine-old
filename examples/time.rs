@@ -11,8 +11,9 @@ impl StageRegister for Time {
 }
 
 impl BobaUpdate<MainBobaUpdate> for Time {
-    fn update(&mut self, delta: &f32, _: &mut BobaResources) {
+    fn update(delta: &f32, _: &mut Pearl<Self>, _: &mut BobaResources) -> BobaResult {
         println!("FPS: {:?}", 1. / delta);
+        Ok(())
     }
 }
 

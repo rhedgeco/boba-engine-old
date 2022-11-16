@@ -12,4 +12,5 @@ pub use plugin::*;
 pub use resources::*;
 pub use stage::*;
 
+pub use anyhow;
 pub mod storage;

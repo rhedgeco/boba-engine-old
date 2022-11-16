@@ -14,12 +14,12 @@ impl StageRegister for ResizePearl {
 
 impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizePearl {
     fn update<'a>(
-        &mut self,
         data: &BobaEvent<MilkTeaResize>,
+        _: &mut Pearl<Self>,
         resources: &mut boba_core::BobaResources,
-    ) {
+    ) -> BobaResult {
         let Ok(renderer) = resources.borrow::<TaroRenderer>() else {
-            return;
+            return Ok(());
         };
 
         let size = *data.data().size();
@@ -37,5 +37,7 @@ impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizePearl {
                 warn!("Could not resize camera. Camera is currenly borrowed as mutable.");
             }
         };
+
+        Ok(())
     }
 }

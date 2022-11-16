@@ -1,8 +1,7 @@
 use hashbrown::HashMap;
-use log::error;
 use uuid::Uuid;
 
-use crate::{BobaResources, BobaStage, BobaUpdate, Pearl};
+use crate::{BobaResources, BobaStage, BobaUpdate, Pearl, PearlRunner};
 
 /// A storage solution for `Pearl` objects.
 ///
@@ -12,7 +11,7 @@ use crate::{BobaResources, BobaStage, BobaUpdate, Pearl};
 /// This struct will typically be used inside a `BobaStage` as the
 /// owner of all the pearls to be run for that stage.
 pub struct PearlStorage<Stage: 'static + ?Sized + BobaStage> {
-    pearls: HashMap<Uuid, Box<dyn GenericBobaStage<Stage>>>,
+    pearls: HashMap<Uuid, Box<dyn PearlRunner<Stage>>>,
 }
 
 /// The default implementation for `PearlStorage<BobaStage>`
@@ -41,26 +40,7 @@ impl<Stage: 'static + BobaStage> PearlStorage<Stage> {
     // updates all pearls that are currently in storage
     pub fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources) {
         for pearl in self.pearls.values_mut() {
-            pearl.update(data, resources);
+            pearl.run(data, resources);
         }
-    }
-}
-
-trait GenericBobaStage<Stage: 'static + BobaStage> {
-    fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources);
-}
-
-impl<Stage, Update> GenericBobaStage<Stage> for Pearl<Update>
-where
-    Stage: 'static + BobaStage,
-    Update: BobaUpdate<Stage>,
-{
-    fn update<'a>(&'a mut self, data: &Stage::StageData, resources: &mut BobaResources) {
-        let Ok(mut pearl) = self.data_mut() else {
-            error!("Skipping update on Pearl<{:?}>: BorrowMutError. Already Borrowed", std::any::type_name::<Update>());
-            return;
-        };
-
-        pearl.update(data, resources);
     }
 }
