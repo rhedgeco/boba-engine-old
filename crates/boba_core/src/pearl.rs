@@ -23,7 +23,7 @@ impl<T> Clone for Pearl<T> {
 }
 
 impl<T> Pearl<T> {
-    pub fn wrap(data: T) -> Self {
+    fn wrap(data: T) -> Self {
         Self {
             uuid: Uuid::new_v4(),
             data: Rc::new(RefCell::new(data)),
@@ -85,4 +85,14 @@ where
     Self: Sized,
 {
     fn register(pearl: Pearl<Self>, storage: &mut StageRunners);
+}
+
+pub trait PearlWrapper<T> {
+    fn pearl(self) -> Pearl<T>;
+}
+
+impl<T> PearlWrapper<T> for T {
+    fn pearl(self) -> Pearl<T> {
+        Pearl::wrap(self)
+    }
 }
