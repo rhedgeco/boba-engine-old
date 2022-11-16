@@ -1,18 +1,19 @@
-use std::any::TypeId;
-
 use indexmap::IndexMap;
 use log::warn;
+use std::any::TypeId;
 
-use crate::{BobaResources, BobaStage, BobaUpdate, MainBobaUpdate, Pearl, StageRunner};
+use crate::{
+    BobaResources, BobaStage, BobaUpdate, MainBobaUpdate, Pearl, StageRegister, StageRunner,
+};
 
 pub struct StageStorage {
-    stages: IndexMap<TypeId, Box<dyn AnyStageRunner>>,
+    runners: StageRunners,
 }
 
 impl Default for StageStorage {
     fn default() -> Self {
         let mut storage = Self {
-            stages: Default::default(),
+            runners: Default::default(),
         };
 
         storage.add(MainBobaUpdate);
@@ -21,25 +22,13 @@ impl Default for StageStorage {
     }
 }
 
-impl StageStorage {
-    pub fn get<Stage>(&mut self) -> Option<&mut StageRunner<Stage>>
-    where
-        Stage: 'static + BobaStage,
-    {
-        let stage_box = self.stages.get_mut(&TypeId::of::<Stage>())?;
+#[derive(Default)]
+pub struct StageRunners {
+    stages: IndexMap<TypeId, Box<dyn AnyStageRunner>>,
+}
 
-        stage_box.downcast_mut::<StageRunner<Stage>>()
-    }
-
-    pub fn add<Stage>(&mut self, stage: Stage)
-    where
-        Stage: 'static + BobaStage,
-    {
-        self.stages
-            .insert(TypeId::of::<Stage>(), Box::new(StageRunner::build(stage)));
-    }
-
-    pub fn add_pearl<Stage, Update>(&mut self, pearl: Pearl<Update>)
+impl StageRunners {
+    pub fn add<Stage, Update>(&mut self, pearl: Pearl<Update>)
     where
         Stage: 'static + BobaStage,
         Update: 'static + BobaUpdate<Stage>,
@@ -55,16 +44,43 @@ impl StageStorage {
             .pearls
             .add(pearl);
     }
+}
+
+impl StageStorage {
+    pub fn get<Stage>(&mut self) -> Option<&mut StageRunner<Stage>>
+    where
+        Stage: 'static + BobaStage,
+    {
+        let stage_box = self.runners.stages.get_mut(&TypeId::of::<Stage>())?;
+
+        stage_box.downcast_mut::<StageRunner<Stage>>()
+    }
+
+    pub fn add<Stage>(&mut self, stage: Stage)
+    where
+        Stage: 'static + BobaStage,
+    {
+        self.runners
+            .stages
+            .insert(TypeId::of::<Stage>(), Box::new(StageRunner::build(stage)));
+    }
+
+    pub fn add_pearl<Update>(&mut self, pearl: Pearl<Update>)
+    where
+        Update: StageRegister,
+    {
+        Update::register(pearl, &mut self.runners);
+    }
 
     pub fn delete<Stage>(&mut self)
     where
         Stage: 'static + BobaStage,
     {
-        self.stages.remove(&TypeId::of::<Stage>());
+        self.runners.stages.remove(&TypeId::of::<Stage>());
     }
 
     pub fn run(&mut self, resources: &mut BobaResources) {
-        for stage in self.stages.values_mut() {
+        for stage in self.runners.stages.values_mut() {
             stage.run(resources);
         }
     }

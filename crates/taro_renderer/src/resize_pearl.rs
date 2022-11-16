@@ -6,6 +6,12 @@ use crate::{TaroRenderer, TaroWindowSurface};
 
 pub struct ResizePearl;
 
+impl StageRegister for ResizePearl {
+    fn register(pearl: Pearl<Self>, storage: &mut storage::StageRunners) {
+        storage.add(pearl);
+    }
+}
+
 impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizePearl {
     fn update<'a>(
         &mut self,

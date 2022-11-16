@@ -5,7 +5,7 @@ use std::{
 
 use uuid::Uuid;
 
-use crate::{BobaResources, BobaStage};
+use crate::{storage::StageRunners, BobaResources, BobaStage};
 
 pub struct Pearl<T> {
     uuid: Uuid,
@@ -42,9 +42,16 @@ impl<T> Pearl<T> {
     }
 }
 
-pub trait BobaUpdate<Stage>
+pub trait BobaUpdate<Stage>: StageRegister
 where
     Stage: 'static + BobaStage,
 {
     fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources);
+}
+
+pub trait StageRegister
+where
+    Self: Sized,
+{
+    fn register(pearl: Pearl<Self>, storage: &mut StageRunners);
 }

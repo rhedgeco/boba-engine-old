@@ -4,6 +4,12 @@ use taro_renderer::{prelude::*, TaroRenderer};
 
 struct Time;
 
+impl StageRegister for Time {
+    fn register(pearl: Pearl<Self>, storage: &mut storage::StageRunners) {
+        storage.add(pearl);
+    }
+}
+
 impl BobaUpdate<MainBobaUpdate> for Time {
     fn update(&mut self, delta: &f32, _: &mut BobaResources) {
         println!("FPS: {:?}", 1. / delta);

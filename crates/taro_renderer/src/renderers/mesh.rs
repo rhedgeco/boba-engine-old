@@ -1,4 +1,4 @@
-use boba_core::{BobaResources, BobaUpdate};
+use boba_core::{BobaResources, BobaUpdate, StageRegister};
 use wgpu::RenderPipeline;
 
 use crate::{
@@ -104,6 +104,12 @@ impl TaroMeshRenderer {
         self.pipeline = Some(TaroMeshPipelineData { render_pipeline });
 
         self.mesh.compile(resources);
+    }
+}
+
+impl StageRegister for TaroMeshRenderer {
+    fn register(pearl: boba_core::Pearl<Self>, storage: &mut boba_core::storage::StageRunners) {
+        storage.add(pearl);
     }
 }
 
