@@ -1,4 +1,8 @@
+use std::f32::consts::PI;
+
+use boba_3d::pearls::Transform;
 use boba_core::*;
+use cgmath::Point3;
 use milk_tea_runner::*;
 use taro_renderer::{
     prelude::*,
@@ -21,17 +25,50 @@ const INDICES: &[u16] = &[
     0, 2, 3,
 ];
 
+struct CameraRotator {
+    pub transform: Pearl<Transform>,
+    pub offset: f32,
+    pub rotation: f32,
+    pub speed: f32,
+}
+
+impl PearlRegister for CameraRotator {
+    fn register(pearl: Pearl<Self>, storage: &mut storage::StageRunners) {
+        storage.add(pearl);
+    }
+}
+
+impl BobaUpdate<MainBobaUpdate> for CameraRotator {
+    fn update(delta: &f32, pearl: &mut Pearl<Self>, _: &mut BobaResources) -> BobaResult {
+        let mut pdata = pearl.data_mut()?;
+
+        pdata.rotation = (pdata.rotation + delta * pdata.speed) % (2. * PI);
+        let x = pdata.rotation.sin() * pdata.offset;
+        let z = pdata.rotation.cos() * pdata.offset;
+        let position: Point3<f32> = (x, 1., z).into();
+
+        let mut tdata = pdata.transform.data_mut()?;
+        tdata.set_position(position);
+        tdata.look_at((0., 0., 0.).into());
+
+        Ok(())
+    }
+}
+
 fn main() {
     // Create app and renderer with a camera
     env_logger::init();
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
     let mut renderer = TaroRenderer::default();
+
+    // create and add camera
+    let mut camera_transform = Transform::from_position((0., 1., 2.).into());
+    camera_transform.look_at((0., 0., 0.).into());
+    let camera_transform = camera_transform.pearl();
     let camera = TaroCamera::new(
+        camera_transform.clone(),
         TaroCameraSettings {
-            eye: (0.0, 1.0, 2.0).into(),
-            target: (0.0, 0.0, 0.0).into(),
-            up: cgmath::Vector3::unit_y(),
             aspect: 1.,
             fovy: 45.0,
             znear: 0.1,
@@ -39,8 +76,19 @@ fn main() {
         },
         renderer.resources(),
     )
+    .unwrap()
     .pearl();
     renderer.cameras.main_camera = Some(camera);
+
+    // create and add camera rotator
+    let rotator = CameraRotator {
+        transform: camera_transform,
+        offset: 2.,
+        rotation: 0.,
+        speed: 1.,
+    }
+    .pearl();
+    app.stages.add_pearl(rotator);
 
     // create an arbitrary mesh to show in the center of the screen
     let shader = TaroShader::from_wgsl("Mesh Shader", include_str!("mesh_shader.wgsl")).unwrap();

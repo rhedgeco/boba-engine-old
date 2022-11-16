@@ -13,6 +13,7 @@ members = [
 
 [dependencies]
 boba_core = { path = "./crates/boba_core" }
+boba_3d = { path = "./crates/boba_3d" }
 milk_tea_runner = { path = "./crates/milk_tea_runner" }
 taro_renderer = { path = "./crates/taro_renderer" }
 

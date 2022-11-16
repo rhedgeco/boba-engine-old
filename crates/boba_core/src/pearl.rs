@@ -69,7 +69,7 @@ where
 
 pub type BobaResult = Result<()>;
 
-pub trait BobaUpdate<Stage>: StageRegister
+pub trait BobaUpdate<Stage>: PearlRegister
 where
     Stage: 'static + BobaStage,
 {
@@ -80,18 +80,24 @@ where
     ) -> BobaResult;
 }
 
-pub trait StageRegister
+pub trait PearlRegister
 where
     Self: Sized,
 {
     fn register(pearl: Pearl<Self>, storage: &mut StageRunners);
 }
 
-pub trait PearlWrapper<T> {
+pub trait PearlWrapper<T>
+where
+    T: PearlRegister,
+{
     fn pearl(self) -> Pearl<T>;
 }
 
-impl<T> PearlWrapper<T> for T {
+impl<T> PearlWrapper<T> for T
+where
+    T: PearlRegister,
+{
     fn pearl(self) -> Pearl<T> {
         Pearl::wrap(self)
     }

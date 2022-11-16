@@ -4,7 +4,7 @@ use taro_renderer::{prelude::*, TaroRenderer};
 
 struct Time;
 
-impl StageRegister for Time {
+impl PearlRegister for Time {
     fn register(pearl: Pearl<Self>, storage: &mut storage::StageRunners) {
         storage.add(pearl);
     }

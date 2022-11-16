@@ -1,13 +1,15 @@
-use boba_core::Pearl;
+use std::cell::BorrowError;
+
+use boba_3d::pearls::Transform;
+use boba_core::{Pearl, PearlRegister};
+use cgmath::{EuclideanSpace, Point3, Quaternion, Vector3};
+use log::error;
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, TextureView};
 
 use crate::{RenderPearls, RenderPhaseStorage, RenderResources};
 
 #[derive(Clone)]
 pub struct TaroCameraSettings {
-    pub eye: cgmath::Point3<f32>,
-    pub target: cgmath::Point3<f32>,
-    pub up: cgmath::Vector3<f32>,
     pub aspect: f32,
     pub fovy: f32,
     pub znear: f32,
@@ -15,10 +17,17 @@ pub struct TaroCameraSettings {
 }
 
 pub struct TaroCamera {
+    transform: Pearl<Transform>,
     pub phases: RenderPhaseStorage,
     pub settings: TaroCameraSettings,
     buffer: Buffer,
     bind_group: BindGroup,
+}
+
+impl PearlRegister for TaroCamera {
+    fn register(_: Pearl<Self>, _: &mut boba_core::storage::StageRunners) {
+        // do nothing for now
+    }
 }
 
 impl TaroCamera {
@@ -30,18 +39,26 @@ impl TaroCamera {
         0.0, 0.0, 0.5, 1.0,
     );
 
-    pub fn new(settings: TaroCameraSettings, resources: &RenderResources) -> Self {
-        let uniform = Self::build_matrix(&settings);
+    pub fn new(
+        transform: Pearl<Transform>,
+        settings: TaroCameraSettings,
+        resources: &RenderResources,
+    ) -> Result<Self, BorrowError> {
+        let tdata = transform.data()?;
+
+        let uniform = Self::build_matrix(tdata.position(), tdata.rotation(), &settings);
         let buffer = Self::build_buffer(uniform, resources);
         let layout = Self::create_bind_group_layout(resources);
         let bind_group = Self::build_bind_group(&buffer, &layout, resources);
 
-        Self {
+        drop(tdata);
+        Ok(Self {
+            transform,
             phases: Default::default(),
             settings,
             buffer,
             bind_group,
-        }
+        })
     }
 
     pub fn buffer(&self) -> &Buffer {
@@ -49,7 +66,12 @@ impl TaroCamera {
     }
 
     pub fn rebuild_matrix(&mut self, resources: &RenderResources) {
-        let uniform = Self::build_matrix(&self.settings);
+        let Ok(tdata) = self.transform.data() else {
+            error!("Could not rebuild matrix. Transform is borrowed as mutable");
+            return;
+        };
+
+        let uniform = Self::build_matrix(tdata.position(), tdata.rotation(), &self.settings);
         resources
             .queue
             .write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
@@ -83,8 +105,13 @@ impl TaroCamera {
             .execute_phases(view, &self.bind_group, encoder, pearls);
     }
 
-    fn build_matrix(settings: &TaroCameraSettings) -> CameraUniform {
-        let view = cgmath::Matrix4::look_at_rh(settings.eye, settings.target, settings.up);
+    fn build_matrix(
+        point: &Point3<f32>,
+        rotation: &Quaternion<f32>,
+        settings: &TaroCameraSettings,
+    ) -> CameraUniform {
+        let target = Point3::from_vec(rotation * Vector3::unit_z());
+        let view = cgmath::Matrix4::look_at_rh(*point, target, cgmath::Vector3::unit_y());
         let proj = cgmath::perspective(
             cgmath::Deg(settings.fovy),
             settings.aspect,

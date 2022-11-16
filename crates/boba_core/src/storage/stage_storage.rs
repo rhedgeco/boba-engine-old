@@ -3,7 +3,7 @@ use log::warn;
 use std::any::TypeId;
 
 use crate::{
-    BobaResources, BobaStage, BobaUpdate, MainBobaUpdate, Pearl, StageRegister, StageRunner,
+    BobaResources, BobaStage, BobaUpdate, MainBobaUpdate, Pearl, PearlRegister, StageRunner,
 };
 
 pub struct StageStorage {
@@ -67,7 +67,7 @@ impl StageStorage {
 
     pub fn add_pearl<Update>(&mut self, pearl: Pearl<Update>)
     where
-        Update: StageRegister,
+        Update: PearlRegister,
     {
         Update::register(pearl, &mut self.runners);
     }

@@ -1,4 +1,4 @@
-use boba_core::{BobaResources, BobaResult, BobaUpdate, Pearl, StageRegister};
+use boba_core::{BobaResources, BobaResult, BobaUpdate, Pearl, PearlRegister};
 use wgpu::RenderPipeline;
 
 use crate::{
@@ -87,7 +87,7 @@ impl TaroMeshRenderer {
                         topology: wgpu::PrimitiveTopology::TriangleList,
                         strip_index_format: None,
                         front_face: wgpu::FrontFace::Ccw,
-                        cull_mode: Some(wgpu::Face::Back),
+                        cull_mode: None, //Some(wgpu::Face::Back),
                         polygon_mode: wgpu::PolygonMode::Fill,
                         unclipped_depth: false,
                         conservative: false,
@@ -107,7 +107,7 @@ impl TaroMeshRenderer {
     }
 }
 
-impl StageRegister for TaroMeshRenderer {
+impl PearlRegister for TaroMeshRenderer {
     fn register(pearl: boba_core::Pearl<Self>, storage: &mut boba_core::storage::StageRunners) {
         storage.add(pearl);
     }

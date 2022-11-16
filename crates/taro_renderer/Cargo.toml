@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 boba_core = { path = "../boba_core" }
+boba_3d = { path = "../boba_3d" }
 milk_tea_runner = { path = "../milk_tea_runner" }
 
 log = "0.4"
