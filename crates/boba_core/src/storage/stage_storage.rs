@@ -3,7 +3,7 @@ use log::warn;
 use std::any::TypeId;
 
 use crate::{
-    BobaResources, BobaStage, BobaUpdate, MainBobaUpdate, Pearl, PearlRegister, StageRunner,
+    BobaResources, BobaStage, MainBobaUpdate, Pearl, PearlRegister, PearlStage, StageRunner,
 };
 
 pub struct StageStorage {
@@ -31,7 +31,7 @@ impl StageRunners {
     pub fn add<Stage, Update>(&mut self, pearl: Pearl<Update>)
     where
         Stage: 'static + BobaStage,
-        Update: 'static + BobaUpdate<Stage>,
+        Update: 'static + PearlStage<Stage>,
     {
         let Some(stage_box) = self.stages.get_mut(&TypeId::of::<Stage>()) else {
             warn!("Pearl not added. Stage {:?} was not found", std::any::type_name::<Stage>());

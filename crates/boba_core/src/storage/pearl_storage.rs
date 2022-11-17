@@ -1,7 +1,5 @@
+use crate::{BobaResources, BobaStage, Pearl, PearlId, PearlRunner, PearlStage};
 use hashbrown::HashMap;
-use uuid::Uuid;
-
-use crate::{BobaResources, BobaStage, BobaUpdate, Pearl, PearlRunner};
 
 /// A storage solution for `Pearl` objects.
 ///
@@ -11,7 +9,7 @@ use crate::{BobaResources, BobaStage, BobaUpdate, Pearl, PearlRunner};
 /// This struct will typically be used inside a `BobaStage` as the
 /// owner of all the pearls to be run for that stage.
 pub struct PearlStorage<Stage: 'static + ?Sized + BobaStage> {
-    pearls: HashMap<Uuid, Box<dyn PearlRunner<Stage>>>,
+    pearls: HashMap<PearlId, Box<dyn PearlRunner<Stage>>>,
 }
 
 /// The default implementation for `PearlStorage<BobaStage>`
@@ -27,14 +25,14 @@ impl<Stage: 'static + BobaStage> PearlStorage<Stage> {
     /// Adds a pearl to the storage system.
     pub fn add<T>(&mut self, pearl: Pearl<T>)
     where
-        T: 'static + BobaUpdate<Stage>,
+        T: 'static + PearlStage<Stage>,
     {
-        self.pearls.insert(*pearl.uuid(), Box::new(pearl));
+        self.pearls.insert(*pearl.id(), Box::new(pearl));
     }
 
     /// Removed a pearl from the storage system
-    pub fn remove(&mut self, uuid: &Uuid) {
-        self.pearls.remove(uuid);
+    pub fn remove(&mut self, id: &PearlId) {
+        self.pearls.remove(id);
     }
 
     // updates all pearls that are currently in storage

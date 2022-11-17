@@ -1,4 +1,4 @@
-use boba_core::{BobaResources, BobaResult, BobaUpdate, Pearl, PearlRegister};
+use boba_core::{BobaResources, Pearl, PearlRegister, PearlResult, PearlStage};
 use wgpu::RenderPipeline;
 
 use crate::{
@@ -113,8 +113,8 @@ impl PearlRegister for TaroMeshRenderer {
     }
 }
 
-impl BobaUpdate<OnTaroRender> for TaroMeshRenderer {
-    fn update(_: &(), pearl: &mut Pearl<Self>, resources: &mut BobaResources) -> BobaResult {
+impl PearlStage<OnTaroRender> for TaroMeshRenderer {
+    fn update(_: &(), pearl: &mut Pearl<Self>, resources: &mut BobaResources) -> PearlResult {
         let mut data = pearl.data_mut()?;
         if data.compiled() {
             return Ok(());

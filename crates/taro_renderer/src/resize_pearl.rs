@@ -12,12 +12,12 @@ impl PearlRegister for ResizePearl {
     }
 }
 
-impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizePearl {
+impl PearlStage<BobaEvent<MilkTeaResize>> for ResizePearl {
     fn update<'a>(
         data: &BobaEvent<MilkTeaResize>,
         _: &mut Pearl<Self>,
         resources: &mut boba_core::BobaResources,
-    ) -> BobaResult {
+    ) -> PearlResult {
         let Ok(renderer) = resources.borrow::<TaroRenderer>() else {
             return Ok(());
         };

@@ -38,8 +38,8 @@ impl PearlRegister for CameraRotator {
     }
 }
 
-impl BobaUpdate<MainBobaUpdate> for CameraRotator {
-    fn update(delta: &f32, pearl: &mut Pearl<Self>, _: &mut BobaResources) -> BobaResult {
+impl PearlStage<MainBobaUpdate> for CameraRotator {
+    fn update(delta: &f32, pearl: &mut Pearl<Self>, _: &mut BobaResources) -> PearlResult {
         let mut pdata = pearl.data_mut()?;
 
         pdata.rotation = (pdata.rotation + delta * pdata.speed) % (2. * PI);
@@ -65,7 +65,7 @@ fn main() {
     // create and add camera
     let mut camera_transform = Transform::from_position((0., 1., 2.).into());
     camera_transform.look_at((0., 0., 0.).into());
-    let camera_transform = camera_transform.pearl();
+    let camera_transform = camera_transform.as_pearl();
     let camera = TaroCamera::new(
         camera_transform.clone(),
         TaroCameraSettings {
@@ -77,7 +77,7 @@ fn main() {
         renderer.resources(),
     )
     .unwrap()
-    .pearl();
+    .as_pearl();
     renderer.cameras.main_camera = Some(camera);
 
     // create and add camera rotator
@@ -87,7 +87,7 @@ fn main() {
         rotation: 0.,
         speed: 2.,
     }
-    .pearl();
+    .as_pearl();
     app.stages.add_pearl(rotator);
 
     // create an arbitrary mesh to show in the center of the screen
@@ -95,7 +95,7 @@ fn main() {
     let texture =
         TaroTexture::from_bytes("Mesh Texture", include_bytes!("happy-tree.png")).unwrap();
     let mesh = TaroMesh::new(VERTICES, INDICES);
-    let mesh_renderer = TaroMeshRenderer::new(mesh, shader, texture).pearl();
+    let mesh_renderer = TaroMeshRenderer::new(mesh, shader, texture).as_pearl();
     app.stages.add_pearl(mesh_renderer.clone()); // we clone it so that it can be used later when attaching to renderer
     renderer.pearls.add(mesh_renderer);
 

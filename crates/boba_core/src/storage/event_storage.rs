@@ -3,7 +3,7 @@ use std::any::{Any, TypeId};
 use indexmap::IndexMap;
 use log::info;
 
-use crate::{BobaEvent, BobaResources, BobaUpdate, Pearl};
+use crate::{BobaEvent, BobaResources, Pearl, PearlStage};
 
 use super::PearlStorage;
 
@@ -16,7 +16,7 @@ impl EventStorage {
     pub fn add_listener<Data, Update>(&mut self, pearl: Pearl<Update>)
     where
         Data: 'static,
-        Update: 'static + BobaUpdate<BobaEvent<Data>>,
+        Update: 'static + PearlStage<BobaEvent<Data>>,
     {
         match self.stages.get_mut(&TypeId::of::<BobaEvent<Data>>()) {
             Some(stage) => stage

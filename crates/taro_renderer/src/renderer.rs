@@ -44,7 +44,7 @@ impl RenderPearls {
         T: 'static,
     {
         if let Some(storage) = self.pearls.get_mut::<TaroStorage<T>>() {
-            storage.remove(pearl.uuid());
+            storage.remove(pearl.id());
         }
     }
 

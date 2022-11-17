@@ -10,8 +10,8 @@ impl PearlRegister for Time {
     }
 }
 
-impl BobaUpdate<MainBobaUpdate> for Time {
-    fn update(delta: &f32, _: &mut Pearl<Self>, _: &mut BobaResources) -> BobaResult {
+impl PearlStage<MainBobaUpdate> for Time {
+    fn update(delta: &f32, _: &mut Pearl<Self>, _: &mut BobaResources) -> PearlResult {
         println!("FPS: {:?}", 1. / delta);
         Ok(())
     }
@@ -20,7 +20,7 @@ impl BobaUpdate<MainBobaUpdate> for Time {
 fn main() {
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
-    app.stages.add_pearl(Time.pearl());
+    app.stages.add_pearl(Time.as_pearl());
     app.resources.add(TaroRenderer::default());
     MilkTeaRunner::run(app).unwrap();
 }

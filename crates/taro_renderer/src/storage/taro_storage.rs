@@ -1,12 +1,10 @@
-use std::cell::Ref;
-
-use boba_core::Pearl;
+use boba_core::{Pearl, PearlId};
 use indexmap::IndexMap;
 use log::error;
-use uuid::Uuid;
+use std::cell::Ref;
 
 pub struct TaroStorage<T> {
-    pearls: IndexMap<Uuid, Pearl<T>>,
+    pearls: IndexMap<PearlId, Pearl<T>>,
 }
 
 impl<T> Default for TaroStorage<T> {
@@ -19,11 +17,11 @@ impl<T> Default for TaroStorage<T> {
 
 impl<T> TaroStorage<T> {
     pub fn add(&mut self, pearl: Pearl<T>) {
-        self.pearls.insert(*pearl.uuid(), pearl);
+        self.pearls.insert(*pearl.id(), pearl);
     }
 
-    pub fn remove(&mut self, uuid: &Uuid) {
-        self.pearls.remove(uuid);
+    pub fn remove(&mut self, id: &PearlId) {
+        self.pearls.remove(id);
     }
 
     pub fn collect(&self) -> Vec<Ref<T>> {

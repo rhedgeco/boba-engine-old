@@ -1,37 +1,43 @@
+use crate::{storage::StageRunners, BobaResources, BobaStage};
 use anyhow::Result;
 use log::error;
 use std::{
     cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
     rc::Rc,
+    sync::atomic::AtomicU64,
 };
-use uuid::Uuid;
 
-use crate::{storage::StageRunners, BobaResources, BobaStage};
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub struct PearlId {
+    _id: u64,
+}
+
+impl PearlId {
+    fn new() -> Self {
+        static COUNTER: AtomicU64 = AtomicU64::new(0);
+        Self {
+            _id: COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
+    }
+}
 
 pub struct Pearl<T> {
-    uuid: Uuid,
+    id: PearlId,
     data: Rc<RefCell<T>>,
 }
 
 impl<T> Clone for Pearl<T> {
     fn clone(&self) -> Self {
         Self {
-            uuid: self.uuid,
+            id: self.id,
             data: self.data.clone(),
         }
     }
 }
 
 impl<T> Pearl<T> {
-    fn wrap(data: T) -> Self {
-        Self {
-            uuid: Uuid::new_v4(),
-            data: Rc::new(RefCell::new(data)),
-        }
-    }
-
-    pub fn uuid(&self) -> &Uuid {
-        &self.uuid
+    pub fn id(&self) -> &PearlId {
+        &self.id
     }
 
     pub fn data(&self) -> Result<Ref<T>, BorrowError> {
@@ -53,7 +59,7 @@ where
 impl<Stage, Update> PearlRunner<Stage> for Pearl<Update>
 where
     Stage: 'static + BobaStage,
-    Update: 'static + BobaUpdate<Stage>,
+    Update: 'static + PearlStage<Stage>,
 {
     fn run(&mut self, data: &<Stage as BobaStage>::StageData, resources: &mut BobaResources) {
         match Update::update(data, self, resources) {
@@ -61,15 +67,15 @@ where
             Err(error) => error!(
                 "There was a(n) {:?} when updating pearl: {:?}",
                 error,
-                self.uuid()
+                self.id()
             ),
         }
     }
 }
 
-pub type BobaResult = Result<()>;
+pub type PearlResult = Result<()>;
 
-pub trait BobaUpdate<Stage>: PearlRegister
+pub trait PearlStage<Stage>: PearlRegister
 where
     Stage: 'static + BobaStage,
 {
@@ -77,7 +83,7 @@ where
         data: &Stage::StageData,
         pearl: &mut Pearl<Self>,
         resources: &mut BobaResources,
-    ) -> BobaResult;
+    ) -> PearlResult;
 }
 
 pub trait PearlRegister
@@ -87,18 +93,21 @@ where
     fn register(pearl: Pearl<Self>, storage: &mut StageRunners);
 }
 
-pub trait PearlWrapper<T>
+pub trait AsPearl<T>
 where
     T: PearlRegister,
 {
-    fn pearl(self) -> Pearl<T>;
+    fn as_pearl(self) -> Pearl<T>;
 }
 
-impl<T> PearlWrapper<T> for T
+impl<T> AsPearl<T> for T
 where
     T: PearlRegister,
 {
-    fn pearl(self) -> Pearl<T> {
-        Pearl::wrap(self)
+    fn as_pearl(self) -> Pearl<T> {
+        Pearl::<T> {
+            id: PearlId::new(),
+            data: Rc::new(RefCell::new(self)),
+        }
     }
 }
