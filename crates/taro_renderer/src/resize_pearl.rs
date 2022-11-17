@@ -26,7 +26,7 @@ impl BobaUpdate<BobaEvent<MilkTeaResize>> for ResizePearl {
 
         if let Ok(mut windows) = resources.borrow_mut::<MilkTeaWindows>() {
             if let Some(surface) = windows.main_mut().get_surface::<TaroWindowSurface>() {
-                surface.resize(data.data().size().clone(), renderer.resources());
+                surface.resize(*data.data().size(), renderer.resources());
             }
         }
 

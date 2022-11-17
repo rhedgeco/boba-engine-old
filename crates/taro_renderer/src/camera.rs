@@ -142,7 +142,7 @@ impl TaroCamera {
         resources
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &layout,
+                layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
                     resource: buffer.as_entire_binding(),

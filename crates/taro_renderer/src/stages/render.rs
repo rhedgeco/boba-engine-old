@@ -37,7 +37,7 @@ impl BobaStage for OnTaroRender {
         let taro_surface = match main_window.get_surface::<TaroWindowSurface>() {
             Some(s) => s,
             None => {
-                main_window.set_surface(TaroWindowSurface::new(main_window.window(), &*renderer))
+                main_window.set_surface(TaroWindowSurface::new(main_window.window(), &renderer))
             }
         };
 
