@@ -23,7 +23,7 @@ pub mod prelude {
 
     impl BobaPlugin for TaroRenderPlugin {
         fn setup(self, app: &mut boba_core::BobaApp) {
-            app.stages.add(OnTaroRender);
+            app.stages.insert(OnTaroRender);
             app.events.add_listener(ResizePearl.as_pearl());
         }
     }
