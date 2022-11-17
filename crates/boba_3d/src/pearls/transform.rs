@@ -42,9 +42,9 @@ impl Transform {
 
     pub fn new(position: Point3<f32>, rotation: Quaternion<f32>, scale: Vector3<f32>) -> Self {
         Self {
-            position: position,
-            rotation: rotation,
-            scale: scale,
+            position,
+            rotation,
+            scale,
         }
     }
 
