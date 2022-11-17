@@ -1,6 +1,6 @@
 use std::cell::BorrowError;
 
-use boba_3d::pearls::Transform;
+use boba_3d::pearls::BobaTransform;
 use boba_core::{Pearl, PearlRegister};
 use cgmath::{EuclideanSpace, Point3, Quaternion, Vector3};
 use log::error;
@@ -17,7 +17,7 @@ pub struct TaroCameraSettings {
 }
 
 pub struct TaroCamera {
-    transform: Pearl<Transform>,
+    transform: Pearl<BobaTransform>,
     pub phases: RenderPhaseStorage,
     pub settings: TaroCameraSettings,
     buffer: Buffer,
@@ -40,7 +40,7 @@ impl TaroCamera {
     );
 
     pub fn new(
-        transform: Pearl<Transform>,
+        transform: Pearl<BobaTransform>,
         settings: TaroCameraSettings,
         resources: &RenderResources,
     ) -> Result<Self, BorrowError> {

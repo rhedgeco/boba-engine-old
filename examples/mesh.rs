@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 
-use boba_3d::pearls::Transform;
+use boba_3d::pearls::BobaTransform;
 use boba_core::*;
 use cgmath::Point3;
 use milk_tea_runner::*;
@@ -26,7 +26,7 @@ const INDICES: &[u16] = &[
 ];
 
 struct CameraRotator {
-    pub transform: Pearl<Transform>,
+    pub transform: Pearl<BobaTransform>,
     pub offset: f32,
     pub rotation: f32,
     pub speed: f32,
@@ -63,7 +63,7 @@ fn main() {
     let mut renderer = TaroRenderer::default();
 
     // create and add camera
-    let mut camera_transform = Transform::from_position((0., 1., 2.).into());
+    let mut camera_transform = BobaTransform::from_position((0., 1., 2.).into());
     camera_transform.look_at((0., 0., 0.).into());
     let camera_transform = camera_transform.as_pearl();
     let camera = TaroCamera::new(

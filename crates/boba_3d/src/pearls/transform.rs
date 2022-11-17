@@ -13,13 +13,13 @@ impl TransformDefault for Quaternion<f32> {
     }
 }
 
-pub struct Transform {
+pub struct BobaTransform {
     position: Point3<f32>,
     rotation: Quaternion<f32>,
     scale: Vector3<f32>,
 }
 
-impl Default for Transform {
+impl Default for BobaTransform {
     fn default() -> Self {
         Self::new(
             (0., 0., 0.).into(),
@@ -29,13 +29,13 @@ impl Default for Transform {
     }
 }
 
-impl PearlRegister for Transform {
+impl PearlRegister for BobaTransform {
     fn register(_: boba_core::Pearl<Self>, _: &mut boba_core::storage::StageRunners) {
         // do nothing for now
     }
 }
 
-impl Transform {
+impl BobaTransform {
     pub fn from_position(position: Point3<f32>) -> Self {
         Self::new(position, Quaternion::default(), (0., 0., 0.).into())
     }
