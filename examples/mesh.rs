@@ -85,7 +85,7 @@ fn main() {
         transform: camera_transform,
         offset: 2.,
         rotation: 0.,
-        speed: 1.,
+        speed: 2.,
     }
     .pearl();
     app.stages.add_pearl(rotator);
