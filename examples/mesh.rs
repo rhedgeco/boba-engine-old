@@ -2,7 +2,7 @@ use std::f32::consts::PI;
 
 use boba_3d::pearls::BobaTransform;
 use boba_core::*;
-use cgmath::Point3;
+use glam::Vec3;
 use milk_tea_runner::*;
 use taro_renderer::{
     prelude::*,
@@ -45,11 +45,11 @@ impl PearlStage<MainBobaUpdate> for CameraRotator {
         pdata.rotation = (pdata.rotation + delta * pdata.speed) % (2. * PI);
         let x = pdata.rotation.sin() * pdata.offset;
         let z = pdata.rotation.cos() * pdata.offset;
-        let position: Point3<f32> = (x, 1., z).into();
+        let position = Vec3::new(x, 1., z);
 
         let mut tdata = pdata.transform.data_mut()?;
         tdata.set_position(position);
-        tdata.look_at((0., 0., 0.).into());
+        tdata.look_at(Vec3::ZERO);
 
         Ok(())
     }
@@ -63,8 +63,8 @@ fn main() {
     let mut renderer = TaroRenderer::default();
 
     // create and add camera
-    let mut camera_transform = BobaTransform::from_position((0., 1., 2.).into());
-    camera_transform.look_at((0., 0., 0.).into());
+    let mut camera_transform = BobaTransform::from_position(Vec3::new(0., 1., 2.));
+    camera_transform.look_at(Vec3::ZERO);
     let camera_transform = camera_transform.as_pearl();
     let camera = TaroCamera::new(
         camera_transform.clone(),

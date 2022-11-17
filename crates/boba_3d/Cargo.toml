@@ -7,6 +7,6 @@ edition = "2021"
 boba_core = { path = "../boba_core" }
 
 uuid = "1.2"
-cgmath = "0.18"
+glam = "0.22"
 hashbrown = "0.13"
 indexmap = "1.9"

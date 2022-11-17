@@ -1,31 +1,15 @@
-use std::f32::consts::PI;
-
 use boba_core::PearlRegister;
-use cgmath::{EuclideanSpace, InnerSpace, Point3, Quaternion, Vector3};
-
-pub trait TransformDefault {
-    fn default() -> Self;
-}
-
-impl TransformDefault for Quaternion<f32> {
-    fn default() -> Self {
-        Quaternion::from_sv(1., (0., 0., 0.).into())
-    }
-}
+use glam::{Quat, Vec3};
 
 pub struct BobaTransform {
-    position: Point3<f32>,
-    rotation: Quaternion<f32>,
-    scale: Vector3<f32>,
+    position: Vec3,
+    rotation: Quat,
+    scale: Vec3,
 }
 
 impl Default for BobaTransform {
     fn default() -> Self {
-        Self::new(
-            (0., 0., 0.).into(),
-            Quaternion::default(),
-            (0., 0., 0.).into(),
-        )
+        Self::new(Vec3::ZERO, Quat::IDENTITY, Vec3::ONE)
     }
 }
 
@@ -36,11 +20,11 @@ impl PearlRegister for BobaTransform {
 }
 
 impl BobaTransform {
-    pub fn from_position(position: Point3<f32>) -> Self {
-        Self::new(position, Quaternion::default(), (0., 0., 0.).into())
+    pub fn from_position(position: Vec3) -> Self {
+        Self::new(position, Quat::IDENTITY, Vec3::ONE)
     }
 
-    pub fn new(position: Point3<f32>, rotation: Quaternion<f32>, scale: Vector3<f32>) -> Self {
+    pub fn new(position: Vec3, rotation: Quat, scale: Vec3) -> Self {
         Self {
             position,
             rotation,
@@ -48,46 +32,47 @@ impl BobaTransform {
         }
     }
 
-    pub fn position(&self) -> &Point3<f32> {
-        &self.position
+    pub fn position(&self) -> Vec3 {
+        self.position
     }
 
-    pub fn rotation(&self) -> &Quaternion<f32> {
-        &self.rotation
+    pub fn rotation(&self) -> Quat {
+        self.rotation
     }
 
-    pub fn scale(&self) -> &Vector3<f32> {
-        &self.scale
+    pub fn scale(&self) -> Vec3 {
+        self.scale
     }
 
-    pub fn set_position(&mut self, position: Point3<f32>) {
+    pub fn set_position(&mut self, position: Vec3) {
         self.position = position
     }
 
-    pub fn set_rotation(&mut self, rotation: Quaternion<f32>) {
+    pub fn set_rotation(&mut self, rotation: Quat) {
         self.rotation = rotation
     }
 
-    pub fn set_scale(&mut self, scale: Vector3<f32>) {
+    pub fn set_scale(&mut self, scale: Vec3) {
         self.scale = scale
     }
 
-    pub fn look_at(&mut self, point: Point3<f32>) {
-        let forward = (point.to_vec() - self.position.to_vec()).normalize();
-        let dot = cgmath::dot(Vector3::unit_z(), forward);
+    pub fn look_at(&mut self, point: Vec3) {
+        let Some(look_vector) = (point - self.position).try_normalize() else {
+            return;
+        };
+
+        let dot = Vec3::Z.dot(look_vector);
         if (dot + 1.).abs() < 0.000001 {
-            self.rotation = Quaternion::new(PI, 0., 0., 1.);
+            self.rotation = Quat::from_axis_angle(Vec3::Y, 0.);
             return;
         }
         if (dot - 1.).abs() < 0.000001 {
-            self.rotation = Quaternion::new(1., 0., 0., 0.);
+            self.rotation = Quat::from_axis_angle(Vec3::Y, 180.);
             return;
         }
 
         let angle = dot.acos();
-        let axis = Vector3::unit_z().cross(forward).normalize();
-        let half_angle = angle * 0.5;
-        let s = half_angle.sin();
-        self.rotation = Quaternion::new(half_angle.cos(), axis.x * s, axis.y * s, axis.z * s);
+        let axis = Vec3::Z.cross(look_vector).normalize();
+        self.rotation = Quat::from_axis_angle(axis, angle);
     }
 }

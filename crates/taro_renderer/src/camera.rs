@@ -2,7 +2,7 @@ use std::cell::BorrowError;
 
 use boba_3d::pearls::BobaTransform;
 use boba_core::{Pearl, PearlRegister};
-use cgmath::{EuclideanSpace, Point3, Quaternion, Vector3};
+use glam::{Mat4, Quat, Vec3};
 use log::error;
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, TextureView};
 
@@ -31,14 +31,6 @@ impl PearlRegister for TaroCamera {
 }
 
 impl TaroCamera {
-    #[rustfmt::skip]
-    pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-        1.0, 0.0, 0.0, 0.0,
-        0.0, 1.0, 0.0, 0.0,
-        0.0, 0.0, 0.5, 0.0,
-        0.0, 0.0, 0.5, 1.0,
-    );
-
     pub fn new(
         transform: Pearl<BobaTransform>,
         settings: TaroCameraSettings,
@@ -106,21 +98,21 @@ impl TaroCamera {
     }
 
     fn build_matrix(
-        point: &Point3<f32>,
-        rotation: &Quaternion<f32>,
+        position: Vec3,
+        rotation: Quat,
         settings: &TaroCameraSettings,
     ) -> CameraUniform {
-        let target = Point3::from_vec(rotation * Vector3::unit_z());
-        let view = cgmath::Matrix4::look_at_rh(*point, target, cgmath::Vector3::unit_y());
-        let proj = cgmath::perspective(
-            cgmath::Deg(settings.fovy),
+        let target = rotation * Vec3::Z;
+        let view = Mat4::look_at_rh(position, target, Vec3::Y);
+        let proj = Mat4::perspective_rh(
+            settings.fovy,
             settings.aspect,
             settings.znear,
             settings.zfar,
         );
 
         CameraUniform {
-            view_proj: (Self::OPENGL_TO_WGPU_MATRIX * proj * view).into(),
+            view_proj: (proj * view).to_cols_array_2d(),
         }
     }
 
