@@ -9,7 +9,7 @@ use hashbrown::HashMap;
 #[derive(Debug)]
 pub enum ResourceError {
     NotFound,
-    BorrowedAsMut,
+    AlreadyBorrowed,
 }
 
 #[derive(Default)]
@@ -36,7 +36,7 @@ impl BobaResources {
         T: 'static,
     {
         let Ok(item) = self.get_ref_cell::<T>()?.try_borrow() else {
-            return Err(ResourceError::BorrowedAsMut);
+            return Err(ResourceError::AlreadyBorrowed);
         };
         Ok(item)
     }
@@ -46,7 +46,7 @@ impl BobaResources {
         T: 'static,
     {
         let Ok(item) = self.get_ref_cell::<T>()?.try_borrow_mut() else {
-            return Err(ResourceError::BorrowedAsMut);
+            return Err(ResourceError::AlreadyBorrowed);
         };
         Ok(item)
     }
@@ -67,6 +67,7 @@ impl BobaResources {
 
 pub struct BobaTime {
     delta: f32,
+    scale: f32,
     instant: Instant,
 }
 
@@ -74,6 +75,7 @@ impl Default for BobaTime {
     fn default() -> Self {
         Self {
             delta: 0.,
+            scale: 1.,
             instant: Instant::now(),
         }
     }
@@ -86,6 +88,10 @@ impl BobaTime {
     }
 
     pub fn delta(&self) -> f32 {
+        self.delta * self.scale
+    }
+
+    pub fn unscaled_delta(&self) -> f32 {
         self.delta
     }
 }

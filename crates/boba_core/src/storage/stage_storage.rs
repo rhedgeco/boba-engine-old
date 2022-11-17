@@ -47,15 +47,6 @@ impl StageRunners {
 }
 
 impl StageStorage {
-    pub fn get<Stage>(&mut self) -> Option<&mut StageRunner<Stage>>
-    where
-        Stage: 'static + BobaStage,
-    {
-        let stage_box = self.runners.stages.get_mut(&TypeId::of::<Stage>())?;
-
-        stage_box.downcast_mut::<StageRunner<Stage>>()
-    }
-
     pub fn add<Stage>(&mut self, stage: Stage)
     where
         Stage: 'static + BobaStage,

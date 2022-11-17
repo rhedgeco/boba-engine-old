@@ -14,7 +14,7 @@ impl PearlRegister for ResizePearl {
 
 impl PearlStage<BobaEvent<MilkTeaResize>> for ResizePearl {
     fn update<'a>(
-        data: &BobaEvent<MilkTeaResize>,
+        data: &MilkTeaResize,
         _: &mut Pearl<Self>,
         resources: &mut boba_core::BobaResources,
     ) -> PearlResult {
@@ -22,11 +22,11 @@ impl PearlStage<BobaEvent<MilkTeaResize>> for ResizePearl {
             return Ok(());
         };
 
-        let size = *data.data().size();
+        let size = data.size();
 
         if let Ok(mut windows) = resources.borrow_mut::<MilkTeaWindows>() {
             if let Some(surface) = windows.main_mut().get_surface::<TaroWindowSurface>() {
-                surface.resize(*data.data().size(), renderer.resources());
+                surface.resize(*size, renderer.resources());
             }
         }
 

@@ -7,20 +7,7 @@ pub trait BobaStage {
         Self: 'static;
 }
 
-pub struct MainBobaUpdate;
-
-impl BobaStage for MainBobaUpdate {
-    type StageData = f32;
-
-    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut BobaResources)
-    where
-        Self: 'static,
-    {
-        pearls.update(&resources.time().delta(), resources);
-    }
-}
-
-pub struct StageRunner<Stage>
+pub(crate) struct StageRunner<Stage>
 where
     Stage: 'static + BobaStage,
 {
@@ -41,5 +28,18 @@ where
 
     pub fn run(&mut self, resources: &mut BobaResources) {
         self.stage.run(&mut self.pearls, resources);
+    }
+}
+
+pub struct MainBobaUpdate;
+
+impl BobaStage for MainBobaUpdate {
+    type StageData = f32;
+
+    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut BobaResources)
+    where
+        Self: 'static,
+    {
+        pearls.update(&resources.time().delta(), resources);
     }
 }

@@ -47,6 +47,6 @@ impl EventStorage {
         any_storage
             .downcast_mut::<PearlStorage<BobaEvent<Data>>>()
             .expect("pearl storage should be valid at this point")
-            .update(event, resources);
+            .update(&event.data, resources);
     }
 }

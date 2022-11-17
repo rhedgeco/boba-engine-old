@@ -21,9 +21,6 @@ impl MilkTeaRunner {
         // add window manager to app resources
         app.resources.add(MilkTeaWindows::new(window));
 
-        // run startup stages
-        app.run_startup_stages();
-
         // run main loop
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
