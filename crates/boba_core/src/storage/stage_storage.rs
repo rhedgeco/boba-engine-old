@@ -67,7 +67,7 @@ impl StageStorage {
     where
         Stage: 'static + BobaStage,
     {
-        self.runners.stages.remove(&TypeId::of::<Stage>());
+        self.runners.stages.shift_remove(&TypeId::of::<Stage>());
     }
 
     pub fn run(&mut self, resources: &mut BobaResources) {
