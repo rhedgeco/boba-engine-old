@@ -9,4 +9,3 @@ boba_core = { path = "../boba_core" }
 log = "0.4"
 winit = "0.27"
 env_logger = "0.9"
-pollster = "0.2"

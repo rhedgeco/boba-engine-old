@@ -1,8 +1,8 @@
 use std::cell::BorrowError;
 
+use boba_3d::glam::{Mat4, Quat, Vec3};
 use boba_3d::pearls::BobaTransform;
 use boba_core::{Pearl, PearlRegister};
-use glam::{Mat4, Quat, Vec3};
 use log::error;
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, TextureView};
 
