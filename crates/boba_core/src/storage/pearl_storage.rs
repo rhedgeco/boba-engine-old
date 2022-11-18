@@ -6,8 +6,8 @@ use hashbrown::HashMap;
 /// You may be `insert` and `remove` pearls in any order.
 /// The storage system has an `update` function that will iterate over
 /// every component and call its corresponding `update` function.
-/// This struct will typically be used inside a `BobaStage` as the
-/// owner of all the pearls to be run for that stage.
+/// This struct will typically be used inside a `BobaStage` to run
+/// all the appropriate pearls for that stage.
 pub struct PearlStorage<Stage: 'static + ?Sized + BobaStage> {
     pearls: HashMap<PearlId, Box<dyn PearlRunner<Stage>>>,
 }

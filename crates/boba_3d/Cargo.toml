@@ -6,4 +6,6 @@ edition = "2021"
 [dependencies]
 boba_core = { path = "../boba_core" }
 
+log = "0.4"
 glam = "0.22"
+indexmap = "1.9"

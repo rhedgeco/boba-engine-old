@@ -48,7 +48,7 @@ impl PearlStage<MainBobaUpdate> for CameraRotator {
         let position = Vec3::new(x, 1., z);
 
         let mut tdata = pdata.transform.data_mut()?;
-        tdata.set_position(position);
+        tdata.set_local_position(position);
         tdata.look_at(Vec3::ZERO);
 
         Ok(())

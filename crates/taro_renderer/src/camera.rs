@@ -38,7 +38,7 @@ impl TaroCamera {
     ) -> Result<Self, BorrowError> {
         let tdata = transform.data()?;
 
-        let uniform = Self::build_matrix(tdata.position(), tdata.rotation(), &settings);
+        let uniform = Self::build_matrix(tdata.world_position(), tdata.world_rotation(), &settings);
         let buffer = Self::build_buffer(uniform, resources);
         let layout = Self::create_bind_group_layout(resources);
         let bind_group = Self::build_bind_group(&buffer, &layout, resources);
@@ -63,7 +63,11 @@ impl TaroCamera {
             return;
         };
 
-        let uniform = Self::build_matrix(tdata.position(), tdata.rotation(), &self.settings);
+        let uniform = Self::build_matrix(
+            tdata.world_position(),
+            tdata.world_rotation(),
+            &self.settings,
+        );
         resources
             .queue
             .write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
