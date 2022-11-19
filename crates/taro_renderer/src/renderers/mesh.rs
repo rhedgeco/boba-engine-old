@@ -1,21 +1,22 @@
-use boba_core::{BobaResources, Pearl, PearlRegister, PearlResult, PearlStage};
-use wgpu::RenderPipeline;
+use boba_core::PearlRegister;
+use wgpu::{BindGroup, RenderPass, RenderPipeline};
 
 use crate::{
-    stages::OnTaroRender,
-    types::{TaroCompiler, TaroMesh, TaroShader, TaroTexture},
-    RenderResources, TaroCamera, TaroRenderer,
+    types::{CompiledTaroMesh, CompiledTaroTexture, TaroMesh, TaroShader, TaroTexture},
+    RenderResources, TaroCamera,
 };
-
-pub struct TaroMeshPipelineData {
-    pub render_pipeline: RenderPipeline,
-}
 
 pub struct TaroMeshRenderer {
     mesh: TaroMesh,
     shader: TaroShader,
     main_texture: TaroTexture,
-    pipeline: Option<TaroMeshPipelineData>,
+    pipeline: Option<RenderPipeline>,
+}
+
+impl PearlRegister for TaroMeshRenderer {
+    fn register(_: boba_core::Pearl<Self>, _: &mut boba_core::storage::StageRunners) {
+        // do nothing
+    }
 }
 
 impl TaroMeshRenderer {
@@ -28,36 +29,45 @@ impl TaroMeshRenderer {
         }
     }
 
-    pub fn mesh(&self) -> &TaroMesh {
-        &self.mesh
+    pub fn render_mesh<'a>(
+        &'a mut self,
+        camera: &'a BindGroup,
+        pass: &mut RenderPass<'a>,
+        resources: &RenderResources,
+    ) {
+        let (pipeline, mesh, texture) = self.compile(resources);
+
+        pass.set_pipeline(&pipeline);
+        pass.set_bind_group(0, &texture.bind_group, &[]);
+        pass.set_bind_group(1, camera, &[]);
+        pass.set_vertex_buffer(0, mesh.vertex_buffer.raw_buffer().slice(..));
+        pass.set_index_buffer(
+            mesh.index_buffer.raw_buffer().slice(..),
+            wgpu::IndexFormat::Uint16,
+        );
+        pass.draw_indexed(0..mesh.index_buffer.buffer_length(), 0, 0..1);
     }
 
-    pub fn texture(&self) -> &TaroTexture {
-        &self.main_texture
-    }
-
-    pub fn pipeline(&self) -> &Option<TaroMeshPipelineData> {
-        &self.pipeline
-    }
-
-    pub fn compiled(&self) -> bool {
-        self.pipeline.is_some()
-    }
-
-    pub fn precompile(&mut self, resources: &RenderResources) {
+    fn compile(
+        &mut self,
+        resources: &RenderResources,
+    ) -> (&RenderPipeline, &CompiledTaroMesh, &CompiledTaroTexture) {
         if self.pipeline.is_some() {
-            return;
+            let pipeline = self.pipeline.as_ref().unwrap();
+            let mesh = self.mesh.compile(resources);
+            let texture = self.main_texture.compile(resources);
+            return (&pipeline, &mesh, &texture);
         }
 
-        let texture = self.main_texture.get_compiled_data(resources);
-        let camera_bind_group_layout = TaroCamera::create_bind_group_layout(resources);
+        let texture = self.main_texture.compile(resources);
+        let camera_layout = TaroCamera::create_bind_group_layout(resources);
 
         let pipeline_layout =
             resources
                 .device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: &[&texture.bind_group_layout, &camera_bind_group_layout],
+                    bind_group_layouts: &[&texture.bind_group_layout, &camera_layout],
                     push_constant_ranges: &[],
                 });
 
@@ -101,29 +111,10 @@ impl TaroMeshRenderer {
                     multiview: None,
                 });
 
-        self.pipeline = Some(TaroMeshPipelineData { render_pipeline });
+        self.pipeline = Some(render_pipeline);
 
-        self.mesh.compile(resources);
-    }
-}
-
-impl PearlRegister for TaroMeshRenderer {
-    fn register(pearl: boba_core::Pearl<Self>, storage: &mut boba_core::storage::StageRunners) {
-        storage.add(pearl);
-    }
-}
-
-impl PearlStage<OnTaroRender> for TaroMeshRenderer {
-    fn update(_: &(), pearl: &mut Pearl<Self>, resources: &mut BobaResources) -> PearlResult {
-        let mut data = pearl.data_mut()?;
-        if data.compiled() {
-            return Ok(());
-        }
-
-        if let Ok(renderer) = resources.borrow::<TaroRenderer>() {
-            data.precompile(renderer.resources())
-        }
-
-        Ok(())
+        let pipeline = self.pipeline.as_ref().unwrap();
+        let mesh = self.mesh.compile(resources);
+        return (pipeline, &mesh, &texture);
     }
 }

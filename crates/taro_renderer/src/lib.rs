@@ -1,10 +1,9 @@
 mod camera;
-mod render_phase;
 mod renderer;
 mod resize_pearl;
 mod window;
 
-pub mod phases;
+pub mod render_phase;
 pub mod renderers;
 pub mod stages;
 pub mod storage;

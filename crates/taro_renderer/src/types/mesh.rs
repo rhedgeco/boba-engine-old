@@ -2,8 +2,6 @@ use wgpu::{util::DeviceExt, Buffer};
 
 use crate::RenderResources;
 
-use super::TaroCompiler;
-
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
@@ -35,7 +33,7 @@ pub struct CompiledTaroMesh {
 pub struct TaroMesh {
     vertices: Box<[Vertex]>,
     indices: Box<[u16]>,
-    buffers: Option<CompiledTaroMesh>,
+    compiled: Option<CompiledTaroMesh>,
 }
 
 impl TaroMesh {
@@ -49,24 +47,16 @@ impl TaroMesh {
         Self {
             vertices: Box::<[Vertex]>::from(vertices),
             indices: Box::<[u16]>::from(indices),
-            buffers: None,
+            compiled: None,
         }
     }
-}
 
-impl TaroCompiler for TaroMesh {
-    type CompiledData = CompiledTaroMesh;
-
-    fn get_data(&self) -> &Option<Self::CompiledData> {
-        &self.buffers
-    }
-
-    fn compile(&mut self, resources: &RenderResources) {
-        if self.buffers.is_some() {
-            return;
+    pub fn compile(&mut self, resources: &RenderResources) -> &CompiledTaroMesh {
+        if self.compiled.is_some() {
+            return self.compiled.as_ref().unwrap();
         }
 
-        self.buffers = Some(CompiledTaroMesh {
+        self.compiled = Some(CompiledTaroMesh {
             vertex_buffer: TaroBuffer {
                 length: self.vertices.len() as u32,
                 raw_buffer: resources.device.create_buffer_init(
@@ -88,5 +78,7 @@ impl TaroCompiler for TaroMesh {
                 ),
             },
         });
+
+        self.compiled.as_ref().unwrap()
     }
 }

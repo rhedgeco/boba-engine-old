@@ -1,7 +1,7 @@
 use boba_core::{Pearl, PearlId};
 use indexmap::IndexMap;
 use log::error;
-use std::cell::Ref;
+use std::cell::RefMut;
 
 pub struct TaroStorage<T> {
     pearls: IndexMap<PearlId, Pearl<T>>,
@@ -24,7 +24,7 @@ impl<T> TaroStorage<T> {
         self.pearls.remove(id);
     }
 
-    pub fn collect(&self) -> Vec<Ref<T>> {
+    pub fn collect(&self) -> Vec<RefMut<T>> {
         let length = self.pearls.len();
         if length == 0 {
             return Vec::new();
@@ -32,7 +32,7 @@ impl<T> TaroStorage<T> {
 
         self.pearls
             .values()
-            .filter_map(|f| match f.data() {
+            .filter_map(|f| match f.data_mut() {
                 Ok(borrow) => Some(borrow),
                 Err(e) => {
                     error!(

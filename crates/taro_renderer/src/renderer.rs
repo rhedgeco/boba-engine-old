@@ -1,4 +1,4 @@
-use std::cell::Ref;
+use std::cell::RefMut;
 
 use anymap::AnyMap;
 use boba_core::Pearl;
@@ -48,7 +48,7 @@ impl RenderPearls {
         }
     }
 
-    pub fn collect<T>(&self) -> Vec<Ref<T>>
+    pub fn collect<T>(&self) -> Vec<RefMut<T>>
     where
         T: 'static,
     {

@@ -3,8 +3,6 @@ use wgpu::{BindGroup, BindGroupLayout, BindGroupLayoutDescriptor, Extent3d, Text
 
 use crate::RenderResources;
 
-use super::TaroCompiler;
-
 pub struct CompiledTaroTexture {
     pub bind_group: BindGroup,
     pub bind_group_layout: BindGroupLayout,
@@ -17,16 +15,32 @@ pub struct TaroTexture {
     compiled: Option<CompiledTaroTexture>,
 }
 
-impl TaroCompiler for TaroTexture {
-    type CompiledData = CompiledTaroTexture;
-
-    fn get_data(&self) -> &Option<Self::CompiledData> {
-        &self.compiled
+impl TaroTexture {
+    pub fn from_bytes(label: &str, bytes: &[u8]) -> Result<Self, ImageError> {
+        let image = image::load_from_memory(bytes)?;
+        Ok(Self::from_image(label, &image))
     }
 
-    fn compile(&mut self, resources: &RenderResources) {
+    pub fn from_image(label: &str, image: &DynamicImage) -> Self {
+        let rgba = image.to_rgba8();
+        let dimensions = rgba.dimensions();
+        let size = Extent3d {
+            width: dimensions.0,
+            height: dimensions.1,
+            depth_or_array_layers: 1,
+        };
+
+        Self {
+            label: Box::<str>::from(label),
+            rgba,
+            size,
+            compiled: None,
+        }
+    }
+
+    pub fn compile(&mut self, resources: &RenderResources) -> &CompiledTaroTexture {
         if self.compiled.is_some() {
-            return;
+            return self.compiled.as_ref().unwrap();
         }
 
         let descriptor = TextureDescriptor {
@@ -114,30 +128,8 @@ impl TaroCompiler for TaroTexture {
         self.compiled = Some(CompiledTaroTexture {
             bind_group,
             bind_group_layout,
-        })
-    }
-}
+        });
 
-impl TaroTexture {
-    pub fn from_bytes(label: &str, bytes: &[u8]) -> Result<Self, ImageError> {
-        let image = image::load_from_memory(bytes)?;
-        Ok(Self::from_image(label, &image))
-    }
-
-    pub fn from_image(label: &str, image: &DynamicImage) -> Self {
-        let rgba = image.to_rgba8();
-        let dimensions = rgba.dimensions();
-        let size = Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
-            depth_or_array_layers: 1,
-        };
-
-        Self {
-            label: Box::<str>::from(label),
-            rgba,
-            size,
-            compiled: None,
-        }
+        self.compiled.as_ref().unwrap()
     }
 }

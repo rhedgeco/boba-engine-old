@@ -82,7 +82,12 @@ impl BobaStage for OnTaroRender {
         if let Some(camera_container) = &renderer.cameras.main_camera {
             if let Ok(mut camera) = camera_container.data_mut() {
                 camera.rebuild_matrix(renderer.resources());
-                camera.execute_render_phases(&view, &mut encoder, &renderer.pearls);
+                camera.execute_render_phases(
+                    &view,
+                    &mut encoder,
+                    &renderer.pearls,
+                    renderer.resources(),
+                );
             } else {
                 error!("Could not render main camera. It is currently borrowed as mutable.");
             }

@@ -8,6 +8,12 @@ use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, 
 
 use crate::{RenderPearls, RenderPhaseStorage, RenderResources};
 
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct CameraUniform {
+    view_proj: [[f32; 4]; 4],
+}
+
 #[derive(Clone)]
 pub struct TaroCameraSettings {
     pub aspect: f32,
@@ -96,9 +102,10 @@ impl TaroCamera {
         view: &TextureView,
         encoder: &mut CommandEncoder,
         pearls: &RenderPearls,
+        resources: &RenderResources,
     ) {
         self.phases
-            .execute_phases(view, &self.bind_group, encoder, pearls);
+            .execute_phases(view, &self.bind_group, encoder, pearls, resources);
     }
 
     fn build_matrix(
@@ -146,12 +153,6 @@ impl TaroCamera {
                 label: Some("camera_bind_group"),
             })
     }
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct CameraUniform {
-    view_proj: [[f32; 4]; 4],
 }
 
 #[derive(Default)]

@@ -1,9 +1,11 @@
-use std::any::TypeId;
+mod default;
 
+pub use default::*;
+
+use crate::{render_phase::DefaultTaroPhase, RenderPearls, RenderResources};
 use indexmap::IndexMap;
+use std::any::TypeId;
 use wgpu::{BindGroup, CommandEncoder, TextureView};
-
-use crate::{phases::DefaultTaroPhase, RenderPearls};
 
 pub trait TaroRenderPhase {
     fn render(
@@ -12,6 +14,7 @@ pub trait TaroRenderPhase {
         camera: &BindGroup,
         encoder: &mut CommandEncoder,
         pearls: &RenderPearls,
+        resources: &RenderResources,
     );
 }
 
@@ -46,9 +49,10 @@ impl RenderPhaseStorage {
         camera: &BindGroup,
         encoder: &mut CommandEncoder,
         pearls: &RenderPearls,
+        resources: &RenderResources,
     ) {
         for phase in self.phases.values_mut() {
-            phase.render(view, camera, encoder, pearls);
+            phase.render(view, camera, encoder, pearls, resources);
         }
     }
 }

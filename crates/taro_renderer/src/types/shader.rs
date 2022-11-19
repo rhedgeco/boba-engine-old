@@ -24,10 +24,6 @@ impl TaroShader {
         })
     }
 
-    pub fn get_compiled(&self) -> &Option<CompiledTaroShader> {
-        &self.compiled
-    }
-
     pub fn compile(&mut self, resources: &RenderResources) -> &CompiledTaroShader {
         if self.compiled.is_some() {
             return self.compiled.as_ref().unwrap();
