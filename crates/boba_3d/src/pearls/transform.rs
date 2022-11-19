@@ -81,7 +81,7 @@ impl BobaTransform {
     }
 
     pub fn world_matrix(&self) -> Mat4 {
-        self.parent_matrix * self.local_matrix
+        self.local_matrix * self.parent_matrix
     }
 
     pub fn local_matrix(&self) -> Mat4 {
@@ -154,11 +154,11 @@ impl BobaTransform {
 
         let angle = dot.acos();
         let axis = Vec3::Z.cross(look_vector).normalize();
-        self.local_rotation = Quat::from_axis_angle(axis, angle);
+        self.set_local_rotation(Quat::from_axis_angle(axis, angle));
     }
 
     fn calculate_world_transforms(&mut self) {
-        (self.world_position, self.world_rotation, self.lossy_scale) =
+        (self.lossy_scale, self.world_rotation, self.world_position) =
             self.world_matrix().to_scale_rotation_translation();
     }
 
