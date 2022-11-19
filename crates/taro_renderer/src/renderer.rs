@@ -3,7 +3,7 @@ use std::cell::RefMut;
 use anymap::AnyMap;
 use boba_core::Pearl;
 
-use crate::{storage::TaroStorage, CameraStorage};
+use crate::storage::{CameraStorage, TaroStorage};
 
 pub struct RenderResources {
     pub instance: wgpu::Instance,

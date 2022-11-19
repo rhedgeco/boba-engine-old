@@ -154,8 +154,3 @@ impl TaroCamera {
             })
     }
 }
-
-#[derive(Default)]
-pub struct CameraStorage {
-    pub main_camera: Option<Pearl<TaroCamera>>,
-}
