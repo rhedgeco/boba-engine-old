@@ -12,7 +12,7 @@ pub struct CompiledTaroShader {
 pub struct TaroShader {
     label: Box<str>,
     module: Module,
-    compiled: Option<CompiledTaroShader>,
+    compiled: Option<ShaderModule>,
 }
 
 impl TaroShader {
@@ -24,7 +24,7 @@ impl TaroShader {
         })
     }
 
-    pub fn compile(&mut self, resources: &RenderResources) -> &CompiledTaroShader {
+    pub fn compile(&mut self, resources: &RenderResources) -> &ShaderModule {
         if self.compiled.is_some() {
             return self.compiled.as_ref().unwrap();
         }
@@ -35,7 +35,7 @@ impl TaroShader {
         };
 
         let module = resources.device.create_shader_module(descriptor);
-        self.compiled = Some(CompiledTaroShader { module });
+        self.compiled = Some(module);
         return self.compiled.as_ref().unwrap();
     }
 }

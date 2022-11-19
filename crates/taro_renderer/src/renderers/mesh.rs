@@ -71,7 +71,7 @@ impl TaroMeshRenderer {
                     push_constant_ranges: &[],
                 });
 
-        let shader = self.shader.compile(resources);
+        let module = self.shader.compile(resources);
 
         let render_pipeline =
             resources
@@ -80,12 +80,12 @@ impl TaroMeshRenderer {
                     label: Some("Render Pipeline"),
                     layout: Some(&pipeline_layout),
                     vertex: wgpu::VertexState {
-                        module: &shader.module,
+                        module,
                         entry_point: "vs_main",
                         buffers: &[Vertex::BUFFER_LAYOUT],
                     },
                     fragment: Some(wgpu::FragmentState {
-                        module: &shader.module,
+                        module,
                         entry_point: "fs_main",
                         targets: &[Some(wgpu::ColorTargetState {
                             format: wgpu::TextureFormat::Rgba8UnormSrgb,
