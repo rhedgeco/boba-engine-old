@@ -1,7 +1,7 @@
 mod camera;
 mod renderer;
 mod resize_pearl;
-mod window;
+mod window_surface;
 
 pub mod render_phase;
 pub mod renderers;
@@ -12,7 +12,7 @@ pub mod types;
 pub use camera::*;
 pub use render_phase::*;
 pub use renderer::*;
-pub use window::*;
+pub use window_surface::*;
 
 pub mod prelude {
     use crate::{resize_pearl::ResizePearl, stages::OnTaroRender};
