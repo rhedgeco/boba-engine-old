@@ -2,7 +2,7 @@ use boba_core::PearlRegister;
 use wgpu::{BindGroup, RenderPass, RenderPipeline};
 
 use crate::{
-    types::{CompiledTaroMesh, CompiledTaroTexture, TaroMesh, TaroShader, TaroTexture},
+    types::{CompiledTaroMesh, CompiledTaroTexture, TaroMesh, TaroShader, TaroTexture, Vertex},
     RenderResources, TaroCamera,
 };
 
@@ -82,7 +82,7 @@ impl TaroMeshRenderer {
                     vertex: wgpu::VertexState {
                         module: &shader.module,
                         entry_point: "vs_main",
-                        buffers: &[TaroMesh::VERTEX_LAYOUT],
+                        buffers: &[Vertex::BUFFER_LAYOUT],
                     },
                     fragment: Some(wgpu::FragmentState {
                         module: &shader.module,

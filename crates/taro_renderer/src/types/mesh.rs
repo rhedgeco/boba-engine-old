@@ -10,6 +10,14 @@ pub struct Vertex {
     pub uv: [f32; 2],
 }
 
+impl Vertex {
+    pub const BUFFER_LAYOUT: wgpu::VertexBufferLayout<'_> = wgpu::VertexBufferLayout {
+        array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2],
+    };
+}
+
 pub struct TaroBuffer {
     raw_buffer: Buffer,
     length: u32,
@@ -37,12 +45,6 @@ pub struct TaroMesh {
 }
 
 impl TaroMesh {
-    pub const VERTEX_LAYOUT: wgpu::VertexBufferLayout<'_> = wgpu::VertexBufferLayout {
-        array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-        step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2],
-    };
-
     pub fn new(vertices: &[Vertex], indices: &[u16]) -> Self {
         Self {
             vertices: Box::<[Vertex]>::from(vertices),
