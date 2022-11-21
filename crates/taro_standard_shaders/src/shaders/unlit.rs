@@ -1,8 +1,8 @@
 use log::error;
 use taro_renderer::{
     shading::{TaroMeshShader, TaroShaderCore},
-    types::Vertex,
-    wgpu, TaroCamera,
+    types::{create_matrix_bind_layout, Vertex},
+    wgpu,
 };
 
 #[derive(Default)]
@@ -22,7 +22,8 @@ impl TaroShaderCore for UnlitShader {
                     ),
                 });
 
-            let camera_layout = TaroCamera::create_bind_group_layout(resources);
+            // TODO: potentially find a way to store this instead of create it each time for each shader
+            let camera_layout = create_matrix_bind_layout(resources);
 
             let pipeline_layout =
                 resources

@@ -6,6 +6,7 @@ use boba_core::{Pearl, PearlRegister};
 use log::error;
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, TextureView};
 
+use crate::types::create_matrix_bind_layout;
 use crate::{RenderPearls, RenderPhaseStorage, RenderResources};
 
 #[repr(C)]
@@ -46,7 +47,7 @@ impl TaroCamera {
 
         let uniform = Self::build_matrix(tdata.world_position(), tdata.world_rotation(), &settings);
         let buffer = Self::build_buffer(uniform, resources);
-        let layout = Self::create_bind_group_layout(resources);
+        let layout = create_matrix_bind_layout(resources);
         let bind_group = Self::build_bind_group(&buffer, &layout, resources);
 
         drop(tdata);
@@ -77,24 +78,6 @@ impl TaroCamera {
         resources
             .queue
             .write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
-    }
-
-    pub fn create_bind_group_layout(resources: &RenderResources) -> BindGroupLayout {
-        resources
-            .device
-            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("camera_bind_group_layout"),
-            })
     }
 
     pub fn execute_render_phases(

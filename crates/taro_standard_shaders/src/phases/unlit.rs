@@ -1,3 +1,4 @@
+use log::error;
 use taro_renderer::{
     renderers::TaroMeshRenderer,
     shading::{RenderMeshData, TaroMeshShader, TaroShaderCore},
@@ -40,7 +41,13 @@ impl TaroRenderPhase for UnlitRenderPhase {
         });
 
         for mesh in meshes.iter_mut() {
-            let binding = mesh.mesh_binding(resources).unwrap();
+            let binding = match mesh.mesh_binding(resources) {
+                Ok(b) => b,
+                Err(e) => {
+                    error!("Cannot render a mesh. There was an error when getting the mesh bindings. Error: {e}");
+                    continue;
+                }
+            };
 
             let data = RenderMeshData {
                 mesh: binding.mesh,
