@@ -20,7 +20,7 @@ impl PearlStage<MainBobaUpdate> for Time {
 fn main() {
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
-    app.stages.add_pearl(Time.as_pearl());
+    app.stages.add_pearl(Time.into_pearl());
     app.resources.add(TaroRenderer::default());
     MilkTeaRunner::run(app).unwrap();
 }

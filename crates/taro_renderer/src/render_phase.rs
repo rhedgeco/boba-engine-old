@@ -16,16 +16,9 @@ pub trait TaroRenderPhase {
     );
 }
 
+#[derive(Default)]
 pub struct RenderPhaseStorage {
     phases: IndexMap<TypeId, Box<dyn TaroRenderPhase>>,
-}
-
-impl Default for RenderPhaseStorage {
-    fn default() -> Self {
-        Self {
-            phases: Default::default(),
-        }
-    }
 }
 
 impl RenderPhaseStorage {

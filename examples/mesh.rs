@@ -61,7 +61,7 @@ fn main() {
     // create and add camera
     let mut camera_transform = BobaTransform::from_position(Vec3::new(0., 1., 2.));
     camera_transform.look_at(Vec3::ZERO);
-    let camera_transform = camera_transform.as_pearl();
+    let camera_transform = camera_transform.into_pearl();
     let mut camera = TaroCamera::new(
         camera_transform.clone(),
         TaroCameraSettings {
@@ -74,16 +74,16 @@ fn main() {
     )
     .unwrap();
     camera.phases.add(UnlitRenderPhase);
-    let camera = camera.as_pearl();
+    let camera = camera.into_pearl();
     renderer.cameras.main_camera = Some(camera);
 
     // create an arbitrary mesh to show in the center of the screen
-    let model_transform = BobaTransform::from_position(Vec3::ZERO).as_pearl();
+    let model_transform = BobaTransform::from_position(Vec3::ZERO).into_pearl();
     app.stages.add_pearl(model_transform.clone());
     let shader = UnlitShader::default().wrap();
     let mesh = TaroMesh::new(VERTICES, INDICES);
     let mesh_renderer =
-        TaroMeshRenderer::new(model_transform.clone(), mesh, shader.id()).as_pearl();
+        TaroMeshRenderer::new(model_transform.clone(), mesh, shader.id()).into_pearl();
     app.stages.add_pearl(mesh_renderer.clone()); // we clone it so that it can be used later when attaching to renderer
     renderer.pearls.add(mesh_renderer);
 
@@ -93,7 +93,7 @@ fn main() {
         rotation: 0.,
         speed: 2.,
     }
-    .as_pearl();
+    .into_pearl();
     app.stages.add_pearl(rotator);
 
     // add the renderer and run the app

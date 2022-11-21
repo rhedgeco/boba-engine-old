@@ -97,14 +97,14 @@ pub trait AsPearl<T>
 where
     T: PearlRegister,
 {
-    fn as_pearl(self) -> Pearl<T>;
+    fn into_pearl(self) -> Pearl<T>;
 }
 
 impl<T> AsPearl<T> for T
 where
     T: PearlRegister,
 {
-    fn as_pearl(self) -> Pearl<T> {
+    fn into_pearl(self) -> Pearl<T> {
         Pearl::<T> {
             id: PearlId::new(),
             data: Rc::new(RefCell::new(self)),
