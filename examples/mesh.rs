@@ -4,7 +4,6 @@ use boba_3d::pearls::BobaTransform;
 use boba_core::*;
 use glam::{Quat, Vec3};
 use milk_tea_runner::*;
-use taro_pbr::{phases::UnlitRenderPhase, shaders::UnlitShader};
 use taro_renderer::{
     prelude::*,
     renderers::TaroMeshRenderer,
@@ -12,6 +11,7 @@ use taro_renderer::{
     types::{TaroMesh, Vertex},
     TaroCamera, TaroCameraSettings, TaroRenderer,
 };
+use taro_standard_shaders::{phases::UnlitRenderPhase, shaders::UnlitShader};
 
 #[rustfmt::skip]
 const VERTICES: &[Vertex] = &[

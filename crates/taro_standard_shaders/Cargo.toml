@@ -1,5 +1,5 @@
 [package]
-name = "taro_pbr"
+name = "taro_standard_shaders"
 version = "0.1.0"
 edition = "2021"
 
