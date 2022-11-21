@@ -1,11 +1,9 @@
-mod default;
-
-pub use default::*;
-
-use crate::{render_phase::DefaultTaroPhase, RenderPearls, RenderResources};
-use indexmap::IndexMap;
 use std::any::TypeId;
+
+use indexmap::IndexMap;
 use wgpu::{BindGroup, CommandEncoder, TextureView};
+
+use crate::{RenderPearls, RenderResources};
 
 pub trait TaroRenderPhase {
     fn render(
@@ -24,13 +22,9 @@ pub struct RenderPhaseStorage {
 
 impl Default for RenderPhaseStorage {
     fn default() -> Self {
-        let mut storage = Self {
+        Self {
             phases: Default::default(),
-        };
-
-        storage.add(DefaultTaroPhase);
-
-        storage
+        }
     }
 }
 

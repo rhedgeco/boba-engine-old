@@ -1,16 +1,30 @@
-use boba_core::PearlRegister;
-use wgpu::{BindGroup, RenderPass, RenderPipeline};
+use std::cell::BorrowError;
 
 use crate::{
-    types::{CompiledTaroMesh, CompiledTaroTexture, TaroMesh, TaroShader, TaroTexture, Vertex},
-    RenderResources, TaroCamera,
+    shading::ShaderId,
+    types::{CompiledTaroMesh, TaroMesh},
+    RenderResources,
 };
+use boba_3d::pearls::BobaTransform;
+use boba_core::{Pearl, PearlRegister};
+use wgpu::{util::DeviceExt, BindGroup, Buffer};
+
+pub struct TaroMeshBinding<'a> {
+    pub mesh: &'a CompiledTaroMesh,
+    pub matrix: &'a BindGroup,
+}
+
+struct CompiledMatrixData {
+    buffer: Buffer,
+    binding: BindGroup,
+}
 
 pub struct TaroMeshRenderer {
-    mesh: TaroMesh,
-    shader: TaroShader,
-    main_texture: TaroTexture,
-    pipeline: Option<RenderPipeline>,
+    transform: Pearl<BobaTransform>,
+    matrix: Option<CompiledMatrixData>,
+
+    pub shader: ShaderId,
+    pub mesh: TaroMesh,
 }
 
 impl PearlRegister for TaroMeshRenderer {
@@ -20,101 +34,76 @@ impl PearlRegister for TaroMeshRenderer {
 }
 
 impl TaroMeshRenderer {
-    pub fn new(mesh: TaroMesh, shader: TaroShader, main_texture: TaroTexture) -> Self {
+    pub fn new(transform: Pearl<BobaTransform>, mesh: TaroMesh, shader: ShaderId) -> Self {
         Self {
+            transform,
+            matrix: None,
             mesh,
             shader,
-            main_texture,
-            pipeline: None,
         }
     }
 
-    pub fn render_mesh<'a>(
-        &'a mut self,
-        camera: &'a BindGroup,
-        pass: &mut RenderPass<'a>,
-        resources: &RenderResources,
-    ) {
-        let (pipeline, mesh, texture) = self.compile(resources);
-
-        pass.set_pipeline(&pipeline);
-        pass.set_bind_group(0, &texture.bind_group, &[]);
-        pass.set_bind_group(1, camera, &[]);
-        pass.set_vertex_buffer(0, mesh.vertex_buffer.raw_buffer().slice(..));
-        pass.set_index_buffer(
-            mesh.index_buffer.raw_buffer().slice(..),
-            wgpu::IndexFormat::Uint16,
-        );
-        pass.draw_indexed(0..mesh.index_buffer.buffer_length(), 0, 0..1);
-    }
-
-    fn compile(
+    pub fn mesh_binding(
         &mut self,
         resources: &RenderResources,
-    ) -> (&RenderPipeline, &CompiledTaroMesh, &CompiledTaroTexture) {
-        if self.pipeline.is_some() {
-            let pipeline = self.pipeline.as_ref().unwrap();
-            let mesh = self.mesh.compile(resources);
-            let texture = self.main_texture.compile(resources);
-            return (&pipeline, &mesh, &texture);
+    ) -> Result<TaroMeshBinding, BorrowError> {
+        if self.matrix.is_none() {
+            let buffer = resources
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Camera Buffer"),
+                    contents: bytemuck::cast_slice(&[self
+                        .transform
+                        .data()?
+                        .world_matrix()
+                        .to_cols_array_2d()]),
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+                });
+
+            let layout =
+                &resources
+                    .device
+                    .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                        entries: &[wgpu::BindGroupLayoutEntry {
+                            binding: 0,
+                            visibility: wgpu::ShaderStages::VERTEX,
+                            ty: wgpu::BindingType::Buffer {
+                                ty: wgpu::BufferBindingType::Uniform,
+                                has_dynamic_offset: false,
+                                min_binding_size: None,
+                            },
+                            count: None,
+                        }],
+                        label: Some("Model Bind Group Layout"),
+                    });
+
+            let binding = resources
+                .device
+                .create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout,
+                    entries: &[wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: buffer.as_entire_binding(),
+                    }],
+                    label: Some("camera_bind_group"),
+                });
+
+            self.matrix = Some(CompiledMatrixData { buffer, binding });
         }
 
-        let texture = self.main_texture.compile(resources);
-        let camera_layout = TaroCamera::create_bind_group_layout(resources);
+        let matrix = self.matrix.as_ref().unwrap();
 
-        let pipeline_layout =
-            resources
-                .device
-                .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                    label: Some("Render Pipeline Layout"),
-                    bind_group_layouts: &[&texture.bind_group_layout, &camera_layout],
-                    push_constant_ranges: &[],
-                });
-
-        let module = self.shader.compile(resources);
-
-        let render_pipeline =
-            resources
-                .device
-                .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-                    label: Some("Render Pipeline"),
-                    layout: Some(&pipeline_layout),
-                    vertex: wgpu::VertexState {
-                        module,
-                        entry_point: "vs_main",
-                        buffers: &[Vertex::BUFFER_LAYOUT],
-                    },
-                    fragment: Some(wgpu::FragmentState {
-                        module,
-                        entry_point: "fs_main",
-                        targets: &[Some(wgpu::ColorTargetState {
-                            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                            blend: Some(wgpu::BlendState::REPLACE),
-                            write_mask: wgpu::ColorWrites::ALL,
-                        })],
-                    }),
-                    primitive: wgpu::PrimitiveState {
-                        topology: wgpu::PrimitiveTopology::TriangleList,
-                        strip_index_format: None,
-                        front_face: wgpu::FrontFace::Ccw,
-                        cull_mode: None, //Some(wgpu::Face::Back),
-                        polygon_mode: wgpu::PolygonMode::Fill,
-                        unclipped_depth: false,
-                        conservative: false,
-                    },
-                    depth_stencil: None,
-                    multisample: wgpu::MultisampleState {
-                        count: 1,
-                        mask: !0,
-                        alpha_to_coverage_enabled: false,
-                    },
-                    multiview: None,
-                });
-
-        self.pipeline = Some(render_pipeline);
-
-        let pipeline = self.pipeline.as_ref().unwrap();
         let mesh = self.mesh.compile(resources);
-        return (pipeline, &mesh, &texture);
+
+        resources.queue.write_buffer(
+            &matrix.buffer,
+            0,
+            bytemuck::cast_slice(&[self.transform.data()?.world_matrix().to_cols_array_2d()]),
+        );
+
+        Ok(TaroMeshBinding {
+            mesh,
+            matrix: &matrix.binding,
+        })
     }
 }
