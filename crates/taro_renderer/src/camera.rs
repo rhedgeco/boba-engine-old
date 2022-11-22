@@ -24,11 +24,12 @@ pub struct TaroCameraSettings {
 }
 
 pub struct TaroCamera {
-    transform: Pearl<BobaTransform>,
-    pub phases: RenderPhaseStorage,
-    pub settings: TaroCameraSettings,
     buffer: Buffer,
     bind_group: BindGroup,
+    transform: Pearl<BobaTransform>,
+
+    pub phases: RenderPhaseStorage,
+    pub settings: TaroCameraSettings,
 }
 
 impl PearlRegister for TaroCamera {
@@ -60,11 +61,19 @@ impl TaroCamera {
         })
     }
 
-    pub fn buffer(&self) -> &Buffer {
-        &self.buffer
+    pub fn execute_render_phases(
+        &mut self,
+        view: &TextureView,
+        encoder: &mut CommandEncoder,
+        pearls: &RenderPearls,
+        resources: &RenderResources,
+    ) {
+        self.rebuild_matrix(resources);
+        self.phases
+            .execute_phases(view, &self.bind_group, encoder, pearls, resources);
     }
 
-    pub fn rebuild_matrix(&mut self, resources: &RenderResources) {
+    fn rebuild_matrix(&mut self, resources: &RenderResources) {
         let Ok(tdata) = self.transform.data() else {
             error!("Could not rebuild matrix. Transform is borrowed as mutable");
             return;
@@ -75,20 +84,10 @@ impl TaroCamera {
             tdata.world_rotation(),
             &self.settings,
         );
+
         resources
             .queue
             .write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
-    }
-
-    pub fn execute_render_phases(
-        &mut self,
-        view: &TextureView,
-        encoder: &mut CommandEncoder,
-        pearls: &RenderPearls,
-        resources: &RenderResources,
-    ) {
-        self.phases
-            .execute_phases(view, &self.bind_group, encoder, pearls, resources);
     }
 
     fn build_matrix(
@@ -96,7 +95,7 @@ impl TaroCamera {
         rotation: Quat,
         settings: &TaroCameraSettings,
     ) -> CameraUniform {
-        let target = rotation * Vec3::Z;
+        let target = position + rotation * Vec3::Z;
         let view = Mat4::look_at_rh(position, target, Vec3::Y);
         let proj = Mat4::perspective_rh(
             settings.fovy,
