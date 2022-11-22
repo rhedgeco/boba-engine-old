@@ -62,13 +62,22 @@ where
     Update: 'static + PearlStage<Stage>,
 {
     fn run(&mut self, data: &<Stage as BobaStage>::StageData, resources: &mut BobaResources) {
-        match Update::update(data, self, resources) {
+        let mut pearl = match self.data_mut() {
+            Ok(p) => p,
+            Err(error) => {
+                error!("Could not update pearl due to error: {error}");
+                return;
+            }
+        };
+
+        match pearl.update(data, resources) {
             Ok(_) => {}
-            Err(error) => error!(
-                "There was a(n) {:?} when updating pearl: {:?}",
-                error,
-                self.id()
-            ),
+            Err(error) => {
+                error!(
+                    "There wan an error while running pearl {:?}: {error}",
+                    std::any::type_name::<Update>()
+                );
+            }
         }
     }
 }
@@ -79,11 +88,7 @@ pub trait PearlStage<Stage>: PearlRegister
 where
     Stage: 'static + BobaStage,
 {
-    fn update(
-        data: &Stage::StageData,
-        pearl: &mut Pearl<Self>,
-        resources: &mut BobaResources,
-    ) -> PearlResult;
+    fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources) -> PearlResult;
 }
 
 pub trait PearlRegister

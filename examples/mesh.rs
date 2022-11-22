@@ -40,12 +40,11 @@ impl PearlRegister for TransformRotator {
 }
 
 impl PearlStage<MainBobaUpdate> for TransformRotator {
-    fn update(delta: &f32, pearl: &mut Pearl<Self>, _: &mut BobaResources) -> PearlResult {
-        let mut pdata = pearl.data_mut()?;
-        pdata.rotation = (pdata.rotation + delta * pdata.speed) % (2. * PI);
+    fn update(&mut self, delta: &f32, _: &mut BobaResources) -> PearlResult {
+        self.rotation = (self.rotation + delta * self.speed) % (2. * PI);
 
-        let mut tdata = pdata.transform.data_mut()?;
-        tdata.set_local_rotation(Quat::from_axis_angle(Vec3::Y, pdata.rotation));
+        let mut tdata = self.transform.data_mut()?;
+        tdata.set_local_rotation(Quat::from_axis_angle(Vec3::Y, self.rotation));
 
         Ok(())
     }

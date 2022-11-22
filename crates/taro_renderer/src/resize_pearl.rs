@@ -13,9 +13,9 @@ impl PearlRegister for ResizePearl {
 }
 
 impl PearlStage<BobaEvent<MilkTeaResize>> for ResizePearl {
-    fn update<'a>(
+    fn update(
+        &mut self,
         data: &MilkTeaResize,
-        _: &mut Pearl<Self>,
         resources: &mut boba_core::BobaResources,
     ) -> PearlResult {
         let Ok(renderer) = resources.borrow::<TaroRenderer>() else {

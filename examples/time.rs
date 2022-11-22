@@ -11,7 +11,7 @@ impl PearlRegister for Time {
 }
 
 impl PearlStage<MainBobaUpdate> for Time {
-    fn update(delta: &f32, _: &mut Pearl<Self>, _: &mut BobaResources) -> PearlResult {
+    fn update(&mut self, delta: &f32, _: &mut BobaResources) -> PearlResult {
         println!("FPS: {:?}", 1. / delta);
         Ok(())
     }
