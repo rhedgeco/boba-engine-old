@@ -2,6 +2,7 @@ use boba_core::{storage::StageRunners, Pearl, PearlId, PearlRegister};
 use glam::{Mat4, Quat, Vec3, Vec4};
 use indexmap::IndexMap;
 use log::error;
+use std::cell::BorrowMutError;
 
 pub struct BobaTransform {
     world_position: Vec3,
@@ -88,29 +89,6 @@ impl BobaTransform {
         self.local_matrix
     }
 
-    pub fn add_child(&mut self, child: Pearl<BobaTransform>) {
-        let Ok(child_data) = child.data_mut() else {
-            error!("Failed to set child transform because it is currently borrowed.");
-            return;
-        };
-
-        if child_data.parent.is_none() {
-            drop(child_data);
-            self.children.insert(*child.id(), child);
-            return;
-        }
-
-        let Ok(mut parent_data) = child_data.parent.as_ref().unwrap().data_mut() else {
-            error!("Failed to set child transform because its parent is currently borrowed.");
-            return;
-        };
-
-        parent_data.children.remove(child.id());
-        drop(parent_data);
-        drop(child_data);
-        self.children.insert(*child.id(), child);
-    }
-
     /// Sets the local position of the transform.
     ///
     /// Also recalculates the world position, and distributes the changes to
@@ -177,4 +155,69 @@ impl BobaTransform {
             }
         }
     }
+}
+
+pub enum SetParentError {
+    RecursionError,
+    BorrowError(BorrowMutError),
+}
+
+pub trait SetTransformParent {
+    fn set_parent(&mut self, parent: Pearl<BobaTransform>) -> Result<(), SetParentError>;
+}
+
+impl SetTransformParent for Pearl<BobaTransform> {
+    fn set_parent(&mut self, parent: Pearl<BobaTransform>) -> Result<(), SetParentError> {
+        if self.id() == parent.id() {
+            return Err(SetParentError::RecursionError);
+        }
+
+        let mut self_data = match self.data_mut() {
+            Ok(d) => d,
+            Err(e) => return Err(SetParentError::BorrowError(e)),
+        };
+
+        let mut parent_data = match parent.data_mut() {
+            Ok(d) => d,
+            Err(e) => return Err(SetParentError::BorrowError(e)),
+        };
+
+        validate_parent_recursive(self.id(), &*parent_data)?;
+
+        let Some(self_parent) = &self_data.parent else {
+            parent_data.children.insert(*self.id(), self.clone());
+            self_data.parent = Some(parent.clone());
+            return Ok(());
+        };
+
+        let mut self_parent_data = match self_parent.data_mut() {
+            Ok(d) => d,
+            Err(e) => return Err(SetParentError::BorrowError(e)),
+        };
+
+        self_parent_data.children.remove(self.id());
+
+        drop(self_parent_data);
+        parent_data.children.insert(*self.id(), self.clone());
+        self_data.parent = Some(parent.clone());
+
+        Ok(())
+    }
+}
+
+fn validate_parent_recursive(id: &PearlId, target: &BobaTransform) -> Result<(), SetParentError> {
+    let Some(parent) = &target.parent else {
+        return Ok(());
+    };
+
+    if id == parent.id() {
+        return Err(SetParentError::RecursionError);
+    };
+
+    let parent_data = match parent.data_mut() {
+        Ok(d) => d,
+        Err(e) => return Err(SetParentError::BorrowError(e)),
+    };
+
+    return validate_parent_recursive(id, &*parent_data);
 }
