@@ -8,12 +8,12 @@ use hashbrown::HashMap;
 /// every component and call its corresponding `update` function.
 /// This struct will typically be used inside a `BobaStage` to run
 /// all the appropriate pearls for that stage.
-pub struct PearlStorage<Stage: 'static + ?Sized + BobaStage> {
+pub struct PearlStorage<Stage: ?Sized + BobaStage> {
     pearls: HashMap<PearlId, Box<dyn PearlRunner<Stage>>>,
 }
 
 /// The default implementation for `PearlStorage<BobaStage>`
-impl<Stage: 'static + BobaStage> Default for PearlStorage<Stage> {
+impl<Stage: BobaStage> Default for PearlStorage<Stage> {
     fn default() -> Self {
         Self {
             pearls: Default::default(),
@@ -21,11 +21,11 @@ impl<Stage: 'static + BobaStage> Default for PearlStorage<Stage> {
     }
 }
 
-impl<Stage: 'static + BobaStage> PearlStorage<Stage> {
+impl<Stage: BobaStage> PearlStorage<Stage> {
     /// Adds a pearl to the storage system.
     pub fn add<T>(&mut self, pearl: Pearl<T>)
     where
-        T: 'static + PearlStage<Stage>,
+        T: PearlStage<Stage>,
     {
         self.pearls.insert(*pearl.id(), Box::new(pearl));
     }

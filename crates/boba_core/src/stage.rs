@@ -1,15 +1,13 @@
 use crate::{storage::PearlStorage, BobaResources};
 
-pub trait BobaStage {
+pub trait BobaStage: 'static {
     type StageData;
-    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut BobaResources)
-    where
-        Self: 'static;
+    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut BobaResources);
 }
 
 pub(crate) struct StageRunner<Stage>
 where
-    Stage: 'static + BobaStage,
+    Stage: BobaStage,
 {
     stage: Stage,
     pub pearls: PearlStorage<Stage>,
@@ -17,7 +15,7 @@ where
 
 impl<Stage> StageRunner<Stage>
 where
-    Stage: 'static + BobaStage,
+    Stage: BobaStage,
 {
     pub fn build(stage: Stage) -> Self {
         Self {
@@ -36,10 +34,7 @@ pub struct MainBobaUpdate;
 impl BobaStage for MainBobaUpdate {
     type StageData = f32;
 
-    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut BobaResources)
-    where
-        Self: 'static,
-    {
+    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut BobaResources) {
         pearls.update(&resources.time().delta(), resources);
     }
 }

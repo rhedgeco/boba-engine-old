@@ -51,15 +51,15 @@ impl<T> Pearl<T> {
 
 pub trait PearlRunner<Stage>
 where
-    Stage: 'static + BobaStage,
+    Stage: BobaStage,
 {
     fn run(&mut self, data: &Stage::StageData, resources: &mut BobaResources);
 }
 
 impl<Stage, Update> PearlRunner<Stage> for Pearl<Update>
 where
-    Stage: 'static + BobaStage,
-    Update: 'static + PearlStage<Stage>,
+    Stage: BobaStage,
+    Update: PearlStage<Stage>,
 {
     fn run(&mut self, data: &<Stage as BobaStage>::StageData, resources: &mut BobaResources) {
         let mut pearl = match self.data_mut() {
@@ -84,9 +84,9 @@ where
 
 pub type PearlResult = Result<()>;
 
-pub trait PearlStage<Stage>: PearlRegister
+pub trait PearlStage<Stage>: PearlRegister + 'static
 where
-    Stage: 'static + BobaStage,
+    Stage: BobaStage,
 {
     fn update(&mut self, data: &Stage::StageData, resources: &mut BobaResources) -> PearlResult;
 }

@@ -16,7 +16,7 @@ impl EventStorage {
     pub fn add_listener<Data, Update>(&mut self, pearl: Pearl<Update>)
     where
         Data: 'static,
-        Update: 'static + PearlStage<BobaEvent<Data>>,
+        Update: PearlStage<BobaEvent<Data>>,
     {
         match self.stages.get_mut(&TypeId::of::<BobaEvent<Data>>()) {
             Some(stage) => stage

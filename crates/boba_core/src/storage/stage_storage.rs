@@ -30,8 +30,8 @@ pub struct StageRunners {
 impl StageRunners {
     pub fn add<Stage, Update>(&mut self, pearl: Pearl<Update>)
     where
-        Stage: 'static + BobaStage,
-        Update: 'static + PearlStage<Stage>,
+        Stage: BobaStage,
+        Update: PearlStage<Stage>,
     {
         let Some(stage_box) = self.stages.get_mut(&TypeId::of::<Stage>()) else {
             warn!("Pearl not added. Stage {:?} was not found", std::any::type_name::<Stage>());
@@ -61,7 +61,7 @@ impl StageStorage {
     /// This will take **O(1)** time.
     pub fn insert<Stage>(&mut self, stage: Stage)
     where
-        Stage: 'static + BobaStage,
+        Stage: BobaStage,
     {
         self.runners
             .stages
@@ -73,7 +73,7 @@ impl StageStorage {
     /// This shifts all stages in the list down, and will take **O(n)** time.
     pub fn prepend<Stage>(&mut self, stage: Stage)
     where
-        Stage: 'static + BobaStage,
+        Stage: BobaStage,
     {
         let (stage_index, _) = self
             .runners
@@ -98,8 +98,8 @@ impl StageStorage {
         stage: AfterStage,
     ) -> Result<(), InsertAfterError>
     where
-        AfterStage: 'static + BobaStage,
-        BeforeStage: 'static + BobaStage,
+        AfterStage: BobaStage,
+        BeforeStage: BobaStage,
     {
         let before_id = TypeId::of::<BeforeStage>();
         let after_id = TypeId::of::<AfterStage>();
@@ -142,7 +142,7 @@ impl StageStorage {
     /// This will take **O(n)** time.
     pub fn delete<Stage>(&mut self)
     where
-        Stage: 'static + BobaStage,
+        Stage: BobaStage,
     {
         self.runners.stages.shift_remove(&TypeId::of::<Stage>());
     }
@@ -154,14 +154,14 @@ impl StageStorage {
     }
 }
 
-trait AnyStageRunner {
+trait AnyStageRunner: 'static {
     fn type_id(&self) -> TypeId;
     fn run(&mut self, resources: &mut BobaResources);
 }
 
 impl dyn AnyStageRunner {
     #[inline]
-    pub fn is<T: 'static + AnyStageRunner>(&self) -> bool {
+    pub fn is<T: AnyStageRunner>(&self) -> bool {
         let t = TypeId::of::<T>();
         let concrete = self.type_id();
         t == concrete
@@ -170,7 +170,7 @@ impl dyn AnyStageRunner {
     #[inline]
     pub fn downcast_mut<T>(&mut self) -> Option<&mut T>
     where
-        T: 'static + AnyStageRunner,
+        T: AnyStageRunner,
     {
         if self.is::<T>() {
             // SAFETY: just checked whether we are pointing to the correct type, and we can rely on
@@ -185,7 +185,7 @@ impl dyn AnyStageRunner {
     #[inline]
     pub unsafe fn downcast_mut_unchecked<T>(&mut self) -> &mut T
     where
-        T: 'static + AnyStageRunner,
+        T: AnyStageRunner,
     {
         debug_assert!(self.is::<T>());
         // SAFETY: caller guarantees that T is the correct type
@@ -195,7 +195,7 @@ impl dyn AnyStageRunner {
 
 impl<Stage> AnyStageRunner for StageRunner<Stage>
 where
-    Stage: 'static + BobaStage,
+    Stage: BobaStage,
 {
     fn type_id(&self) -> TypeId {
         TypeId::of::<StageRunner<Stage>>()
