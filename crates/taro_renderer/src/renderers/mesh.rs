@@ -3,7 +3,7 @@ use std::cell::BorrowError;
 use crate::{
     shading::ShaderId,
     types::{CompiledTaroMesh, TaroMesh},
-    RenderResources,
+    RenderHardware,
 };
 use boba_3d::pearls::BobaTransform;
 use boba_core::{Pearl, PearlRegister};
@@ -45,10 +45,10 @@ impl TaroMeshRenderer {
 
     pub fn mesh_binding(
         &mut self,
-        resources: &RenderResources,
+        hardware: &RenderHardware,
     ) -> Result<TaroMeshBinding, BorrowError> {
         if self.matrix.is_none() {
-            let buffer = resources
+            let buffer = hardware
                 .device
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Camera Buffer"),
@@ -61,7 +61,7 @@ impl TaroMeshRenderer {
                 });
 
             let layout =
-                &resources
+                &hardware
                     .device
                     .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                         entries: &[wgpu::BindGroupLayoutEntry {
@@ -77,7 +77,7 @@ impl TaroMeshRenderer {
                         label: Some("Model Bind Group Layout"),
                     });
 
-            let binding = resources
+            let binding = hardware
                 .device
                 .create_bind_group(&wgpu::BindGroupDescriptor {
                     layout,
@@ -93,9 +93,9 @@ impl TaroMeshRenderer {
 
         let matrix = self.matrix.as_ref().unwrap();
 
-        let mesh = self.mesh.compile(resources);
+        let mesh = self.mesh.compile(hardware);
 
-        resources.queue.write_buffer(
+        hardware.queue.write_buffer(
             &matrix.buffer,
             0,
             bytemuck::cast_slice(&[self.transform.data()?.world_matrix().to_cols_array_2d()]),

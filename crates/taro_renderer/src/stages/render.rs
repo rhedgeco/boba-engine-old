@@ -58,7 +58,7 @@ impl BobaStage for OnTaroRender {
 
         let mut encoder =
             renderer
-                .resources()
+                .hardware()
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Render Encoder"),
@@ -85,7 +85,7 @@ impl BobaStage for OnTaroRender {
                     &view,
                     &mut encoder,
                     &renderer.pearls,
-                    renderer.resources(),
+                    renderer.hardware(),
                 );
             } else {
                 error!("Could not render main camera. It is currently borrowed as mutable.");
@@ -93,7 +93,7 @@ impl BobaStage for OnTaroRender {
         }
 
         renderer
-            .resources()
+            .hardware()
             .queue
             .submit(std::iter::once(encoder.finish()));
 

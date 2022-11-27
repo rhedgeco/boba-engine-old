@@ -1,6 +1,6 @@
 use wgpu::{util::DeviceExt, Buffer};
 
-use crate::RenderResources;
+use crate::RenderHardware;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -53,7 +53,7 @@ impl TaroMesh {
         }
     }
 
-    pub fn compile(&mut self, resources: &RenderResources) -> &CompiledTaroMesh {
+    pub fn compile(&mut self, hardware: &RenderHardware) -> &CompiledTaroMesh {
         if self.compiled.is_some() {
             return self.compiled.as_ref().unwrap();
         }
@@ -61,23 +61,23 @@ impl TaroMesh {
         self.compiled = Some(CompiledTaroMesh {
             vertex_buffer: TaroBuffer {
                 length: self.vertices.len() as u32,
-                raw_buffer: resources.device.create_buffer_init(
-                    &wgpu::util::BufferInitDescriptor {
+                raw_buffer: hardware
+                    .device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some("Vertex Buffer"),
                         contents: bytemuck::cast_slice(self.vertices.as_ref()),
                         usage: wgpu::BufferUsages::VERTEX,
-                    },
-                ),
+                    }),
             },
             index_buffer: TaroBuffer {
                 length: self.indices.len() as u32,
-                raw_buffer: resources.device.create_buffer_init(
-                    &wgpu::util::BufferInitDescriptor {
+                raw_buffer: hardware
+                    .device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some("Index Buffer"),
                         contents: bytemuck::cast_slice(self.indices.as_ref()),
                         usage: wgpu::BufferUsages::INDEX,
-                    },
-                ),
+                    }),
             },
         });
 

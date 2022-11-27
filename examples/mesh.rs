@@ -69,7 +69,7 @@ fn main() {
             znear: 0.1,
             zfar: 100.0,
         },
-        renderer.resources(),
+        renderer.hardware(),
     )
     .unwrap();
     camera.phases.add(UnlitRenderPhase);

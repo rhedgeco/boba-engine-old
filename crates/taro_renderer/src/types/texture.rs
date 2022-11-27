@@ -1,7 +1,7 @@
 use image::{DynamicImage, ImageError, RgbaImage};
 use wgpu::{BindGroup, BindGroupLayout, BindGroupLayoutDescriptor, Extent3d, TextureDescriptor};
 
-use crate::RenderResources;
+use crate::RenderHardware;
 
 pub struct CompiledTaroTexture {
     pub bind_group: BindGroup,
@@ -38,7 +38,7 @@ impl TaroTexture {
         }
     }
 
-    pub fn compile(&mut self, resources: &RenderResources) -> &CompiledTaroTexture {
+    pub fn compile(&mut self, hardware: &RenderHardware) -> &CompiledTaroTexture {
         if self.compiled.is_some() {
             return self.compiled.as_ref().unwrap();
         }
@@ -53,9 +53,9 @@ impl TaroTexture {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         };
 
-        let texture = resources.device.create_texture(&descriptor);
+        let texture = hardware.device.create_texture(&descriptor);
 
-        resources.queue.write_texture(
+        hardware.queue.write_texture(
             wgpu::ImageCopyTexture {
                 aspect: wgpu::TextureAspect::All,
                 texture: &texture,
@@ -74,7 +74,7 @@ impl TaroTexture {
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
         let bind_group_layout =
-            resources
+            hardware
                 .device
                 .create_bind_group_layout(&BindGroupLayoutDescriptor {
                     label: Some("Render Bind Group Layout"),
@@ -98,7 +98,7 @@ impl TaroTexture {
                     ],
                 });
 
-        let sampler = resources.device.create_sampler(&wgpu::SamplerDescriptor {
+        let sampler = hardware.device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -108,7 +108,7 @@ impl TaroTexture {
             ..Default::default()
         });
 
-        let bind_group = resources
+        let bind_group = hardware
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
                 label: Some("Render Bind Group"),

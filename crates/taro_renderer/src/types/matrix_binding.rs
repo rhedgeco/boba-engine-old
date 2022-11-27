@@ -1,9 +1,9 @@
 use wgpu::BindGroupLayout;
 
-use crate::RenderResources;
+use crate::RenderHardware;
 
-pub fn create_matrix_bind_layout(resources: &RenderResources) -> BindGroupLayout {
-    resources
+pub fn create_matrix_bind_layout(hardware: &RenderHardware) -> BindGroupLayout {
+    hardware
         .device
         .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {

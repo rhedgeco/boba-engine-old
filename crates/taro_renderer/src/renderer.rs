@@ -5,7 +5,7 @@ use boba_core::Pearl;
 
 use crate::storage::{CameraStorage, TaroStorage};
 
-pub struct RenderResources {
+pub struct RenderHardware {
     pub instance: wgpu::Instance,
     pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
@@ -60,7 +60,7 @@ impl RenderPearls {
 }
 
 pub struct TaroRenderer {
-    resources: RenderResources,
+    hardware: RenderHardware,
     pub cameras: CameraStorage,
     pub pearls: RenderPearls,
 }
@@ -85,7 +85,7 @@ impl Default for TaroRenderer {
         ))
         .unwrap();
 
-        let resources = RenderResources {
+        let hardware = RenderHardware {
             instance,
             adapter,
             device,
@@ -93,7 +93,7 @@ impl Default for TaroRenderer {
         };
 
         Self {
-            resources,
+            hardware,
             cameras: Default::default(),
             pearls: Default::default(),
         }
@@ -101,7 +101,7 @@ impl Default for TaroRenderer {
 }
 
 impl TaroRenderer {
-    pub fn resources(&self) -> &RenderResources {
-        &self.resources
+    pub fn hardware(&self) -> &RenderHardware {
+        &self.hardware
     }
 }

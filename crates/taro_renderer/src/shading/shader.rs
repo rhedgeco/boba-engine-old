@@ -1,9 +1,9 @@
 use std::sync::atomic::AtomicU64;
 
-use crate::RenderResources;
+use crate::RenderHardware;
 
 pub trait TaroShaderCore {
-    fn prepare(&mut self, resources: &RenderResources);
+    fn prepare(&mut self, hardware: &RenderHardware);
 }
 
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]

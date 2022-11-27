@@ -16,10 +16,10 @@ impl TaroRenderPhase for UnlitRenderPhase {
         camera: &taro_renderer::wgpu::BindGroup,
         encoder: &mut taro_renderer::wgpu::CommandEncoder,
         pearls: &taro_renderer::RenderPearls,
-        resources: &taro_renderer::RenderResources,
+        hardware: &taro_renderer::RenderHardware,
     ) {
         let mut shader = UnlitShader::default();
-        shader.prepare(resources);
+        shader.prepare(hardware);
 
         let mut meshes = pearls.collect::<TaroMeshRenderer>();
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -41,7 +41,7 @@ impl TaroRenderPhase for UnlitRenderPhase {
         });
 
         for mesh in meshes.iter_mut() {
-            let binding = match mesh.mesh_binding(resources) {
+            let binding = match mesh.mesh_binding(hardware) {
                 Ok(b) => b,
                 Err(e) => {
                     error!("Cannot render a mesh. There was an error when getting the mesh bindings. Error: {e}");

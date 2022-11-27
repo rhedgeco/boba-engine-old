@@ -11,9 +11,9 @@ pub struct UnlitShader {
 }
 
 impl TaroShaderCore for UnlitShader {
-    fn prepare(&mut self, resources: &taro_renderer::RenderResources) {
+    fn prepare(&mut self, hardware: &taro_renderer::RenderHardware) {
         if self.pipeline.is_none() {
-            let module = &resources
+            let module = &hardware
                 .device
                 .create_shader_module(wgpu::ShaderModuleDescriptor {
                     label: Some("Unlit Shader"),
@@ -23,10 +23,10 @@ impl TaroShaderCore for UnlitShader {
                 });
 
             // TODO: potentially find a way to store this instead of create it each time for each shader
-            let camera_layout = create_matrix_bind_layout(resources);
+            let camera_layout = create_matrix_bind_layout(hardware);
 
             let pipeline_layout =
-                resources
+                hardware
                     .device
                     .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                         label: Some("Render Pipeline Layout"),
@@ -35,7 +35,7 @@ impl TaroShaderCore for UnlitShader {
                     });
 
             let render_pipeline =
-                resources
+                hardware
                     .device
                     .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
                         label: Some("Unlit Render Pipeline"),

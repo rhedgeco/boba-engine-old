@@ -7,7 +7,7 @@ use log::error;
 use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, TextureView};
 
 use crate::types::create_matrix_bind_layout;
-use crate::{RenderPearls, RenderPhaseStorage, RenderResources};
+use crate::{RenderHardware, RenderPearls, RenderPhaseStorage};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -42,14 +42,14 @@ impl TaroCamera {
     pub fn new(
         transform: Pearl<BobaTransform>,
         settings: TaroCameraSettings,
-        resources: &RenderResources,
+        hardware: &RenderHardware,
     ) -> Result<Self, BorrowError> {
         let tdata = transform.data()?;
 
         let uniform = Self::build_matrix(tdata.world_position(), tdata.world_rotation(), &settings);
-        let buffer = Self::build_buffer(uniform, resources);
-        let layout = create_matrix_bind_layout(resources);
-        let bind_group = Self::build_bind_group(&buffer, &layout, resources);
+        let buffer = Self::build_buffer(uniform, hardware);
+        let layout = create_matrix_bind_layout(hardware);
+        let bind_group = Self::build_bind_group(&buffer, &layout, hardware);
 
         drop(tdata);
         Ok(Self {
@@ -66,14 +66,14 @@ impl TaroCamera {
         view: &TextureView,
         encoder: &mut CommandEncoder,
         pearls: &RenderPearls,
-        resources: &RenderResources,
+        hardware: &RenderHardware,
     ) {
-        self.rebuild_matrix(resources);
+        self.rebuild_matrix(hardware);
         self.phases
-            .execute_phases(view, &self.bind_group, encoder, pearls, resources);
+            .execute_phases(view, &self.bind_group, encoder, pearls, hardware);
     }
 
-    fn rebuild_matrix(&mut self, resources: &RenderResources) {
+    fn rebuild_matrix(&mut self, hardware: &RenderHardware) {
         let Ok(tdata) = self.transform.data() else {
             error!("Could not rebuild matrix. Transform is borrowed as mutable");
             return;
@@ -85,7 +85,7 @@ impl TaroCamera {
             &self.settings,
         );
 
-        resources
+        hardware
             .queue
             .write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
     }
@@ -109,8 +109,8 @@ impl TaroCamera {
         }
     }
 
-    fn build_buffer(uniform: CameraUniform, resources: &RenderResources) -> Buffer {
-        resources
+    fn build_buffer(uniform: CameraUniform, hardware: &RenderHardware) -> Buffer {
+        hardware
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some("Camera Buffer"),
@@ -122,9 +122,9 @@ impl TaroCamera {
     fn build_bind_group(
         buffer: &Buffer,
         layout: &BindGroupLayout,
-        resources: &RenderResources,
+        hardware: &RenderHardware,
     ) -> BindGroup {
-        resources
+        hardware
             .device
             .create_bind_group(&wgpu::BindGroupDescriptor {
                 layout,
