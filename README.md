@@ -8,7 +8,7 @@
 <h2 align="center">💎 Diamond Sponsor 💎</h2>
 <br>
 <div align="center">
-<a href="https://enzo.systems">
+<a href="https://enzo.systems" target="_blank">
 <img alt="Enzo Systems" src="./readme_assets/enzo-systems.svg" width="200">
 </a>
 </div>
