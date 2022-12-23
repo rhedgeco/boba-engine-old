@@ -1,13 +1,11 @@
-use std::cell::BorrowError;
-
 use boba_3d::glam::{Mat4, Quat, Vec3};
 use boba_3d::pearls::BobaTransform;
-use boba_core::{Pearl, PearlRegister};
+use boba_core::{BobaEvent, Pearl, PearlRegister, PearlStage};
 use log::error;
-use wgpu::{util::DeviceExt, BindGroup, BindGroupLayout, Buffer, CommandEncoder, TextureView};
+use milk_tea_runner::events::MilkTeaResize;
+use wgpu::{CommandEncoder, TextureView};
 
-use crate::types::create_matrix_bind_layout;
-use crate::{RenderHardware, RenderPearls, RenderPhaseStorage};
+use crate::{RenderPearls, RenderPhaseStorage, TaroHardware};
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -24,41 +22,51 @@ pub struct TaroCameraSettings {
 }
 
 pub struct TaroCamera {
-    buffer: Buffer,
-    bind_group: BindGroup,
     transform: Pearl<BobaTransform>,
+    matrix: Mat4,
 
     pub phases: RenderPhaseStorage,
     pub settings: TaroCameraSettings,
 }
 
 impl PearlRegister for TaroCamera {
-    fn register(_: Pearl<Self>, _: &mut boba_core::storage::StageRunners) {
-        // do nothing for now
+    fn register(pearl: Pearl<Self>, storage: &mut boba_core::storage::StageRunners) {
+        storage.add(pearl);
+    }
+}
+
+impl PearlStage<BobaEvent<MilkTeaResize>> for TaroCamera {
+    fn update(
+        &mut self,
+        data: &MilkTeaResize,
+        _: &mut boba_core::BobaResources,
+    ) -> boba_core::PearlResult {
+        let size = data.size();
+        self.settings.aspect = size.width as f32 / size.height as f32;
+        Ok(())
     }
 }
 
 impl TaroCamera {
-    pub fn new(
-        transform: Pearl<BobaTransform>,
-        settings: TaroCameraSettings,
-        hardware: &RenderHardware,
-    ) -> Result<Self, BorrowError> {
-        let tdata = transform.data()?;
+    pub fn new(transform: Pearl<BobaTransform>, settings: TaroCameraSettings) -> Self {
+        let matrix = match transform.data() {
+            Ok(transform) => Self::calculate_matrix(
+                transform.world_position(),
+                transform.world_rotation(),
+                &settings,
+            ),
+            Err(_) => {
+                error!("Error when creating camera. Transform is borrowed as mut. Resorting to default matrix");
+                Self::calculate_matrix(Vec3::ZERO, Quat::IDENTITY, &settings)
+            }
+        };
 
-        let uniform = Self::build_matrix(tdata.world_position(), tdata.world_rotation(), &settings);
-        let buffer = Self::build_buffer(uniform, hardware);
-        let layout = create_matrix_bind_layout(hardware);
-        let bind_group = Self::build_bind_group(&buffer, &layout, hardware);
-
-        drop(tdata);
-        Ok(Self {
+        Self {
             transform,
+            matrix,
             phases: Default::default(),
             settings,
-            buffer,
-            bind_group,
-        })
+        }
     }
 
     pub fn execute_render_phases(
@@ -66,35 +74,23 @@ impl TaroCamera {
         view: &TextureView,
         encoder: &mut CommandEncoder,
         pearls: &RenderPearls,
-        hardware: &RenderHardware,
+        hardware: &TaroHardware,
     ) {
-        self.rebuild_matrix(hardware);
+        if let Ok(transform) = self.transform.data() {
+            self.matrix = Self::calculate_matrix(
+                transform.world_position(),
+                transform.world_rotation(),
+                &self.settings,
+            )
+        } else {
+            error!("Error when recalculating camera matrix. Transform is borrowed as mut.");
+        }
+
         self.phases
-            .execute_phases(view, &self.bind_group, encoder, pearls, hardware);
+            .execute_phases(view, &self.matrix, encoder, pearls, hardware);
     }
 
-    fn rebuild_matrix(&mut self, hardware: &RenderHardware) {
-        let Ok(tdata) = self.transform.data() else {
-            error!("Could not rebuild matrix. Transform is borrowed as mutable");
-            return;
-        };
-
-        let uniform = Self::build_matrix(
-            tdata.world_position(),
-            tdata.world_rotation(),
-            &self.settings,
-        );
-
-        hardware
-            .queue
-            .write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[uniform]));
-    }
-
-    fn build_matrix(
-        position: Vec3,
-        rotation: Quat,
-        settings: &TaroCameraSettings,
-    ) -> CameraUniform {
+    pub fn calculate_matrix(position: Vec3, rotation: Quat, settings: &TaroCameraSettings) -> Mat4 {
         let target = position + rotation * Vec3::Z;
         let view = Mat4::look_at_rh(position, target, Vec3::Y);
         let proj = Mat4::perspective_rh(
@@ -104,35 +100,6 @@ impl TaroCamera {
             settings.zfar,
         );
 
-        CameraUniform {
-            view_proj: (proj * view).to_cols_array_2d(),
-        }
-    }
-
-    fn build_buffer(uniform: CameraUniform, hardware: &RenderHardware) -> Buffer {
-        hardware
-            .device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Camera Buffer"),
-                contents: bytemuck::cast_slice(&[uniform]),
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            })
-    }
-
-    fn build_bind_group(
-        buffer: &Buffer,
-        layout: &BindGroupLayout,
-        hardware: &RenderHardware,
-    ) -> BindGroup {
-        hardware
-            .device
-            .create_bind_group(&wgpu::BindGroupDescriptor {
-                layout,
-                entries: &[wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: buffer.as_entire_binding(),
-                }],
-                label: Some("camera_bind_group"),
-            })
+        proj * view
     }
 }

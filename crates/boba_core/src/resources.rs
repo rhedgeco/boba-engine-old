@@ -9,7 +9,7 @@ use hashbrown::HashMap;
 #[derive(Debug)]
 pub enum ResourceError {
     NotFound,
-    AlreadyBorrowed,
+    BorrowedAsMut,
 }
 
 #[derive(Default)]
@@ -36,7 +36,7 @@ impl BobaResources {
         T: 'static,
     {
         let Ok(item) = self.get_ref_cell::<T>()?.try_borrow() else {
-            return Err(ResourceError::AlreadyBorrowed);
+            return Err(ResourceError::BorrowedAsMut);
         };
         Ok(item)
     }
@@ -46,7 +46,7 @@ impl BobaResources {
         T: 'static,
     {
         let Ok(item) = self.get_ref_cell::<T>()?.try_borrow_mut() else {
-            return Err(ResourceError::AlreadyBorrowed);
+            return Err(ResourceError::BorrowedAsMut);
         };
         Ok(item)
     }

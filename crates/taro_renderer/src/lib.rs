@@ -15,6 +15,8 @@ pub use render_phase::*;
 pub use renderer::*;
 pub use window_surface::*;
 
+pub use boba_3d::glam;
+pub use bytemuck;
 pub use wgpu;
 
 pub mod prelude {

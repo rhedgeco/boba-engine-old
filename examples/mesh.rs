@@ -3,15 +3,13 @@ use std::f32::consts::PI;
 use boba_3d::pearls::BobaTransform;
 use boba_core::*;
 use glam::{Quat, Vec3};
-use milk_tea_runner::*;
+use standard_taro_shaders::{phases::UnlitRenderPhase, shaders::UnlitShader};
 use taro_renderer::{
     prelude::*,
-    renderers::TaroMeshRenderer,
-    shading::WrapShader,
+    shading::TaroShader,
     types::{TaroMesh, Vertex},
-    TaroCamera, TaroCameraSettings, TaroRenderer,
+    TaroCamera, TaroCameraSettings,
 };
-use taro_standard_shaders::{phases::UnlitRenderPhase, shaders::UnlitShader};
 
 #[rustfmt::skip]
 const VERTICES: &[Vertex] = &[
@@ -55,7 +53,6 @@ fn main() {
     env_logger::init();
     let mut app = BobaApp::default();
     app.add_plugin(TaroRenderPlugin);
-    let mut renderer = TaroRenderer::default();
 
     // create and add camera
     let mut camera_transform = BobaTransform::from_position(Vec3::new(0., 1., 2.));
@@ -69,33 +66,29 @@ fn main() {
             znear: 0.1,
             zfar: 100.0,
         },
-        renderer.hardware(),
-    )
-    .unwrap();
+    );
     camera.phases.add(UnlitRenderPhase);
-    let camera = camera.into_pearl();
-    renderer.cameras.main_camera = Some(camera);
+    app.stages.add_pearl(camera.into_pearl());
 
     // create an arbitrary mesh to show in the center of the screen
     let model_transform = BobaTransform::from_position(Vec3::ZERO).into_pearl();
     app.stages.add_pearl(model_transform.clone());
-    let shader = UnlitShader::default().wrap();
+    let shader = TaroShader::<UnlitShader>::new();
     let mesh = TaroMesh::new(VERTICES, INDICES);
-    let mesh_renderer =
-        TaroMeshRenderer::new(model_transform.clone(), mesh, shader.id()).into_pearl();
-    app.stages.add_pearl(mesh_renderer.clone()); // we clone it so that it can be used later when attaching to renderer
-    renderer.pearls.add(mesh_renderer);
+    // let mesh_renderer = TaroMeshRenderer::new(model_transform.clone(), mesh, shader).into_pearl();
+    // app.stages.add_pearl(mesh_renderer.clone()); // we clone it so that it can be used later when attaching to renderer
+    // renderer.pearls.add(mesh_renderer);
 
-    // create model rotator
-    let rotator = TransformRotator {
-        transform: model_transform,
-        rotation: 0.,
-        speed: 2.,
-    }
-    .into_pearl();
-    app.stages.add_pearl(rotator);
+    // // create model rotator
+    // let rotator = TransformRotator {
+    //     transform: model_transform,
+    //     rotation: 0.,
+    //     speed: 2.,
+    // }
+    // .into_pearl();
+    // app.stages.add_pearl(rotator);
 
-    // add the renderer and run the app
-    app.resources.add(renderer);
-    MilkTeaRunner::run(app).unwrap();
+    // // add the renderer and run the app
+    // app.resources.add(renderer);
+    // MilkTeaRunner::run(app).unwrap();
 }

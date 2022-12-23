@@ -9,7 +9,7 @@ pub struct OnTaroRender;
 impl BobaStage for OnTaroRender {
     type StageData = ();
 
-    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut boba_core::BobaResources) {
+    fn run(&mut self, _: &mut PearlStorage<Self>, resources: &mut boba_core::BobaResources) {
         let renderer = match resources.borrow::<TaroRenderer>() {
             Ok(item) => item,
             Err(e) => {
@@ -63,21 +63,6 @@ impl BobaStage for OnTaroRender {
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some("Render Encoder"),
                 });
-
-        drop(windows);
-        drop(renderer); // drop renderer so that resources may be passed as mutable to pearls
-        pearls.update(&(), resources);
-
-        let renderer = match resources.borrow::<TaroRenderer>() {
-            Ok(item) => item,
-            Err(e) => {
-                warn!(
-                    "Skipping TaroRenderStage. TaroRenderer Resource Error: {:?}",
-                    e
-                );
-                return;
-            }
-        };
 
         if let Some(camera_container) = &renderer.cameras.main_camera {
             if let Ok(mut camera) = camera_container.data_mut() {

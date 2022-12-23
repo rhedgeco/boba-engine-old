@@ -1,18 +1,19 @@
 use std::any::TypeId;
 
+use boba_3d::glam::Mat4;
 use indexmap::IndexMap;
-use wgpu::{BindGroup, CommandEncoder, TextureView};
+use wgpu::{CommandEncoder, TextureView};
 
-use crate::{RenderHardware, RenderPearls};
+use crate::{RenderPearls, TaroHardware};
 
 pub trait TaroRenderPhase {
     fn render(
         &mut self,
         view: &TextureView,
-        camera: &BindGroup,
+        camera_matrix: &Mat4,
         encoder: &mut CommandEncoder,
         pearls: &RenderPearls,
-        hardware: &RenderHardware,
+        hardware: &TaroHardware,
     );
 }
 
@@ -33,13 +34,13 @@ impl RenderPhaseStorage {
     pub fn execute_phases(
         &mut self,
         view: &TextureView,
-        camera: &BindGroup,
+        camera_matrix: &Mat4,
         encoder: &mut CommandEncoder,
         pearls: &RenderPearls,
-        hardware: &RenderHardware,
+        hardware: &TaroHardware,
     ) {
         for phase in self.phases.values_mut() {
-            phase.render(view, camera, encoder, pearls, hardware);
+            phase.render(view, camera_matrix, encoder, pearls, hardware);
         }
     }
 }

@@ -1,7 +1,7 @@
 use image::{DynamicImage, ImageError, RgbaImage};
 use wgpu::{BindGroup, BindGroupLayout, BindGroupLayoutDescriptor, Extent3d, TextureDescriptor};
 
-use crate::RenderHardware;
+use crate::TaroHardware;
 
 pub struct CompiledTaroTexture {
     pub bind_group: BindGroup,
@@ -38,7 +38,7 @@ impl TaroTexture {
         }
     }
 
-    pub fn compile(&mut self, hardware: &RenderHardware) -> &CompiledTaroTexture {
+    pub fn compile(&mut self, hardware: &TaroHardware) -> &CompiledTaroTexture {
         if self.compiled.is_some() {
             return self.compiled.as_ref().unwrap();
         }

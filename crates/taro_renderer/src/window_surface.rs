@@ -1,7 +1,7 @@
 use milk_tea_runner::winit;
 use winit::{dpi::PhysicalSize, window::Window};
 
-use crate::{RenderHardware, TaroRenderer};
+use crate::{TaroHardware, TaroRenderer};
 
 pub struct TaroWindowSurface {
     pub size: winit::dpi::PhysicalSize<u32>,
@@ -34,7 +34,7 @@ impl TaroWindowSurface {
         }
     }
 
-    pub fn resize(&mut self, new_size: PhysicalSize<u32>, hardware: &RenderHardware) {
+    pub fn resize(&mut self, new_size: PhysicalSize<u32>, hardware: &TaroHardware) {
         if new_size.width > 0 && new_size.height > 0 {
             self.size = new_size;
             self.config.width = new_size.width;

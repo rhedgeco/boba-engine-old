@@ -1,9 +1,10 @@
 [package]
-name = "taro_standard_shaders"
+name = "standard_taro_shaders"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+boba_3d = { path = "../boba_3d" }
 taro_renderer = { path = "../taro_renderer" }
 
-log = "0.4"
+once_cell = "1.16"

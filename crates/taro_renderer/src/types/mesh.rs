@@ -1,6 +1,6 @@
 use wgpu::{util::DeviceExt, Buffer};
 
-use crate::RenderHardware;
+use crate::TaroHardware;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -53,7 +53,7 @@ impl TaroMesh {
         }
     }
 
-    pub fn compile(&mut self, hardware: &RenderHardware) -> &CompiledTaroMesh {
+    pub fn compile(&mut self, hardware: &TaroHardware) -> &CompiledTaroMesh {
         if self.compiled.is_some() {
             return self.compiled.as_ref().unwrap();
         }

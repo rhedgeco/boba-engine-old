@@ -98,17 +98,11 @@ where
     fn register(pearl: Pearl<Self>, storage: &mut StageRunners);
 }
 
-pub trait AsPearl<T>
-where
-    T: PearlRegister,
-{
+pub trait AsPearl<T> {
     fn into_pearl(self) -> Pearl<T>;
 }
 
-impl<T> AsPearl<T> for T
-where
-    T: PearlRegister,
-{
+impl<T> AsPearl<T> for T {
     fn into_pearl(self) -> Pearl<T> {
         Pearl::<T> {
             id: PearlId::new(),
