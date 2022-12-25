@@ -54,7 +54,7 @@ pub enum PearlMutError {
 /// The core data management object in BobaEngine.
 ///
 /// It is useful for multiple objects to hold references to the same struct.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Pearl<T>
 where
     T: RegisterStages,

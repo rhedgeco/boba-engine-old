@@ -12,7 +12,7 @@ use crate::{BobaResources, BobaStage, Pearl, PearlId, PearlMutError, PearlStage,
 /// A collection of pearls, all registered to their respective stages.
 ///
 /// The registry may be told to `run_stage`, and all pearls associated with that stage will be updated.
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct PearlRegistry {
     pearls: HashMap<TypeId, Box<dyn Any>>,
 }

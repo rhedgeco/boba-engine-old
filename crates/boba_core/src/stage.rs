@@ -1,4 +1,4 @@
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 
 use indexmap::IndexMap;
 
@@ -11,9 +11,9 @@ pub trait BobaStage: 'static {
 }
 
 /// An ordered collection of BobaStages
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct StageCollection {
-    stages: IndexMap<TypeId, Box<dyn Any>>,
+    stages: IndexMap<TypeId, Box<dyn DynamicStageRunner>>,
 }
 
 impl StageCollection {
@@ -63,5 +63,24 @@ impl StageCollection {
     {
         let stageid = TypeId::of::<Stage>();
         self.stages.shift_remove(&stageid);
+    }
+
+    pub fn run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) {
+        for runner in self.stages.values_mut() {
+            runner.dynamic_run(registry, resources);
+        }
+    }
+}
+
+trait DynamicStageRunner {
+    fn dynamic_run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources);
+}
+
+impl<Data, Stage> DynamicStageRunner for Stage
+where
+    Stage: BobaStage<Data = Data>,
+{
+    fn dynamic_run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) {
+        self.run(registry, resources);
     }
 }

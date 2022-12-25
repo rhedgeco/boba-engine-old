@@ -1,5 +1,6 @@
 use crate::{BobaResources, PearlRegistry, StageCollection};
 
+#[derive(Default)]
 pub struct BobaApp {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
