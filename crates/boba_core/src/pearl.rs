@@ -47,7 +47,7 @@ pub enum PearlError {
 pub enum PearlMutError {
     #[error("Pearl has been destroyed")]
     Destroyed,
-    #[error("Pearl cannot be borrowed. Error: {0}")]
+    #[error("Pearl cannot be borrowed as mutable. Error: {0}")]
     Borrowed(BorrowMutError),
 }
 
@@ -119,6 +119,7 @@ where
     }
 }
 
+/// Used to wrap an object in a new Pearl
 pub trait WrapPearl<T>
 where
     T: RegisterStages,
@@ -138,6 +139,7 @@ where
     }
 }
 
+/// Base trait for being able to register stages with the boba system
 pub trait RegisterStages: 'static
 where
     Self: Sized,
@@ -145,6 +147,7 @@ where
     fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar);
 }
 
+/// Generic result for quick returning from stage updates
 pub type PearlStageResult = anyhow::Result<()>;
 
 pub trait PearlStage<Stage>: RegisterStages
