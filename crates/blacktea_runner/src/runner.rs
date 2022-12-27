@@ -16,11 +16,11 @@ impl BlackTeaRunner {
             .build(&event_loop)?;
         let main_window_id = window.id();
 
+        app.startup_stages
+            .run(&mut app.registry, &mut app.resources);
+
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
-
-            app.startup_stages
-                .run(&mut app.registry, &mut app.resources);
 
             match event {
                 Event::WindowEvent {
