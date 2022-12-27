@@ -1,5 +1,5 @@
+use blacktea_runner::BlackTeaRunner;
 use boba_core::BobaApp;
-use milktea_runner::BlackTeaRunner;
 
 fn main() {
     let app = BobaApp::default();
