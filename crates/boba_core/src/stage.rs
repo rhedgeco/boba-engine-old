@@ -65,6 +65,7 @@ impl StageCollection {
         self.stages.shift_remove(&stageid);
     }
 
+    /// Runs all the corresponding pearls in a registry with this stage
     pub fn run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) {
         for runner in self.stages.values_mut() {
             runner.dynamic_run(registry, resources);
