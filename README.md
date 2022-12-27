@@ -5,7 +5,7 @@
 
 ---
 
-<h2 align="center">💎 Diamond Sponsor 💎</h2>
+<h2 align="center">💎 Crystal Boba Sponsor 💎</h2>
 <br>
 <div align="center">
 <a href="https://enzo.systems" target="_blank">
