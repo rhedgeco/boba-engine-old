@@ -1,4 +1,4 @@
-use boba_core::BobaApp;
+use boba_core::{BobaResources, PearlRegistry, StageCollection};
 use winit::{
     error::OsError,
     event::{Event, WindowEvent},
@@ -6,18 +6,24 @@ use winit::{
     window::WindowBuilder,
 };
 
-pub struct BlackTeaRunner;
+#[derive(Default)]
+pub struct BlackTeaApp {
+    pub registry: PearlRegistry,
+    pub startup_stages: StageCollection,
+    pub main_stages: StageCollection,
+    pub resources: BobaResources,
+}
 
-impl BlackTeaRunner {
-    pub fn run(mut app: BobaApp) -> Result<(), OsError> {
+impl BlackTeaApp {
+    pub fn run(mut self) -> Result<(), OsError> {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_title("Milk Tea Window")
             .build(&event_loop)?;
         let main_window_id = window.id();
 
-        app.startup_stages
-            .run(&mut app.registry, &mut app.resources);
+        self.startup_stages
+            .run(&mut self.registry, &mut self.resources);
 
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
@@ -31,7 +37,8 @@ impl BlackTeaRunner {
                     _ => (),
                 },
                 Event::MainEventsCleared => {
-                    app.main_stages.run(&mut app.registry, &mut app.resources);
+                    self.main_stages
+                        .run(&mut self.registry, &mut self.resources);
                 }
                 _ => (),
             }

@@ -1,5 +1,5 @@
-use blacktea_runner::BlackTeaRunner;
-use boba_core::{BobaApp, BobaResources, BobaStage, PearlRegistry};
+use black_tea::BlackTeaApp;
+use boba_core::{BobaResources, BobaStage, PearlRegistry};
 
 struct Stage1;
 struct Stage2;
@@ -39,7 +39,7 @@ impl BobaStage for Stage4 {
 }
 
 fn main() {
-    let mut app = BobaApp::default();
+    let mut app = BlackTeaApp::default();
 
     app.startup_stages.insert(Stage3);
     app.startup_stages.prepend(Stage2);
@@ -47,5 +47,5 @@ fn main() {
     app.startup_stages.insert(Stage2);
     app.startup_stages.prepend(Stage1);
 
-    BlackTeaRunner::run(app).unwrap();
+    app.run().unwrap();
 }
