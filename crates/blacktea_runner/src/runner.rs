@@ -6,9 +6,9 @@ use winit::{
     window::WindowBuilder,
 };
 
-pub struct MilkTeaRunner;
+pub struct BlackTeaRunner;
 
-impl MilkTeaRunner {
+impl BlackTeaRunner {
     pub fn run(mut app: BobaApp) -> Result<(), OsError> {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
