@@ -18,16 +18,21 @@ pub struct MilkTeaApp {
 
 impl MilkTeaApp {
     pub fn run(mut self) -> Result<(), OsError> {
+        // Create main event loop and winit window
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_title("Milk Tea Window")
             .build(&event_loop)?;
         let main_window_id = window.id();
 
+        // add windows to resources
         self.resources.add(MilkTeaWindows::new(window));
+
+        // run the startup stages
         self.startup_stages
             .run(&mut self.registry, &mut self.resources);
 
+        // run the main event loop
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
 
