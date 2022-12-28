@@ -6,6 +6,8 @@ use winit::{
     window::WindowBuilder,
 };
 
+use crate::MilkTeaWindows;
+
 #[derive(Default)]
 pub struct MilkTeaApp {
     pub registry: PearlRegistry,
@@ -22,6 +24,7 @@ impl MilkTeaApp {
             .build(&event_loop)?;
         let main_window_id = window.id();
 
+        self.resources.add(MilkTeaWindows::new(window));
         self.startup_stages
             .run(&mut self.registry, &mut self.resources);
 
