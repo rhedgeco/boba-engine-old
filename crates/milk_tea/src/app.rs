@@ -7,14 +7,14 @@ use winit::{
 };
 
 #[derive(Default)]
-pub struct BlackTeaApp {
+pub struct MilkTeaApp {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
     pub main_stages: StageCollection,
     pub resources: BobaResources,
 }
 
-impl BlackTeaApp {
+impl MilkTeaApp {
     pub fn run(mut self) -> Result<(), OsError> {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()

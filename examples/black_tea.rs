@@ -1,5 +1,5 @@
-use black_tea::BlackTeaApp;
+use milk_tea::MilkTeaApp;
 
 fn main() {
-    BlackTeaApp::default().run().unwrap();
+    MilkTeaApp::default().run().unwrap();
 }

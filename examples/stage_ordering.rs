@@ -1,5 +1,5 @@
-use black_tea::BlackTeaApp;
 use boba_core::{BobaResources, BobaStage, PearlRegistry};
+use milk_tea::MilkTeaApp;
 
 struct Stage1;
 struct Stage2;
@@ -39,7 +39,7 @@ impl BobaStage for Stage4 {
 }
 
 fn main() {
-    let mut app = BlackTeaApp::default();
+    let mut app = MilkTeaApp::default();
 
     app.startup_stages.insert(Stage3);
     app.startup_stages.prepend(Stage2);
