@@ -5,15 +5,18 @@ use winit::{
     error::OsError,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::WindowBuilder,
+    window::{Window, WindowBuilder, WindowId},
 };
 
-use crate::{MilkTeaWindow, WindowRenderer};
+pub trait RenderAdapter: 'static {
+    fn build(window: Window) -> Self;
+    fn window_id(&self) -> WindowId;
+}
 
 #[derive(Default)]
 pub struct MilkTeaApp<Renderer>
 where
-    Renderer: WindowRenderer,
+    Renderer: RenderAdapter,
 {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
@@ -25,7 +28,7 @@ where
 
 impl<Renderer> MilkTeaApp<Renderer>
 where
-    Renderer: WindowRenderer,
+    Renderer: RenderAdapter,
 {
     pub fn run(mut self) -> Result<(), OsError> {
         // Create main event loop and winit window
@@ -35,7 +38,7 @@ where
             .build(&event_loop)?;
 
         // add windows to resources
-        self.resources.add(MilkTeaWindow::<Renderer>::new(window));
+        self.resources.add(Renderer::build(window));
 
         // run the startup stages
         self.startup_stages
@@ -45,15 +48,15 @@ where
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
 
-            let Some(window) = self.resources.get::<MilkTeaWindow<Renderer>>() else {
-                panic!("MilkTeaWindow has been removed from resources");
+            let Some(window) = self.resources.get::<Renderer>() else {
+                panic!("WindowRenderer '{}' has been removed from resources", std::any::type_name::<Renderer>());
             };
 
             match event {
                 Event::WindowEvent {
                     ref event,
                     window_id,
-                } if window_id == window.id() => match event {
+                } if window_id == window.window_id() => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
                     _ => (),
                 },
