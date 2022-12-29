@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use boba_core::BobaStage;
 use milk_tea::MilkTeaApp;
+use taro_renderer::adapters::TaroMilkTea;
 
 struct FpsStage {
     instant: Instant,
@@ -26,7 +27,7 @@ impl BobaStage for FpsStage {
 }
 
 fn main() {
-    let mut app = MilkTeaApp::default();
+    let mut app = MilkTeaApp::<TaroMilkTea>::default();
     app.main_stages.insert(FpsStage::default());
     app.run().unwrap();
 }

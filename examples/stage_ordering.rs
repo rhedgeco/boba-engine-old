@@ -1,5 +1,6 @@
 use boba_core::{BobaResources, BobaStage, PearlRegistry};
 use milk_tea::MilkTeaApp;
+use taro_renderer::adapters::TaroMilkTea;
 
 struct Stage1;
 struct Stage2;
@@ -39,7 +40,7 @@ impl BobaStage for Stage4 {
 }
 
 fn main() {
-    let mut app = MilkTeaApp::default();
+    let mut app = MilkTeaApp::<TaroMilkTea>::default();
 
     app.startup_stages.insert(Stage3);
     app.startup_stages.prepend(Stage2);

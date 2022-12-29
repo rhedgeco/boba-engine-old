@@ -1,5 +1,6 @@
 use milk_tea::MilkTeaApp;
+use taro_renderer::adapters::TaroMilkTea;
 
 fn main() {
-    MilkTeaApp::default().run().unwrap();
+    MilkTeaApp::<TaroMilkTea>::default().run().unwrap();
 }
