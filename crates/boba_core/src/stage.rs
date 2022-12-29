@@ -1,13 +1,14 @@
 use std::any::TypeId;
 
 use indexmap::IndexMap;
+use log::error;
 
-use crate::{BobaResources, PearlRegistry};
+use crate::{BobaResources, BobaResult, PearlRegistry};
 
 /// Used for ordered execution of logic and pearl updates
 pub trait BobaStage: 'static {
     type Data;
-    fn run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources);
+    fn run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) -> BobaResult;
 }
 
 /// An ordered collection of BobaStages
@@ -87,7 +88,12 @@ where
     }
 
     fn dynamic_run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) {
-        self.run(registry, resources);
+        if let Err(e) = self.run(registry, resources) {
+            error!(
+                "There was an error while updating Stage '{}'. Error: {e}",
+                std::any::type_name::<Stage>()
+            );
+        };
     }
 }
 
@@ -95,7 +101,7 @@ where
 mod tests {
     use std::any::TypeId;
 
-    use crate::{BobaStage, StageCollection};
+    use crate::{BobaResult, BobaStage, StageCollection};
 
     pub struct TestStage1;
     pub struct TestStage2;
@@ -104,24 +110,36 @@ mod tests {
     impl BobaStage for TestStage1 {
         type Data = ();
 
-        fn run(&mut self, _: &mut crate::PearlRegistry, _: &mut crate::BobaResources) {
-            // do nothing
+        fn run(
+            &mut self,
+            _: &mut crate::PearlRegistry,
+            _: &mut crate::BobaResources,
+        ) -> BobaResult {
+            Ok(())
         }
     }
 
     impl BobaStage for TestStage2 {
         type Data = ();
 
-        fn run(&mut self, _: &mut crate::PearlRegistry, _: &mut crate::BobaResources) {
-            // do nothing
+        fn run(
+            &mut self,
+            _: &mut crate::PearlRegistry,
+            _: &mut crate::BobaResources,
+        ) -> BobaResult {
+            Ok(())
         }
     }
 
     impl BobaStage for TestStage3 {
         type Data = ();
 
-        fn run(&mut self, _: &mut crate::PearlRegistry, _: &mut crate::BobaResources) {
-            // do nothing
+        fn run(
+            &mut self,
+            _: &mut crate::PearlRegistry,
+            _: &mut crate::BobaResources,
+        ) -> BobaResult {
+            Ok(())
         }
     }
 

@@ -7,7 +7,7 @@ use std::{
 
 use thiserror::Error;
 
-use crate::{BobaResources, BobaStage, StageRegistrar};
+use crate::{BobaResources, BobaResult, BobaStage, StageRegistrar};
 
 /// The Id for a Pearl
 #[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
@@ -147,12 +147,9 @@ where
     fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar);
 }
 
-/// Generic result for quick returning from stage updates
-pub type PearlStageResult = anyhow::Result<()>;
-
 pub trait PearlStage<Stage>: RegisterStages
 where
     Stage: BobaStage,
 {
-    fn update(&mut self, data: &Stage::Data, resources: &mut BobaResources) -> PearlStageResult;
+    fn update(&mut self, data: &Stage::Data, resources: &mut BobaResources) -> BobaResult;
 }

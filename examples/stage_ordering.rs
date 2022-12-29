@@ -1,4 +1,4 @@
-use boba_core::{BobaResources, BobaStage, PearlRegistry};
+use boba_core::{BobaResources, BobaResult, BobaStage, PearlRegistry};
 use milk_tea::MilkTeaApp;
 use taro_renderer::adapters::TaroMilkTea;
 
@@ -10,32 +10,36 @@ struct Stage4;
 impl BobaStage for Stage1 {
     type Data = ();
 
-    fn run(&mut self, _: &mut PearlRegistry, _: &mut BobaResources) {
+    fn run(&mut self, _: &mut PearlRegistry, _: &mut BobaResources) -> BobaResult {
         println!("Running Stage1");
+        Ok(())
     }
 }
 
 impl BobaStage for Stage2 {
     type Data = ();
 
-    fn run(&mut self, _: &mut PearlRegistry, _: &mut BobaResources) {
+    fn run(&mut self, _: &mut PearlRegistry, _: &mut BobaResources) -> BobaResult {
         println!("Running Stage2");
+        Ok(())
     }
 }
 
 impl BobaStage for Stage3 {
     type Data = ();
 
-    fn run(&mut self, _: &mut PearlRegistry, _: &mut BobaResources) {
+    fn run(&mut self, _: &mut PearlRegistry, _: &mut BobaResources) -> BobaResult {
         println!("Running Stage3");
+        Ok(())
     }
 }
 
 impl BobaStage for Stage4 {
     type Data = ();
 
-    fn run(&mut self, _: &mut PearlRegistry, _: &mut BobaResources) {
+    fn run(&mut self, _: &mut PearlRegistry, _: &mut BobaResources) -> BobaResult {
         println!("Running Stage4");
+        Ok(())
     }
 }
 
