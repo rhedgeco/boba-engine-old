@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use boba_core::{BobaResources, PearlRegistry, StageCollection};
 use winit::{
     error::OsError,
@@ -6,27 +8,34 @@ use winit::{
     window::WindowBuilder,
 };
 
-use crate::MilkTeaWindows;
+use crate::{MilkTeaWindow, WindowRenderer};
 
 #[derive(Default)]
-pub struct MilkTeaApp {
+pub struct MilkTeaApp<Renderer>
+where
+    Renderer: WindowRenderer,
+{
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
     pub main_stages: StageCollection,
     pub resources: BobaResources,
+
+    _renderer: PhantomData<Renderer>,
 }
 
-impl MilkTeaApp {
+impl<Renderer> MilkTeaApp<Renderer>
+where
+    Renderer: WindowRenderer,
+{
     pub fn run(mut self) -> Result<(), OsError> {
         // Create main event loop and winit window
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_title("Milk Tea Window")
             .build(&event_loop)?;
-        let main_window_id = window.id();
 
         // add windows to resources
-        self.resources.add(MilkTeaWindows::new(window));
+        self.resources.add(MilkTeaWindow::<Renderer>::new(window));
 
         // run the startup stages
         self.startup_stages
@@ -36,11 +45,15 @@ impl MilkTeaApp {
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
 
+            let Some(window) = self.resources.get::<MilkTeaWindow<Renderer>>() else {
+                panic!("MilkTeaWindow has been removed from resources");
+            };
+
             match event {
                 Event::WindowEvent {
                     ref event,
                     window_id,
-                } if window_id == main_window_id => match event {
+                } if window_id == window.id() => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
                     _ => (),
                 },
