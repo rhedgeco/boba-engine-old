@@ -30,7 +30,7 @@ impl BobaStage for FpsStage {
 }
 
 fn main() {
-    let mut app = MilkTeaApp::<TaroMilkTea>::default();
+    let mut app = Bobarista::<TaroMilkTea>::default();
     app.main_stages.insert(FpsStage::default());
     app.run().unwrap();
 }

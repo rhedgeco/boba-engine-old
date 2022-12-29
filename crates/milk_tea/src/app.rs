@@ -8,14 +8,14 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-pub trait RenderAdapter: 'static {
+pub trait MilkTeaAdapter: 'static {
     fn build(window: Window) -> Self;
     fn raw_window(&self) -> &Window;
 }
 
-pub struct MilkTeaApp<Renderer>
+pub struct Bobarista<Renderer>
 where
-    Renderer: RenderAdapter,
+    Renderer: MilkTeaAdapter,
 {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
@@ -25,9 +25,9 @@ where
     _renderer: PhantomData<Renderer>,
 }
 
-impl<Renderer> Default for MilkTeaApp<Renderer>
+impl<Renderer> Default for Bobarista<Renderer>
 where
-    Renderer: RenderAdapter,
+    Renderer: MilkTeaAdapter,
 {
     fn default() -> Self {
         Self {
@@ -40,9 +40,9 @@ where
     }
 }
 
-impl<Renderer> MilkTeaApp<Renderer>
+impl<Renderer> Bobarista<Renderer>
 where
-    Renderer: RenderAdapter,
+    Renderer: MilkTeaAdapter,
 {
     pub fn run(mut self) -> Result<(), OsError> {
         // Create main event loop and winit window

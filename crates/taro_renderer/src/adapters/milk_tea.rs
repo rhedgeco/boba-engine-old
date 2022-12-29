@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use milk_tea::{winit::window::Window, RenderAdapter};
+use milk_tea::{winit::window::Window, MilkTeaAdapter};
 
 use crate::{SurfaceSize, TaroRenderer};
 
@@ -17,7 +17,7 @@ impl Deref for TaroMilkTea {
     }
 }
 
-impl RenderAdapter for TaroMilkTea {
+impl MilkTeaAdapter for TaroMilkTea {
     fn build(window: Window) -> Self {
         let size = window.inner_size();
         let renderer = pollster::block_on(TaroRenderer::new(

@@ -3,7 +3,7 @@ pub use milk_tea;
 pub use taro_renderer;
 
 pub mod prelude {
-    pub use milk_tea::MilkTeaApp;
+    pub use milk_tea::Bobarista;
     pub use taro_renderer::adapters::TaroMilkTea;
 
     pub use boba_core::BobaResources;

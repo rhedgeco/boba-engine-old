@@ -1,6 +1,6 @@
-use milk_tea::MilkTeaApp;
+use milk_tea::Bobarista;
 use taro_renderer::adapters::TaroMilkTea;
 
 fn main() {
-    MilkTeaApp::<TaroMilkTea>::default().run().unwrap();
+    Bobarista::<TaroMilkTea>::default().run().unwrap();
 }
