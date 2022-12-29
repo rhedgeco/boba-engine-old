@@ -5,15 +5,14 @@ use winit::{
     error::OsError,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::{Window, WindowBuilder, WindowId},
+    window::{Window, WindowBuilder},
 };
 
 pub trait RenderAdapter: 'static {
     fn build(window: Window) -> Self;
-    fn window_id(&self) -> WindowId;
+    fn raw_window(&self) -> &Window;
 }
 
-#[derive(Default)]
 pub struct MilkTeaApp<Renderer>
 where
     Renderer: RenderAdapter,
@@ -24,6 +23,21 @@ where
     pub resources: BobaResources,
 
     _renderer: PhantomData<Renderer>,
+}
+
+impl<Renderer> Default for MilkTeaApp<Renderer>
+where
+    Renderer: RenderAdapter,
+{
+    fn default() -> Self {
+        Self {
+            registry: Default::default(),
+            startup_stages: Default::default(),
+            main_stages: Default::default(),
+            resources: Default::default(),
+            _renderer: Default::default(),
+        }
+    }
 }
 
 impl<Renderer> MilkTeaApp<Renderer>
@@ -56,7 +70,7 @@ where
                 Event::WindowEvent {
                     ref event,
                     window_id,
-                } if window_id == window.window_id() => match event {
+                } if window_id == window.raw_window().id() => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
                     _ => (),
                 },
