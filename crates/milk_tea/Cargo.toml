@@ -1,0 +1,12 @@
+[package]
+name = "milk_tea"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+boba_core = { path = "../boba_core" }
+
+log = "0.4"
+winit = "0.27"
+env_logger = "0.10"
+raw-window-handle = "0.5"

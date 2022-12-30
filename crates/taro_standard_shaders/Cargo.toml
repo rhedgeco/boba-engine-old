@@ -1,9 +1,0 @@
-[package]
-name = "taro_standard_shaders"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-taro_renderer = { path = "../taro_renderer" }
-
-log = "0.4"

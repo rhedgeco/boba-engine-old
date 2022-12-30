@@ -13,15 +13,5 @@ members = [
 
 [dependencies]
 boba_core = { path = "./crates/boba_core" }
-boba_3d = { path = "./crates/boba_3d" }
-milk_tea_runner = { path = "./crates/milk_tea_runner" }
+milk_tea = { path = "./crates/milk_tea" }
 taro_renderer = { path = "./crates/taro_renderer" }
-taro_standard_shaders = { path = "./crates/taro_standard_shaders" }
-
-winit = "0.27"
-env_logger = "0.9"
-log = "0.4"
-wgpu = "0.14"
-pollster = "0.2"
-glam = "0.22"
-bytemuck = { version = "1.4", features = [ "derive" ] }

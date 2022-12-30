@@ -1,57 +1,26 @@
-use boba_core::{storage::PearlStorage, BobaStage};
-use log::{error, warn};
-use milk_tea_runner::MilkTeaWindows;
+use boba_core::{BobaResources, BobaResult, BobaStage, PearlRegistry};
+use log::warn;
 
-use crate::{TaroRenderer, TaroWindowSurface};
+use crate::{TaroRenderPasses, TaroRenderPearls, TaroRenderer};
 
 pub struct OnTaroRender;
 
 impl BobaStage for OnTaroRender {
-    type StageData = ();
+    type Data = ();
 
-    fn run(&mut self, pearls: &mut PearlStorage<Self>, resources: &mut boba_core::BobaResources) {
-        let renderer = match resources.borrow::<TaroRenderer>() {
-            Ok(item) => item,
-            Err(e) => {
-                warn!(
-                    "Skipping TaroRenderStage. TaroRenderer Resource Error: {:?}",
-                    e
-                );
-                return;
-            }
-        };
+    fn run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) -> BobaResult {
+        // run pearls that are listening for this stage
+        registry.run_stage::<OnTaroRender>(&(), resources);
 
-        let mut windows = match resources.borrow_mut::<MilkTeaWindows>() {
-            Ok(item) => item,
-            Err(e) => {
-                warn!(
-                    "Skipping TaroRenderStage. MilkTeaWindows Resource Error: {:?}",
-                    e
-                );
-                return;
-            }
-        };
+        let renderer = resources.get::<TaroRenderer>()?;
+        let pearls = resources.get::<TaroRenderPearls>()?;
+        let mut passes = resources.get_mut::<TaroRenderPasses>()?;
+        if passes.len() == 0 {
+            warn!("No render passes. Skipping render stage");
+            return Ok(());
+        }
 
-        let main_window = windows.main_mut();
-
-        let taro_surface = match main_window.get_surface::<TaroWindowSurface>() {
-            Some(s) => s,
-            None => {
-                main_window.set_surface(TaroWindowSurface::new(main_window.window(), &renderer))
-            }
-        };
-
-        let output = match taro_surface.surface.get_current_texture() {
-            Ok(surface) => surface,
-            Err(surface_error) => {
-                error!(
-                    "Skipping TaroRenderStage. Could not get current surface texture. SurfaceError: {:?}",
-                    surface_error
-                );
-                return;
-            }
-        };
-
+        let output = renderer.surface().get_current_texture()?;
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -64,39 +33,13 @@ impl BobaStage for OnTaroRender {
                     label: Some("Render Encoder"),
                 });
 
-        drop(windows);
-        drop(renderer); // drop renderer so that resources may be passed as mutable to pearls
-        pearls.update(&(), resources);
-
-        let renderer = match resources.borrow::<TaroRenderer>() {
-            Ok(item) => item,
-            Err(e) => {
-                warn!(
-                    "Skipping TaroRenderStage. TaroRenderer Resource Error: {:?}",
-                    e
-                );
-                return;
-            }
-        };
-
-        if let Some(camera_container) = &renderer.cameras.main_camera {
-            if let Ok(mut camera) = camera_container.data_mut() {
-                camera.execute_render_phases(
-                    &view,
-                    &mut encoder,
-                    &renderer.pearls,
-                    renderer.hardware(),
-                );
-            } else {
-                error!("Could not render main camera. It is currently borrowed as mutable.");
-            }
-        }
+        passes.render(&pearls, &view, &mut encoder, renderer.hardware());
 
         renderer
             .hardware()
             .queue
             .submit(std::iter::once(encoder.finish()));
 
-        output.present();
+        Ok(output.present())
     }
 }

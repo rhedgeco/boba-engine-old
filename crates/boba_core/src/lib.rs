@@ -1,16 +1,12 @@
-mod app;
-mod event;
 mod pearl;
-mod plugin;
+mod registry;
 mod resources;
 mod stage;
 
-pub use anyhow;
-pub use app::*;
-pub use event::*;
 pub use pearl::*;
-pub use plugin::*;
+pub use registry::*;
 pub use resources::*;
 pub use stage::*;
 
-pub mod storage;
+/// Generic result for quick returning from stage updates
+pub type BobaResult = anyhow::Result<()>;

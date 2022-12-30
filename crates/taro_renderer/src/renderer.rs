@@ -1,91 +1,86 @@
-use std::cell::RefMut;
+use log::error;
 
-use anymap::AnyMap;
-use boba_core::Pearl;
+pub struct SurfaceSize {
+    pub width: u32,
+    pub height: u32,
+}
 
-use crate::storage::{CameraStorage, TaroStorage};
-
-pub struct RenderHardware {
+pub struct TaroHardware {
     pub instance: wgpu::Instance,
     pub adapter: wgpu::Adapter,
     pub device: wgpu::Device,
     pub queue: wgpu::Queue,
 }
 
-pub struct RenderPearls {
-    pearls: AnyMap,
-}
-
-impl Default for RenderPearls {
-    fn default() -> Self {
-        Self {
-            pearls: AnyMap::new(),
-        }
-    }
-}
-
-impl RenderPearls {
-    pub fn add<T>(&mut self, pearl: Pearl<T>)
-    where
-        T: 'static,
-    {
-        match self.pearls.get_mut::<TaroStorage<T>>() {
-            Some(storage) => storage.add(pearl),
-            None => {
-                let mut storage = TaroStorage::default();
-                storage.add(pearl);
-                self.pearls.insert(storage);
-            }
-        }
-    }
-
-    pub fn remove<T>(&mut self, pearl: Pearl<T>)
-    where
-        T: 'static,
-    {
-        if let Some(storage) = self.pearls.get_mut::<TaroStorage<T>>() {
-            storage.remove(pearl.id());
-        }
-    }
-
-    pub fn collect<T>(&self) -> Vec<RefMut<T>>
-    where
-        T: 'static,
-    {
-        match self.pearls.get::<TaroStorage<T>>() {
-            Some(storage) => storage.collect(),
-            None => Vec::new(),
-        }
-    }
-}
-
 pub struct TaroRenderer {
-    hardware: RenderHardware,
-    pub cameras: CameraStorage,
-    pub pearls: RenderPearls,
+    surface: wgpu::Surface,
+    config: wgpu::SurfaceConfiguration,
+    hardware: TaroHardware,
 }
 
-impl Default for TaroRenderer {
-    fn default() -> Self {
+impl TaroRenderer {
+    pub fn hardware(&self) -> &TaroHardware {
+        &self.hardware
+    }
+
+    pub fn surface(&self) -> &wgpu::Surface {
+        &self.surface
+    }
+
+    pub fn resize(&mut self, new_size: SurfaceSize) {
+        let width = new_size.width;
+        let height = new_size.height;
+        if width == 0 || height == 0 {
+            error!("Error when resizing TaroRenderer to ({width},{height}). All values must be greater than 0.");
+            return;
+        }
+
+        self.config.width = width;
+        self.config.height = height;
+        self.surface.configure(&self.hardware.device, &self.config);
+    }
+
+    pub async fn new<W>(window: W, size: SurfaceSize) -> Self
+    where
+        W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
+    {
         let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
-            compatible_surface: None,
-            force_fallback_adapter: false,
-        }))
-        .unwrap();
+        let surface = unsafe { instance.create_surface(&window) };
+        let adapter = instance
+            .request_adapter(&wgpu::RequestAdapterOptions {
+                power_preference: wgpu::PowerPreference::HighPerformance,
+                compatible_surface: Some(&surface),
+                force_fallback_adapter: false,
+            })
+            .await
+            .unwrap();
+        let (device, queue) = adapter
+            .request_device(
+                &wgpu::DeviceDescriptor {
+                    limits: if cfg!(target_arch = "wasm32") {
+                        wgpu::Limits::downlevel_webgl2_defaults()
+                    } else {
+                        wgpu::Limits::default()
+                    },
+                    features: wgpu::Features::empty(),
+                    label: None,
+                },
+                None,
+            )
+            .await
+            .unwrap();
 
-        let (device, queue) = pollster::block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                features: wgpu::Features::empty(),
-                limits: wgpu::Limits::default(),
-                label: None,
-            },
-            None,
-        ))
-        .unwrap();
+        let config = wgpu::SurfaceConfiguration {
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            format: surface.get_supported_formats(&adapter)[0],
+            width: size.width,
+            height: size.height,
+            present_mode: wgpu::PresentMode::AutoNoVsync,
+            alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        };
+        surface.configure(&device, &config);
 
-        let hardware = RenderHardware {
+        let hardware = TaroHardware {
             instance,
             adapter,
             device,
@@ -93,15 +88,9 @@ impl Default for TaroRenderer {
         };
 
         Self {
+            config,
+            surface,
             hardware,
-            cameras: Default::default(),
-            pearls: Default::default(),
         }
-    }
-}
-
-impl TaroRenderer {
-    pub fn hardware(&self) -> &RenderHardware {
-        &self.hardware
     }
 }

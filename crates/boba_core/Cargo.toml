@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 log = "0.4"
-hashbrown = "0.13"
-indexmap = "1.9"
 anyhow = "1.0"
+indexmap = "1.9"
+thiserror = "1.0"
+hashbrown = "0.13"

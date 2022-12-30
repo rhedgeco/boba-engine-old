@@ -1,97 +1,104 @@
 use std::{
     any::{Any, TypeId},
-    cell::{Ref, RefCell, RefMut},
-    time::Instant,
+    cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
 };
 
 use hashbrown::HashMap;
+use thiserror::Error;
 
-#[derive(Debug)]
-pub enum ResourceError {
+#[derive(Debug, Error)]
+pub enum ResourceError<T> {
+    #[error("Resource does not exist")]
     NotFound,
-    AlreadyBorrowed,
+    #[error("Error when borrowing resource: {0}")]
+    BorrowError(T),
 }
 
 #[derive(Default)]
 pub struct BobaResources {
-    pub(crate) time: BobaTime,
     resources: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl BobaResources {
-    pub fn time(&self) -> &BobaTime {
-        &self.time
-    }
-
-    pub fn add<T>(&mut self, item: T)
-    where
-        T: 'static,
-    {
-        let typeid = TypeId::of::<T>();
-        self.resources.insert(typeid, Box::new(RefCell::new(item)));
-    }
-
-    pub fn borrow<T>(&self) -> Result<Ref<T>, ResourceError>
-    where
-        T: 'static,
-    {
-        let Ok(item) = self.get_ref_cell::<T>()?.try_borrow() else {
-            return Err(ResourceError::AlreadyBorrowed);
-        };
-        Ok(item)
-    }
-
-    pub fn borrow_mut<T>(&self) -> Result<RefMut<T>, ResourceError>
-    where
-        T: 'static,
-    {
-        let Ok(item) = self.get_ref_cell::<T>()?.try_borrow_mut() else {
-            return Err(ResourceError::AlreadyBorrowed);
-        };
-        Ok(item)
-    }
-
-    fn get_ref_cell<T>(&self) -> Result<&RefCell<T>, ResourceError>
-    where
-        T: 'static,
-    {
-        let typeid = TypeId::of::<T>();
-        let Some(any) = self.resources.get(&typeid) else {
+    pub fn get<T: 'static>(&self) -> Result<Ref<T>, ResourceError<BorrowError>> {
+        let Some(any) = self.resources.get(&TypeId::of::<T>()) else {
             return Err(ResourceError::NotFound);
         };
-        Ok(any
+
+        return match any
+            .as_ref()
             .downcast_ref::<RefCell<T>>()
-            .expect("Downcast should always succeed if item exists"))
+            .unwrap()
+            .try_borrow()
+        {
+            Ok(item) => Ok(item),
+            Err(borrow) => Err(ResourceError::BorrowError(borrow)),
+        };
+    }
+
+    pub fn get_mut<T: 'static>(&self) -> Result<RefMut<T>, ResourceError<BorrowMutError>> {
+        let Some(any) = self.resources.get(&TypeId::of::<T>()) else {
+            return Err(ResourceError::NotFound);
+        };
+
+        return match any
+            .as_ref()
+            .downcast_ref::<RefCell<T>>()
+            .unwrap()
+            .try_borrow_mut()
+        {
+            Ok(item) => Ok(item),
+            Err(borrow) => Err(ResourceError::BorrowError(borrow)),
+        };
+    }
+
+    pub fn add<T>(&mut self, resource: T)
+    where
+        T: 'static,
+    {
+        self.resources
+            .insert(TypeId::of::<T>(), Box::new(RefCell::new(resource)));
+    }
+
+    pub fn remove<T>(&mut self) -> Option<T>
+    where
+        T: 'static,
+    {
+        let any = self.resources.remove(&TypeId::of::<T>())?;
+        Some(any.downcast::<RefCell<T>>().unwrap().into_inner())
     }
 }
 
-pub struct BobaTime {
-    delta: f32,
-    scale: f32,
-    instant: Instant,
-}
+#[cfg(test)]
+mod tests {
+    use crate::BobaResources;
 
-impl Default for BobaTime {
-    fn default() -> Self {
-        Self {
-            delta: 0.,
-            scale: 1.,
-            instant: Instant::now(),
-        }
-    }
-}
+    struct TestStruct1;
+    struct TestStruct2;
 
-impl BobaTime {
-    pub(crate) fn reset(&mut self) {
-        self.delta = self.instant.elapsed().as_secs_f32();
-        self.instant = Instant::now();
+    #[test]
+    fn add() {
+        let mut resources = BobaResources::default();
+        resources.add(TestStruct1);
+        assert!(resources.resources.len() == 1);
     }
 
-    pub fn delta(&self) -> f32 {
-        self.delta * self.scale
+    #[test]
+    fn borrow() {
+        let mut resources = BobaResources::default();
+        resources.add(TestStruct1);
+        assert!(resources.get::<TestStruct1>().is_ok());
+        assert!(resources.get::<TestStruct2>().is_err());
+        assert!(resources.get_mut::<TestStruct1>().is_ok());
+        assert!(resources.get_mut::<TestStruct2>().is_err());
     }
 
-    pub fn unscaled_delta(&self) -> f32 {
-        self.delta
+    #[test]
+    fn remove() {
+        let mut resources = BobaResources::default();
+        resources.add(TestStruct2);
+        assert!(resources.remove::<TestStruct1>().is_none());
+        assert!(resources.remove::<TestStruct2>().is_some());
+        assert!(resources.get::<TestStruct2>().is_err());
     }
 }
