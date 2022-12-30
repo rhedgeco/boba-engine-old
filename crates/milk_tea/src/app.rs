@@ -1,6 +1,9 @@
 use std::marker::PhantomData;
 
-use boba_core::{BobaResources, PearlRegistry, StageCollection};
+use boba_core::{
+    BobaResources, BobaStage, PearlCollector, PearlRegistry, ResourceCollector, StageCollection,
+    StageCollector,
+};
 use winit::{
     error::OsError,
     event::{Event, WindowEvent},
@@ -8,7 +11,12 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-pub trait MilkTeaAdapter: 'static {
+use crate::{
+    events::{MilkTeaSize, OnMilkTeaResize},
+    MilkTeaPlugin,
+};
+
+pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
     fn build(window: Window) -> Self;
     fn raw_window(&self) -> &Window;
 }
@@ -17,10 +25,10 @@ pub struct Bobarista<Renderer>
 where
     Renderer: MilkTeaAdapter,
 {
-    pub registry: PearlRegistry,
-    pub startup_stages: StageCollection,
-    pub main_stages: StageCollection,
-    pub resources: BobaResources,
+    registry: PearlRegistry,
+    startup_stages: StageCollection,
+    main_stages: StageCollection,
+    resources: BobaResources,
 
     _renderer: PhantomData<Renderer>,
 }
@@ -44,6 +52,22 @@ impl<Renderer> Bobarista<Renderer>
 where
     Renderer: MilkTeaAdapter,
 {
+    pub fn registry(&mut self) -> &mut impl PearlCollector {
+        &mut self.registry
+    }
+
+    pub fn startup_stages(&mut self) -> &mut impl StageCollector {
+        &mut self.startup_stages
+    }
+
+    pub fn main_stages(&mut self) -> &mut impl StageCollector {
+        &mut self.main_stages
+    }
+
+    pub fn resources(&mut self) -> &mut impl ResourceCollector {
+        &mut self.resources
+    }
+
     pub fn run(mut self) -> Result<(), OsError> {
         // Create main event loop and winit window
         let event_loop = EventLoop::new();
@@ -53,6 +77,14 @@ where
 
         // add windows to resources
         self.resources.add(Renderer::build(window));
+
+        // setup the render plugin
+        Renderer::setup(
+            &mut self.registry,
+            &mut self.startup_stages,
+            &mut self.main_stages,
+            &mut self.resources,
+        );
 
         // run the startup stages
         self.startup_stages
@@ -72,6 +104,14 @@ where
                     window_id,
                 } if window_id == window.raw_window().id() => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
+                    WindowEvent::Resized(size) => {
+                        let mut resize = OnMilkTeaResize::new(MilkTeaSize::new(size.width, size.height));
+                        resize.run(&mut self.registry, &mut self.resources).unwrap();
+                    }
+                    WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                        let mut resize = OnMilkTeaResize::new(MilkTeaSize::new(new_inner_size.width, new_inner_size.height));
+                        resize.run(&mut self.registry, &mut self.resources).unwrap();
+                    }
                     _ => (),
                 },
                 Event::MainEventsCleared => {
