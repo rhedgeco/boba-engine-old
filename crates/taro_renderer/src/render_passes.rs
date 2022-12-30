@@ -2,7 +2,7 @@ use std::any::TypeId;
 
 use indexmap::IndexMap;
 
-use crate::{TaroHardware, TaroRenderPearls};
+use crate::{passes::BlankRenderPass, TaroHardware, TaroRenderPearls};
 
 pub trait TaroRenderPass: 'static {
     fn render(
@@ -14,9 +14,20 @@ pub trait TaroRenderPass: 'static {
     );
 }
 
-#[derive(Default)]
 pub struct TaroRenderPasses {
     passes: IndexMap<TypeId, Box<dyn DynamicPassRenderer>>,
+}
+
+impl Default for TaroRenderPasses {
+    fn default() -> Self {
+        let mut new = Self {
+            passes: Default::default(),
+        };
+
+        new.insert(BlankRenderPass);
+
+        new
+    }
 }
 
 impl TaroRenderPasses {

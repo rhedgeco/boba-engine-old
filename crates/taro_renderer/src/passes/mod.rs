@@ -1,3 +1,3 @@
-mod white;
+mod blank;
 
-pub use white::*;
+pub use blank::*;
