@@ -16,8 +16,7 @@ use crate::{
 
 pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
     type Renderer;
-    fn build(window: &Window) -> Self::Renderer;
-    fn raw_window(&self) -> &Window;
+    fn build_renderer(window: &Window) -> Self::Renderer;
 }
 
 pub struct MilkTeaWindow {
@@ -80,9 +79,9 @@ where
     }
 }
 
-impl<Renderer> Bobarista<Renderer>
+impl<RenderAdapter> Bobarista<RenderAdapter>
 where
-    Renderer: MilkTeaAdapter,
+    RenderAdapter: MilkTeaAdapter,
 {
     pub fn run(mut self) -> Result<(), OsError> {
         env_logger::init();
@@ -94,7 +93,7 @@ where
             .build(&event_loop)?;
 
         // add windows to resources
-        self.resources.add(Renderer::build(&window));
+        self.resources.add(RenderAdapter::build_renderer(&window));
         self.resources.add(MilkTeaWindow::new(window));
 
         // run the startup stages
@@ -105,10 +104,10 @@ where
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
 
-            let Ok(window) = self.resources.get::<MilkTeaWindow>() else {
-                panic!("MilkTeaWindow has been removed from resources");
-            };
-            drop(window);
+            match self.resources.get::<MilkTeaWindow>() {
+                Ok(_) => (),
+                Err(e) => panic!("Could not get MilkTeaWindow from resources. Error: {e}"),
+            }
 
             match event {
                 Event::WindowEvent { ref event, .. } => match event {

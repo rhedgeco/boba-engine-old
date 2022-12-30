@@ -11,14 +11,12 @@ use milk_tea::{
 
 use crate::{stages::OnTaroRender, SurfaceSize, TaroRenderPasses, TaroRenderPearls, TaroRenderer};
 
-pub struct TaroMilkTea {
-    window: Window,
-}
+pub struct TaroMilkTea;
 
 impl MilkTeaAdapter for TaroMilkTea {
     type Renderer = TaroRenderer;
 
-    fn build(window: &Window) -> Self::Renderer {
+    fn build_renderer(window: &Window) -> Self::Renderer {
         let size = window.inner_size();
         let renderer = pollster::block_on(TaroRenderer::new(
             window,
@@ -29,10 +27,6 @@ impl MilkTeaAdapter for TaroMilkTea {
         ));
 
         renderer
-    }
-
-    fn raw_window(&self) -> &Window {
-        &self.window
     }
 }
 
