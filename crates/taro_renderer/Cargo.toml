@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+log = "0.4"
 wgpu = "0.14"
 pollster = "0.2"
 raw-window-handle = "0.5"
 
+boba_core = { path = "../boba_core" }
 milk_tea = { path = "../milk_tea" }
