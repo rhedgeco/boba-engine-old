@@ -14,8 +14,9 @@ pub struct TaroHardware {
 
 pub struct TaroRenderer<W> {
     window: W,
-    config: wgpu::SurfaceConfiguration,
     surface: wgpu::Surface,
+    config: wgpu::SurfaceConfiguration,
+
     hardware: TaroHardware,
 }
 
