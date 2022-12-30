@@ -93,9 +93,10 @@ where
         };
 
         Self {
-            window,
             config,
             surface,
+            window,
+
             hardware,
         }
     }
