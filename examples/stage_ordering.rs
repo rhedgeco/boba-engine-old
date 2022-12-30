@@ -44,11 +44,11 @@ impl BobaStage for Stage4 {
 fn main() {
     let mut app = Bobarista::<TaroMilkTea>::default();
 
-    app.startup_stages.insert(Stage3);
-    app.startup_stages.prepend(Stage2);
-    app.startup_stages.append(Stage4);
-    app.startup_stages.insert(Stage2);
-    app.startup_stages.prepend(Stage1);
+    app.startup_stages().insert(Stage3);
+    app.startup_stages().prepend(Stage2);
+    app.startup_stages().append(Stage4);
+    app.startup_stages().insert(Stage2);
+    app.startup_stages().prepend(Stage1);
 
     app.run().unwrap();
 }
