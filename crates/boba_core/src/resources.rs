@@ -2,13 +2,19 @@ use std::any::{Any, TypeId};
 
 use hashbrown::HashMap;
 
+pub trait ResourceCollector {
+    fn add<T>(&mut self, resource: T) -> Option<T>
+    where
+        T: 'static;
+}
+
 #[derive(Default)]
 pub struct BobaResources {
     resources: HashMap<TypeId, Box<dyn Any>>,
 }
 
-impl BobaResources {
-    pub fn add<T>(&mut self, resource: T) -> Option<T>
+impl ResourceCollector for BobaResources {
+    fn add<T>(&mut self, resource: T) -> Option<T>
     where
         T: 'static,
     {
@@ -18,7 +24,9 @@ impl BobaResources {
 
         Some(*old_any.downcast::<T>().unwrap())
     }
+}
 
+impl BobaResources {
     pub fn get<T>(&self) -> Option<&T>
     where
         T: 'static,

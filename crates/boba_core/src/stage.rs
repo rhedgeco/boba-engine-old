@@ -11,17 +11,31 @@ pub trait BobaStage: 'static {
     fn run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) -> BobaResult;
 }
 
+pub trait StageCollector {
+    fn insert<Stage>(&mut self, stage: Stage)
+    where
+        Stage: BobaStage;
+
+    fn append<Stage>(&mut self, stage: Stage)
+    where
+        Stage: BobaStage;
+
+    fn prepend<Stage>(&mut self, stage: Stage)
+    where
+        Stage: BobaStage;
+}
+
 /// An ordered collection of BobaStages
 #[derive(Default)]
 pub struct StageCollection {
     stages: IndexMap<TypeId, Box<dyn DynamicStageRunner>>,
 }
 
-impl StageCollection {
+impl StageCollector for StageCollection {
     /// Adds or replaces a stage in the collection.
     ///
     /// If the stage exists, it will be replaced. If it does not it will be appended.
-    pub fn insert<Stage>(&mut self, stage: Stage)
+    fn insert<Stage>(&mut self, stage: Stage)
     where
         Stage: BobaStage,
     {
@@ -32,7 +46,7 @@ impl StageCollection {
     /// Appends a stage to the collection
     ///
     /// If an instance of this stage already exists in this collection, it will be removed first.
-    pub fn append<Stage>(&mut self, stage: Stage)
+    fn append<Stage>(&mut self, stage: Stage)
     where
         Stage: BobaStage,
     {
@@ -44,7 +58,7 @@ impl StageCollection {
     /// Prepends a stage to the collection
     ///
     /// If an instance of this stage already exists in this collection, it will be removed first.
-    pub fn prepend<Stage>(&mut self, stage: Stage)
+    fn prepend<Stage>(&mut self, stage: Stage)
     where
         Stage: BobaStage,
     {
@@ -56,7 +70,9 @@ impl StageCollection {
             self.stages.move_index(index, 0);
         }
     }
+}
 
+impl StageCollection {
     /// Removes a stage from the collection
     pub fn remove<Stage>(&mut self)
     where
@@ -101,7 +117,7 @@ where
 mod tests {
     use std::any::TypeId;
 
-    use crate::{BobaResult, BobaStage, StageCollection};
+    use crate::{BobaResult, BobaStage, StageCollection, StageCollector};
 
     pub struct TestStage1;
     pub struct TestStage2;
