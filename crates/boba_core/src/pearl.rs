@@ -1,5 +1,6 @@
 use std::{
     cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
+    hash::Hash,
     ops::DerefMut,
     rc::Rc,
     sync::atomic::AtomicU64,
@@ -57,6 +58,20 @@ pub enum PearlMutError {
 pub struct Pearl<T> {
     id: PearlId,
     data: Rc<RefCell<Option<T>>>,
+}
+
+impl<T> Eq for Pearl<T> {}
+
+impl<T> PartialEq for Pearl<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl<T> Hash for Pearl<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
 }
 
 impl<T> Pearl<T> {
