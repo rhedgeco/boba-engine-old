@@ -54,18 +54,21 @@ pub enum PearlMutError {
 /// The core data management object in BobaEngine.
 ///
 /// It is useful for multiple objects to hold references to the same struct.
-pub struct Pearl<T>
-where
-    T: RegisterStages,
-{
+pub struct Pearl<T> {
     id: PearlId,
     data: Rc<RefCell<Option<T>>>,
 }
 
-impl<T> Clone for Pearl<T>
-where
-    T: RegisterStages,
-{
+impl<T> Pearl<T> {
+    pub fn wrap(item: T) -> Self {
+        Self {
+            id: PearlId::new(),
+            data: Rc::new(RefCell::new(Some(item))),
+        }
+    }
+}
+
+impl<T> Clone for Pearl<T> {
     fn clone(&self) -> Self {
         Self {
             id: self.id.clone(),
@@ -74,10 +77,7 @@ where
     }
 }
 
-impl<T> Pearl<T>
-where
-    T: RegisterStages,
-{
+impl<T> Pearl<T> {
     /// Gets the unique id of the current pearl
     pub fn id(&self) -> &PearlId {
         &self.id
@@ -143,10 +143,7 @@ where
     T: RegisterStages,
 {
     fn wrap_pearl(self) -> Pearl<T> {
-        Pearl {
-            id: PearlId::new(),
-            data: Rc::new(RefCell::new(Some(self))),
-        }
+        Pearl::wrap(self)
     }
 }
 
