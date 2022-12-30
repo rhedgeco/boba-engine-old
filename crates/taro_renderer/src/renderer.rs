@@ -12,24 +12,19 @@ pub struct TaroHardware {
     pub queue: wgpu::Queue,
 }
 
-pub struct TaroRenderer<W> {
-    window: W,
+pub struct TaroRenderer {
     surface: wgpu::Surface,
     config: wgpu::SurfaceConfiguration,
-
     hardware: TaroHardware,
 }
 
-impl<W> TaroRenderer<W>
-where
-    W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
-{
-    pub fn window(&self) -> &W {
-        &self.window
-    }
-
+impl TaroRenderer {
     pub fn hardware(&self) -> &TaroHardware {
         &self.hardware
+    }
+
+    pub fn surface(&self) -> &wgpu::Surface {
+        &self.surface
     }
 
     pub fn resize(&mut self, new_size: SurfaceSize) {
@@ -45,7 +40,7 @@ where
         self.surface.configure(&self.hardware.device, &self.config);
     }
 
-    pub async fn new(window: W, size: SurfaceSize) -> Self
+    pub async fn new<W>(window: W, size: SurfaceSize) -> Self
     where
         W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
     {
@@ -95,8 +90,6 @@ where
         Self {
             config,
             surface,
-            window,
-
             hardware,
         }
     }

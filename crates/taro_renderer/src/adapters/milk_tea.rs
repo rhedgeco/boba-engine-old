@@ -1,5 +1,3 @@
-use std::ops::{Deref, DerefMut};
-
 use boba_core::{
     BobaResources, BobaResult, Pearl, PearlRegistry, PearlStage, RegisterStages, StageCollection,
     StageRegistrar, WrapPearl,
@@ -11,28 +9,16 @@ use milk_tea::{
     MilkTeaAdapter, MilkTeaPlugin,
 };
 
-use crate::{stages::OnTaroRender, SurfaceSize, TaroRenderer};
+use crate::{stages::OnTaroRender, SurfaceSize, TaroRenderPasses, TaroRenderPearls, TaroRenderer};
 
 pub struct TaroMilkTea {
-    renderer: TaroRenderer<Window>,
-}
-
-impl Deref for TaroMilkTea {
-    type Target = TaroRenderer<Window>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.renderer
-    }
-}
-
-impl DerefMut for TaroMilkTea {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.renderer
-    }
+    window: Window,
 }
 
 impl MilkTeaAdapter for TaroMilkTea {
-    fn build(window: Window) -> Self {
+    type Renderer = TaroRenderer;
+
+    fn build(window: &Window) -> Self::Renderer {
         let size = window.inner_size();
         let renderer = pollster::block_on(TaroRenderer::new(
             window,
@@ -42,11 +28,11 @@ impl MilkTeaAdapter for TaroMilkTea {
             },
         ));
 
-        Self { renderer }
+        renderer
     }
 
     fn raw_window(&self) -> &Window {
-        &self.renderer.window()
+        &self.window
     }
 }
 
@@ -55,10 +41,12 @@ impl MilkTeaPlugin for TaroMilkTea {
         registry: &mut PearlRegistry,
         _: &mut StageCollection,
         main_stages: &mut StageCollection,
-        _: &mut BobaResources,
+        resources: &mut BobaResources,
     ) {
         registry.add(&ResizeListener.wrap_pearl());
         main_stages.append(OnTaroRender);
+        resources.add(TaroRenderPearls::default());
+        resources.add(TaroRenderPasses::default());
     }
 }
 
@@ -72,7 +60,7 @@ impl RegisterStages for ResizeListener {
 
 impl PearlStage<OnMilkTeaResize> for ResizeListener {
     fn update(&mut self, data: &MilkTeaSize, resources: &mut BobaResources) -> BobaResult {
-        let mut renderer = resources.get_mut::<TaroMilkTea>()?;
+        let mut renderer = resources.get_mut::<TaroRenderer>()?;
 
         renderer.resize(SurfaceSize {
             width: data.width,
