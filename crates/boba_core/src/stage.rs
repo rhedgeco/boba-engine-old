@@ -56,9 +56,7 @@ impl StageCollection {
             self.stages.move_index(index, 0);
         }
     }
-}
 
-impl StageCollection {
     /// Removes a stage from the collection
     pub fn remove<Stage>(&mut self)
     where
