@@ -1,36 +1,23 @@
-use std::time::Instant;
-
 use boba::prelude::*;
+use milk_tea::stages::MilkTeaUpdate;
 
-struct FpsStage {
-    instant: Instant,
-}
+pub struct FpsPrinter;
 
-impl Default for FpsStage {
-    fn default() -> Self {
-        Self {
-            instant: Instant::now(),
-        }
+impl RegisterStages for FpsPrinter {
+    fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar) {
+        stages.add(pearl.clone());
     }
 }
 
-impl BobaStage for FpsStage {
-    type Data = ();
-
-    fn run(
-        &mut self,
-        _: &mut boba_core::PearlRegistry,
-        _: &mut boba_core::BobaResources,
-    ) -> BobaResult {
-        let fps = 1. / self.instant.elapsed().as_secs_f64();
-        self.instant = Instant::now();
-        println!("FPS: {fps:.0}");
+impl PearlStage<MilkTeaUpdate> for FpsPrinter {
+    fn update(&mut self, delta: &f32, _: &mut BobaResources) -> BobaResult {
+        println!("FPS: {:.0}", 1. / delta);
         Ok(())
     }
 }
 
 fn main() {
     let mut app = Bobarista::<TaroMilkTea>::default();
-    app.main_stages.insert(FpsStage::default());
+    app.registry.add(&FpsPrinter.wrap_pearl());
     app.run().unwrap();
 }
