@@ -1,5 +1,3 @@
-use log::error;
-
 pub struct SurfaceSize {
     pub width: u32,
     pub height: u32,
@@ -13,13 +11,20 @@ pub struct TaroHardware {
 }
 
 pub struct TaroRenderer {
-    config: wgpu::SurfaceConfiguration,
     surface: wgpu::Surface,
     hardware: TaroHardware,
 }
 
 impl TaroRenderer {
-    pub async fn new<W>(window: &W, size: SurfaceSize) -> Self
+    pub fn surface(&self) -> &wgpu::Surface {
+        &self.surface
+    }
+
+    pub fn hardware(&self) -> &TaroHardware {
+        &self.hardware
+    }
+
+    pub async fn new<W>(window: &W, size: SurfaceSize) -> (Self, wgpu::SurfaceConfiguration)
     where
         W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
     {
@@ -66,28 +71,6 @@ impl TaroRenderer {
             queue,
         };
 
-        Self {
-            config,
-            surface,
-            hardware,
-        }
-    }
-
-    pub fn resize_surface(&mut self, new_size: SurfaceSize) {
-        if new_size.width == 0 && new_size.height == 0 {
-            error!(
-                "Could not set TaroRenderer surface size to ({},{}).Width and height must be greater than 0.",
-                new_size.width, new_size.height
-            );
-            return;
-        }
-
-        self.config.width = new_size.width;
-        self.config.height = new_size.height;
-        self.surface.configure(&self.hardware.device, &self.config);
-    }
-
-    pub fn hardware(&self) -> &TaroHardware {
-        &self.hardware
+        (Self { surface, hardware }, config)
     }
 }

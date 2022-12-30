@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use boba_core::{
     BobaResources, BobaResult, Pearl, PearlRegistry, PearlStage, RegisterStages, StageCollection,
     StageRegistrar, WrapPearl,
@@ -10,31 +8,33 @@ use milk_tea::{
     MilkTeaAdapter, MilkTeaPlugin,
 };
 
-use crate::{SurfaceSize, TaroRenderer};
+use crate::{SurfaceSize, TaroHardware, TaroRenderer};
 
 pub struct TaroMilkTea {
     window: Window,
     renderer: TaroRenderer,
+    config: wgpu::SurfaceConfiguration,
 }
 
 impl TaroMilkTea {
-    pub fn resize_surface(&mut self, new_size: SurfaceSize) {
-        self.renderer.resize_surface(new_size);
+    pub fn hardware(&self) -> &TaroHardware {
+        self.renderer.hardware()
     }
-}
 
-impl Deref for TaroMilkTea {
-    type Target = TaroRenderer;
+    pub fn resize_surface(&mut self, new_size: SurfaceSize) {
+        let surface = self.renderer.surface();
+        let hardware = self.renderer.hardware();
 
-    fn deref(&self) -> &Self::Target {
-        &self.renderer
+        self.config.width = new_size.width;
+        self.config.height = new_size.height;
+        surface.configure(&hardware.device, &self.config);
     }
 }
 
 impl MilkTeaAdapter for TaroMilkTea {
     fn build(window: Window) -> Self {
         let size = window.inner_size();
-        let renderer = pollster::block_on(TaroRenderer::new(
+        let (renderer, config) = pollster::block_on(TaroRenderer::new(
             &window,
             SurfaceSize {
                 width: size.width,
@@ -42,7 +42,11 @@ impl MilkTeaAdapter for TaroMilkTea {
             },
         ));
 
-        Self { window, renderer }
+        Self {
+            window,
+            renderer,
+            config,
+        }
     }
 
     fn raw_window(&self) -> &Window {
