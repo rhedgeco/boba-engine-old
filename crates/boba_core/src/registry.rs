@@ -6,7 +6,7 @@ use std::{
 
 use hashbrown::HashMap;
 use indexmap::IndexSet;
-use log::{error, warn};
+use log::{error, info};
 
 use crate::{BobaResources, BobaStage, Pearl, PearlId, PearlMutError, PearlStage, RegisterStages};
 
@@ -33,7 +33,7 @@ impl PearlRegistry {
     {
         let stageid = TypeId::of::<Stage>();
         let Some(any_collection) = self.pearls.get_mut(&stageid) else {
-            warn!("PearlRegistry ran stage {}, but there were no associated pearls.", std::any::type_name::<Stage>());
+            info!("PearlRegistry ran stage {}, but there were no associated pearls.", std::any::type_name::<Stage>());
             return;
         };
 
