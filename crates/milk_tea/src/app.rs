@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, ops::Deref};
 
 use boba_core::{BobaResources, BobaStage, PearlRegistry, StageCollection};
 
@@ -15,8 +15,27 @@ use crate::{
 };
 
 pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
-    fn build(window: Window) -> Self;
+    type Renderer;
+    fn build(window: &Window) -> Self::Renderer;
     fn raw_window(&self) -> &Window;
+}
+
+pub struct MilkTeaWindow {
+    window: Window,
+}
+
+impl MilkTeaWindow {
+    pub fn new(window: Window) -> Self {
+        Self { window }
+    }
+}
+
+impl Deref for MilkTeaWindow {
+    type Target = Window;
+
+    fn deref(&self) -> &Self::Target {
+        &self.window
+    }
 }
 
 pub struct Bobarista<Renderer>
@@ -75,7 +94,8 @@ where
             .build(&event_loop)?;
 
         // add windows to resources
-        self.resources.add(Renderer::build(window));
+        self.resources.add(Renderer::build(&window));
+        self.resources.add(MilkTeaWindow::new(window));
 
         // run the startup stages
         self.startup_stages
@@ -85,30 +105,29 @@ where
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
 
-            let Ok(window) = self.resources.get::<Renderer>() else {
-                panic!("WindowRenderer '{}' has been removed from resources", std::any::type_name::<Renderer>());
+            let Ok(window) = self.resources.get::<MilkTeaWindow>() else {
+                panic!("MilkTeaWindow has been removed from resources");
             };
+            drop(window);
 
             match event {
-                Event::WindowEvent {
-                    ref event,
-                    window_id,
-                } if window_id == window.raw_window().id() => match event {
+                Event::WindowEvent { ref event, .. } => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
                     WindowEvent::Resized(size) => {
-                        drop(window);
-                        let mut resize = OnMilkTeaResize::new(MilkTeaSize::new(size.width, size.height));
+                        let mut resize =
+                            OnMilkTeaResize::new(MilkTeaSize::new(size.width, size.height));
                         resize.run(&mut self.registry, &mut self.resources).unwrap();
                     }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        drop(window);
-                        let mut resize = OnMilkTeaResize::new(MilkTeaSize::new(new_inner_size.width, new_inner_size.height));
+                        let mut resize = OnMilkTeaResize::new(MilkTeaSize::new(
+                            new_inner_size.width,
+                            new_inner_size.height,
+                        ));
                         resize.run(&mut self.registry, &mut self.resources).unwrap();
                     }
                     _ => (),
                 },
                 Event::MainEventsCleared => {
-                    drop(window);
                     self.main_stages
                         .run(&mut self.registry, &mut self.resources);
                 }
