@@ -1,8 +1,8 @@
 use std::ops::Deref;
 
 use boba_core::{
-    BobaResources, BobaResult, Pearl, PearlCollector, PearlStage, RegisterStages,
-    ResourceCollector, StageCollector, StageRegistrar, WrapPearl,
+    BobaResources, BobaResult, Pearl, PearlRegistry, PearlStage, RegisterStages, StageCollection,
+    StageRegistrar, WrapPearl,
 };
 use milk_tea::{
     events::{MilkTeaSize, OnMilkTeaResize},
@@ -15,6 +15,12 @@ use crate::{SurfaceSize, TaroRenderer};
 pub struct TaroMilkTea {
     window: Window,
     renderer: TaroRenderer,
+}
+
+impl TaroMilkTea {
+    pub fn resize_surface(&mut self, new_size: SurfaceSize) {
+        self.renderer.resize_surface(new_size);
+    }
 }
 
 impl Deref for TaroMilkTea {
@@ -46,10 +52,10 @@ impl MilkTeaAdapter for TaroMilkTea {
 
 impl MilkTeaPlugin for TaroMilkTea {
     fn setup(
-        registry: &mut impl PearlCollector,
-        _: &mut impl StageCollector,
-        _: &mut impl StageCollector,
-        _: &mut impl ResourceCollector,
+        registry: &mut PearlRegistry,
+        _: &mut StageCollection,
+        _: &mut StageCollection,
+        _: &mut BobaResources,
     ) {
         registry.add(&ResizeListener.wrap_pearl());
     }
@@ -65,9 +71,7 @@ impl RegisterStages for ResizeListener {
 
 impl PearlStage<OnMilkTeaResize> for ResizeListener {
     fn update(&mut self, data: &MilkTeaSize, resources: &mut BobaResources) -> BobaResult {
-        let Some(renderer) = resources.get_mut::<TaroMilkTea>() else {
-            return Ok(());
-        };
+        let mut renderer = resources.get_mut::<TaroMilkTea>()?;
 
         renderer.resize_surface(SurfaceSize {
             width: data.width,

@@ -1,10 +1,10 @@
-use boba_core::{PearlCollector, ResourceCollector, StageCollector};
+use boba_core::{BobaResources, PearlRegistry, StageCollection};
 
 pub trait MilkTeaPlugin {
     fn setup(
-        registry: &mut impl PearlCollector,
-        startup_stages: &mut impl StageCollector,
-        main_stages: &mut impl StageCollector,
-        resources: &mut impl ResourceCollector,
+        registry: &mut PearlRegistry,
+        startup_stages: &mut StageCollection,
+        main_stages: &mut StageCollection,
+        resources: &mut BobaResources,
     );
 }

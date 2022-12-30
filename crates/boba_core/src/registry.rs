@@ -18,6 +18,13 @@ pub struct PearlRegistry {
 }
 
 impl PearlRegistry {
+    pub fn add<T>(&mut self, pearl: &Pearl<T>)
+    where
+        T: RegisterStages,
+    {
+        T::register(&pearl, self);
+    }
+
     /// Updates all pearls associated with a specific stage
     pub fn run_stage<Stage>(&mut self, data: &Stage::Data, resources: &mut BobaResources)
     where
@@ -33,21 +40,6 @@ impl PearlRegistry {
             .downcast_mut::<PearlCollection<Stage>>()
             .unwrap()
             .update(data, resources);
-    }
-}
-
-pub trait PearlCollector {
-    fn add<T>(&mut self, pearl: &Pearl<T>)
-    where
-        T: RegisterStages;
-}
-
-impl PearlCollector for PearlRegistry {
-    fn add<T>(&mut self, pearl: &Pearl<T>)
-    where
-        T: RegisterStages,
-    {
-        T::register(&pearl, self);
     }
 }
 

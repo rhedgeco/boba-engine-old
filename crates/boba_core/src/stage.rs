@@ -11,31 +11,17 @@ pub trait BobaStage: 'static {
     fn run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) -> BobaResult;
 }
 
-pub trait StageCollector {
-    fn insert<Stage>(&mut self, stage: Stage)
-    where
-        Stage: BobaStage;
-
-    fn append<Stage>(&mut self, stage: Stage)
-    where
-        Stage: BobaStage;
-
-    fn prepend<Stage>(&mut self, stage: Stage)
-    where
-        Stage: BobaStage;
-}
-
 /// An ordered collection of BobaStages
 #[derive(Default)]
 pub struct StageCollection {
     stages: IndexMap<TypeId, Box<dyn DynamicStageRunner>>,
 }
 
-impl StageCollector for StageCollection {
+impl StageCollection {
     /// Adds or replaces a stage in the collection.
     ///
     /// If the stage exists, it will be replaced. If it does not it will be appended.
-    fn insert<Stage>(&mut self, stage: Stage)
+    pub fn insert<Stage>(&mut self, stage: Stage)
     where
         Stage: BobaStage,
     {
@@ -46,7 +32,7 @@ impl StageCollector for StageCollection {
     /// Appends a stage to the collection
     ///
     /// If an instance of this stage already exists in this collection, it will be removed first.
-    fn append<Stage>(&mut self, stage: Stage)
+    pub fn append<Stage>(&mut self, stage: Stage)
     where
         Stage: BobaStage,
     {
@@ -58,7 +44,7 @@ impl StageCollector for StageCollection {
     /// Prepends a stage to the collection
     ///
     /// If an instance of this stage already exists in this collection, it will be removed first.
-    fn prepend<Stage>(&mut self, stage: Stage)
+    pub fn prepend<Stage>(&mut self, stage: Stage)
     where
         Stage: BobaStage,
     {
@@ -117,7 +103,7 @@ where
 mod tests {
     use std::any::TypeId;
 
-    use crate::{BobaResult, BobaStage, StageCollection, StageCollector};
+    use crate::{BobaResult, BobaStage, StageCollection};
 
     pub struct TestStage1;
     pub struct TestStage2;

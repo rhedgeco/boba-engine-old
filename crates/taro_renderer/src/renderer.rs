@@ -13,7 +13,7 @@ pub struct TaroHardware {
 }
 
 pub struct TaroRenderer {
-    initial_config: wgpu::SurfaceConfiguration,
+    config: wgpu::SurfaceConfiguration,
     surface: wgpu::Surface,
     hardware: TaroHardware,
 }
@@ -49,7 +49,7 @@ impl TaroRenderer {
             .await
             .unwrap();
 
-        let initial_config = wgpu::SurfaceConfiguration {
+        let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface.get_supported_formats(&adapter)[0],
             width: size.width,
@@ -57,7 +57,7 @@ impl TaroRenderer {
             present_mode: wgpu::PresentMode::Fifo,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
         };
-        surface.configure(&device, &initial_config);
+        surface.configure(&device, &config);
 
         let hardware = TaroHardware {
             instance,
@@ -67,13 +67,13 @@ impl TaroRenderer {
         };
 
         Self {
-            initial_config,
+            config,
             surface,
             hardware,
         }
     }
 
-    pub fn resize_surface(&self, new_size: SurfaceSize) {
+    pub fn resize_surface(&mut self, new_size: SurfaceSize) {
         if new_size.width == 0 && new_size.height == 0 {
             error!(
                 "Could not set TaroRenderer surface size to ({},{}).Width and height must be greater than 0.",
@@ -82,10 +82,9 @@ impl TaroRenderer {
             return;
         }
 
-        let mut new_config = self.initial_config.clone();
-        new_config.width = new_size.width;
-        new_config.height = new_size.height;
-        self.surface.configure(&self.hardware.device, &new_config);
+        self.config.width = new_size.width;
+        self.config.height = new_size.height;
+        self.surface.configure(&self.hardware.device, &self.config);
     }
 
     pub fn hardware(&self) -> &TaroHardware {
