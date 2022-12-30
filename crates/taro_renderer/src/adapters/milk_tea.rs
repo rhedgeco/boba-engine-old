@@ -1,66 +1,52 @@
+use std::ops::{Deref, DerefMut};
+
 use boba_core::{
     BobaResources, BobaResult, Pearl, PearlRegistry, PearlStage, RegisterStages, StageCollection,
     StageRegistrar, WrapPearl,
 };
-use log::error;
+
 use milk_tea::{
     events::{MilkTeaSize, OnMilkTeaResize},
     winit::window::Window,
     MilkTeaAdapter, MilkTeaPlugin,
 };
 
-use crate::{SurfaceSize, TaroHardware, TaroRenderer};
+use crate::{SurfaceSize, TaroRenderer};
 
 pub struct TaroMilkTea {
-    window: Window,
-    renderer: TaroRenderer,
-    config: wgpu::SurfaceConfiguration,
+    renderer: TaroRenderer<Window>,
 }
 
-impl TaroMilkTea {
-    pub fn hardware(&self) -> &TaroHardware {
-        self.renderer.hardware()
+impl Deref for TaroMilkTea {
+    type Target = TaroRenderer<Window>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.renderer
     }
+}
 
-    pub fn resize_surface(&mut self, new_size: SurfaceSize) {
-        if new_size.width == 0 || new_size.height == 0 {
-            error!(
-                "Failed to resize render surface with size ({}, {}).
-                Width and height must be greater than 0.",
-                new_size.width, new_size.height
-            );
-            return;
-        }
-
-        let surface = self.renderer.surface();
-        let hardware = self.renderer.hardware();
-
-        self.config.width = new_size.width;
-        self.config.height = new_size.height;
-        surface.configure(&hardware.device, &self.config);
+impl DerefMut for TaroMilkTea {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.renderer
     }
 }
 
 impl MilkTeaAdapter for TaroMilkTea {
     fn build(window: Window) -> Self {
         let size = window.inner_size();
-        let (renderer, config) = pollster::block_on(TaroRenderer::new(
-            &window,
+        let renderer = pollster::block_on(TaroRenderer::new(
+            window,
             SurfaceSize {
                 width: size.width,
                 height: size.height,
             },
         ));
 
-        Self {
-            window,
-            renderer,
-            config,
-        }
+        Self { renderer }
     }
 
     fn raw_window(&self) -> &Window {
-        &self.window
+        &self.renderer.window()
     }
 }
 
@@ -87,7 +73,7 @@ impl PearlStage<OnMilkTeaResize> for ResizeListener {
     fn update(&mut self, data: &MilkTeaSize, resources: &mut BobaResources) -> BobaResult {
         let mut renderer = resources.get_mut::<TaroMilkTea>()?;
 
-        renderer.resize_surface(SurfaceSize {
+        renderer.resize(SurfaceSize {
             width: data.width,
             height: data.height,
         });

@@ -1,3 +1,5 @@
+use log::error;
+
 pub struct SurfaceSize {
     pub width: u32,
     pub height: u32,
@@ -10,26 +12,44 @@ pub struct TaroHardware {
     pub queue: wgpu::Queue,
 }
 
-pub struct TaroRenderer {
+pub struct TaroRenderer<W> {
+    window: W,
+    config: wgpu::SurfaceConfiguration,
     surface: wgpu::Surface,
     hardware: TaroHardware,
 }
 
-impl TaroRenderer {
-    pub fn surface(&self) -> &wgpu::Surface {
-        &self.surface
+impl<W> TaroRenderer<W>
+where
+    W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
+{
+    pub fn window(&self) -> &W {
+        &self.window
     }
 
     pub fn hardware(&self) -> &TaroHardware {
         &self.hardware
     }
 
-    pub async fn new<W>(window: &W, size: SurfaceSize) -> (Self, wgpu::SurfaceConfiguration)
+    pub fn resize(&mut self, new_size: SurfaceSize) {
+        let width = new_size.width;
+        let height = new_size.height;
+        if width == 0 || height == 0 {
+            error!("Error when resizing TaroRenderer to ({width},{height}). All values must be greater than 0.");
+            return;
+        }
+
+        self.config.width = width;
+        self.config.height = height;
+        self.surface.configure(&self.hardware.device, &self.config);
+    }
+
+    pub async fn new(window: W, size: SurfaceSize) -> Self
     where
         W: raw_window_handle::HasRawWindowHandle + raw_window_handle::HasRawDisplayHandle,
     {
         let instance = wgpu::Instance::new(wgpu::Backends::all());
-        let surface = unsafe { instance.create_surface(window) };
+        let surface = unsafe { instance.create_surface(&window) };
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
@@ -71,6 +91,11 @@ impl TaroRenderer {
             queue,
         };
 
-        (Self { surface, hardware }, config)
+        Self {
+            window,
+            config,
+            surface,
+            hardware,
+        }
     }
 }
