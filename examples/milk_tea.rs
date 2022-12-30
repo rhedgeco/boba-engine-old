@@ -1,5 +1,4 @@
-use milk_tea::Bobarista;
-use taro_renderer::adapters::TaroMilkTea;
+use boba::prelude::*;
 
 fn main() {
     Bobarista::<TaroMilkTea>::default().run().unwrap();

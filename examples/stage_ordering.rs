@@ -1,6 +1,4 @@
-use boba_core::{BobaResources, BobaResult, BobaStage, PearlRegistry};
-use milk_tea::Bobarista;
-use taro_renderer::adapters::TaroMilkTea;
+use boba::prelude::*;
 
 struct Stage1;
 struct Stage2;
