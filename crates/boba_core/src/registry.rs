@@ -1,10 +1,11 @@
 use std::{
     any::{Any, TypeId},
     cell::BorrowMutError,
+    hash::Hash,
 };
 
 use hashbrown::HashMap;
-use indexmap::IndexMap;
+use indexmap::IndexSet;
 use log::{error, warn};
 
 use crate::{BobaResources, BobaStage, Pearl, PearlId, PearlMutError, PearlStage, RegisterStages};
@@ -78,7 +79,7 @@ struct PearlCollection<Stage>
 where
     Stage: BobaStage,
 {
-    pearls: IndexMap<PearlId, Box<dyn PearlRunner<Stage>>>,
+    pearls: IndexSet<Box<dyn PearlRunner<Stage>>>,
 }
 
 impl<Stage> PearlCollection<Stage>
@@ -95,12 +96,12 @@ where
     where
         Update: PearlStage<Stage>,
     {
-        self.pearls.insert(pearl.id().clone(), Box::new(pearl));
+        self.pearls.insert(Box::new(pearl));
     }
 
     pub fn update(&mut self, data: &Stage::Data, resources: &mut BobaResources) {
         self.pearls
-            .retain(|_, runner| match runner.dynamic_update(data, resources) {
+            .retain(|runner| match runner.dynamic_update(data, resources) {
                 PearlStatus::Dead => false,
                 _ => true,
             });
@@ -117,6 +118,7 @@ trait PearlRunner<Stage>
 where
     Stage: BobaStage,
 {
+    fn id(&self) -> &PearlId;
     fn dynamic_update(&self, data: &Stage::Data, resources: &mut BobaResources) -> PearlStatus;
 }
 
@@ -125,6 +127,10 @@ where
     Stage: BobaStage,
     Update: PearlStage<Stage>,
 {
+    fn id(&self) -> &PearlId {
+        self.id()
+    }
+
     fn dynamic_update(
         &self,
         data: &<Stage as BobaStage>::Data,
@@ -150,5 +156,25 @@ where
         };
 
         return PearlStatus::Alive;
+    }
+}
+
+impl<Stage> Eq for Box<dyn PearlRunner<Stage>> where Stage: BobaStage {}
+
+impl<Stage> PartialEq for Box<dyn PearlRunner<Stage>>
+where
+    Stage: BobaStage,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.id() == other.id()
+    }
+}
+
+impl<Stage> Hash for Box<dyn PearlRunner<Stage>>
+where
+    Stage: BobaStage,
+{
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id().hash(state);
     }
 }
