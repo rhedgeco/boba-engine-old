@@ -6,12 +6,12 @@ use boba_core::{
 };
 
 use milk_tea::{
-    events::{MilkTeaSize, OnMilkTeaResize},
+    stages::{MilkTeaSize, OnMilkTeaResize},
     winit::window::Window,
     MilkTeaAdapter, MilkTeaPlugin,
 };
 
-use crate::{SurfaceSize, TaroRenderer};
+use crate::{stages::OnTaroRender, SurfaceSize, TaroRenderer};
 
 pub struct TaroMilkTea {
     renderer: TaroRenderer<Window>,
@@ -54,10 +54,11 @@ impl MilkTeaPlugin for TaroMilkTea {
     fn setup(
         registry: &mut PearlRegistry,
         _: &mut StageCollection,
-        _: &mut StageCollection,
+        main_stages: &mut StageCollection,
         _: &mut BobaResources,
     ) {
         registry.add(&ResizeListener.wrap_pearl());
+        main_stages.append(OnTaroRender);
     }
 }
 
