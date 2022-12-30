@@ -4,6 +4,7 @@ use boba_core::{
     BobaResources, BobaStage, PearlCollector, PearlRegistry, ResourceCollector, StageCollection,
     StageCollector,
 };
+
 use winit::{
     error::OsError,
     event::{Event, WindowEvent},
@@ -69,6 +70,8 @@ where
     }
 
     pub fn run(mut self) -> Result<(), OsError> {
+        env_logger::init();
+
         // Create main event loop and winit window
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
