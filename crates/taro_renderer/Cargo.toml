@@ -7,6 +7,8 @@ edition = "2021"
 log = "0.4"
 wgpu = "0.14"
 pollster = "0.2"
+indexmap = "1.9"
+hashbrown = "0.13"
 raw-window-handle = "0.5"
 
 boba_core = { path = "../boba_core" }
