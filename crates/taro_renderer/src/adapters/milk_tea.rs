@@ -2,6 +2,7 @@ use boba_core::{
     BobaResources, BobaResult, Pearl, PearlRegistry, PearlStage, RegisterStages, StageCollection,
     StageRegistrar, WrapPearl,
 };
+use log::error;
 use milk_tea::{
     events::{MilkTeaSize, OnMilkTeaResize},
     winit::window::Window,
@@ -22,6 +23,15 @@ impl TaroMilkTea {
     }
 
     pub fn resize_surface(&mut self, new_size: SurfaceSize) {
+        if new_size.width == 0 || new_size.height == 0 {
+            error!(
+                "Failed to resize render surface with size ({}, {}).
+                Width and height must be greater than 0.",
+                new_size.width, new_size.height
+            );
+            return;
+        }
+
         let surface = self.renderer.surface();
         let hardware = self.renderer.hardware();
 
