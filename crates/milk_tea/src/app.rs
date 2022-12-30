@@ -10,7 +10,7 @@ use winit::{
 };
 
 use crate::{
-    stages::{MilkTeaSize, OnMilkTeaResize},
+    stages::{MilkTeaSize, MilkTeaUpdate, OnMilkTeaResize},
     MilkTeaPlugin,
 };
 
@@ -44,6 +44,9 @@ where
             resources: Default::default(),
             _renderer: Default::default(),
         };
+
+        // add default milk tea stages
+        new.main_stages.append(MilkTeaUpdate::default());
 
         // set up render plugin
         Renderer::setup(
