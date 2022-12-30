@@ -10,7 +10,7 @@ use winit::{
 };
 
 use crate::{
-    events::{MilkTeaSize, OnMilkTeaResize},
+    stages::{MilkTeaSize, OnMilkTeaResize},
     MilkTeaPlugin,
 };
 
@@ -36,13 +36,25 @@ where
     Renderer: MilkTeaAdapter,
 {
     fn default() -> Self {
-        Self {
+        // create application
+        let mut new = Self {
             registry: Default::default(),
             startup_stages: Default::default(),
             main_stages: Default::default(),
             resources: Default::default(),
             _renderer: Default::default(),
-        }
+        };
+
+        // set up render plugin
+        Renderer::setup(
+            &mut new.registry,
+            &mut new.startup_stages,
+            &mut new.main_stages,
+            &mut new.resources,
+        );
+
+        // return
+        new
     }
 }
 
@@ -61,14 +73,6 @@ where
 
         // add windows to resources
         self.resources.add(Renderer::build(window));
-
-        // setup the render plugin
-        Renderer::setup(
-            &mut self.registry,
-            &mut self.startup_stages,
-            &mut self.main_stages,
-            &mut self.resources,
-        );
 
         // run the startup stages
         self.startup_stages
