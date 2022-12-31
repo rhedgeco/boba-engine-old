@@ -1,5 +1,6 @@
 use boba_core::{BobaResources, BobaStage, PearlRegistry};
 
+#[derive(Debug, Clone, Copy)]
 pub struct MilkTeaSize {
     pub width: u32,
     pub height: u32,
