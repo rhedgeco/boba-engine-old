@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, ops::Deref};
+use std::marker::PhantomData;
 
 use boba_core::{BobaResources, BobaStage, PearlRegistry, StageCollection};
 
@@ -13,40 +13,20 @@ use crate::{
     stages::{MilkTeaSize, MilkTeaUpdate, OnMilkTeaResize},
     MilkTeaPlugin,
 };
-
 pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
-    type Renderer;
-    fn build_renderer(window: &Window) -> Self::Renderer;
+    fn build(window: Window) -> Self;
 }
 
-pub struct MilkTeaWindow {
-    window: Window,
-}
-
-impl MilkTeaWindow {
-    pub fn new(window: Window) -> Self {
-        Self { window }
-    }
-}
-
-impl Deref for MilkTeaWindow {
-    type Target = Window;
-
-    fn deref(&self) -> &Self::Target {
-        &self.window
-    }
-}
-
-pub struct Bobarista<Renderer>
+pub struct Bobarista<RenderAdapter>
 where
-    Renderer: MilkTeaAdapter,
+    RenderAdapter: MilkTeaAdapter,
 {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
     pub main_stages: StageCollection,
     pub resources: BobaResources,
 
-    _renderer: PhantomData<Renderer>,
+    _renderer: PhantomData<RenderAdapter>,
 }
 
 impl<Renderer> Default for Bobarista<Renderer>
@@ -93,8 +73,7 @@ where
             .build(&event_loop)?;
 
         // add windows to resources
-        self.resources.add(RenderAdapter::build_renderer(&window));
-        self.resources.add(MilkTeaWindow::new(window));
+        self.resources.add(RenderAdapter::build(window));
 
         // run the startup stages
         self.startup_stages
@@ -103,11 +82,6 @@ where
         // run the main event loop
         event_loop.run(move |event, _, control_flow| {
             control_flow.set_poll();
-
-            match self.resources.get::<MilkTeaWindow>() {
-                Ok(_) => (),
-                Err(e) => panic!("Could not get MilkTeaWindow from resources. Error: {e}"),
-            }
 
             match event {
                 Event::WindowEvent { ref event, .. } => match event {
