@@ -7,6 +7,7 @@ use crate::{TaroCameras, TaroHardware, TaroRenderPearls};
 pub trait TaroSurfaceManager: 'static {
     fn get_hardware(&self) -> &TaroHardware;
     fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture, wgpu::SurfaceError>;
+    fn get_surface_size(&self) -> (u32, u32);
 }
 
 pub struct OnTaroRender<T>

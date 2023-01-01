@@ -42,6 +42,13 @@ impl TaroSurfaceManager for TaroMilkTea {
     fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture, wgpu::SurfaceError> {
         self.taro_surface.surface.get_current_texture()
     }
+
+    fn get_surface_size(&self) -> (u32, u32) {
+        (
+            self.taro_surface.config.width,
+            self.taro_surface.config.height,
+        )
+    }
 }
 
 impl MilkTeaAdapter for TaroMilkTea {
