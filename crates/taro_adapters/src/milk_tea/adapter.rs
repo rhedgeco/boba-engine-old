@@ -1,4 +1,4 @@
-use boba_core::{BobaResources, PearlRegistry, StageCollection, WrapPearl};
+use boba_core::{BobaResources, Pearl, PearlRegistry, StageCollection};
 
 use log::error;
 use milk_tea::{stages::MilkTeaSize, winit::window::Window, MilkTeaAdapter, MilkTeaPlugin};
@@ -70,7 +70,7 @@ impl MilkTeaPlugin for TaroMilkTea {
         resources: &mut BobaResources,
     ) {
         main_stages.append(OnTaroRender::<TaroMilkTea>::default());
-        registry.add(&TaroMilkTeaResizeListener.wrap_pearl());
+        registry.add(&Pearl::wrap(TaroMilkTeaResizeListener));
         resources.add(TaroRenderPearls::default());
         resources.add(TaroCameras::default());
     }
