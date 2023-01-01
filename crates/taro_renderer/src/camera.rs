@@ -22,8 +22,8 @@ pub struct TaroCameraSettings {
 pub struct TaroCamera {
     pub(crate) aspect: f32,
     view_proj_matrix: Mat4,
-    transform: Pearl<BobaTransform>,
 
+    pub transform: Pearl<BobaTransform>,
     pub settings: TaroCameraSettings,
     pub passes: TaroRenderPasses,
 }
