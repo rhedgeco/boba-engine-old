@@ -59,7 +59,7 @@ where
         // render all cameras
         let size = surface.get_surface_size();
         for camera in cameras.cameras.iter_mut() {
-            camera.settings.aspect = size.0 as f32 / size.1 as f32;
+            camera.aspect = size.0 as f32 / size.1 as f32;
             camera.render(&*pearls, &view, &mut encoder, hardware);
         }
 
