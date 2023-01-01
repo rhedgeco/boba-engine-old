@@ -1,17 +1,18 @@
 use std::{
-    any::{Any, TypeId},
+    any::{type_name, Any, TypeId},
     cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
+    fmt::Debug,
 };
 
 use hashbrown::HashMap;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ResourceError<T> {
-    #[error("Resource does not exist")]
-    NotFound,
-    #[error("Error when borrowing resource: {0}")]
-    BorrowError(T),
+pub enum ResourceError<E> {
+    #[error("Resource '{0}' does not exist.")]
+    NotFound(String),
+    #[error("Error when borrowing resource '{0}': {1}")]
+    BorrowError(String, E),
 }
 
 #[derive(Default)]
@@ -22,7 +23,7 @@ pub struct BobaResources {
 impl BobaResources {
     pub fn get<T: 'static>(&self) -> Result<Ref<T>, ResourceError<BorrowError>> {
         let Some(any) = self.resources.get(&TypeId::of::<T>()) else {
-            return Err(ResourceError::NotFound);
+            return Err(ResourceError::NotFound(type_name::<T>().into()));
         };
 
         return match any
@@ -32,13 +33,13 @@ impl BobaResources {
             .try_borrow()
         {
             Ok(item) => Ok(item),
-            Err(borrow) => Err(ResourceError::BorrowError(borrow)),
+            Err(borrow) => Err(ResourceError::BorrowError(type_name::<T>().into(), borrow)),
         };
     }
 
     pub fn get_mut<T: 'static>(&self) -> Result<RefMut<T>, ResourceError<BorrowMutError>> {
         let Some(any) = self.resources.get(&TypeId::of::<T>()) else {
-            return Err(ResourceError::NotFound);
+            return Err(ResourceError::NotFound(type_name::<T>().into()));
         };
 
         return match any
@@ -48,7 +49,7 @@ impl BobaResources {
             .try_borrow_mut()
         {
             Ok(item) => Ok(item),
-            Err(borrow) => Err(ResourceError::BorrowError(borrow)),
+            Err(borrow) => Err(ResourceError::BorrowError(type_name::<T>().into(), borrow)),
         };
     }
 
