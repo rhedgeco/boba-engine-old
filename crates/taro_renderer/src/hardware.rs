@@ -1,9 +1,27 @@
+use std::sync::atomic::AtomicU32;
+
 pub struct TaroSurface {
     pub surface: wgpu::Surface,
     pub config: wgpu::SurfaceConfiguration,
 }
 
+/// The Id for TaroHardware
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
+pub struct HardwareId {
+    _id: u32,
+}
+
+impl HardwareId {
+    fn new() -> Self {
+        static COUNTER: AtomicU32 = AtomicU32::new(0);
+        Self {
+            _id: COUNTER.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+        }
+    }
+}
+
 pub struct TaroHardware {
+    id: HardwareId,
     instance: wgpu::Instance,
     adapter: wgpu::Adapter,
     device: wgpu::Device,
@@ -11,6 +29,10 @@ pub struct TaroHardware {
 }
 
 impl TaroHardware {
+    pub fn id(&self) -> &HardwareId {
+        &self.id
+    }
+
     pub fn instance(&self) -> &wgpu::Instance {
         &self.instance
     }
@@ -65,6 +87,7 @@ impl TaroHardware {
         surface.configure(&device, &config);
 
         let hardware = Self {
+            id: HardwareId::new(),
             instance,
             adapter,
             device,
