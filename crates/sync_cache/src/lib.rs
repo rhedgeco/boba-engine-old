@@ -6,6 +6,7 @@ use std::{
 use hashbrown::{hash_map::Entry, HashMap};
 
 /// A caching system similar to OnceCell, but for a map of data.
+#[derive(Clone)]
 pub struct SyncCache<K, V> {
     cache: Arc<RwLock<HashMap<K, V>>>,
 }
