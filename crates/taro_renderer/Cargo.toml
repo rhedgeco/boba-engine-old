@@ -15,3 +15,4 @@ bytemuck = { version = "1.4", features = ["derive"] }
 boba_core = { path = "../boba_core" }
 boba_3d = { path = "../boba_3d" }
 milk_tea = { path = "../milk_tea" }
+sync_cache = { path = "../sync_cache" }

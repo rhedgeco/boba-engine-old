@@ -1,4 +1,4 @@
-use hashbrown::{hash_map::Entry, HashMap};
+use sync_cache::SyncCache;
 use wgpu::util::DeviceExt;
 
 use crate::{HardwareId, TaroHardware};
@@ -47,7 +47,7 @@ impl UploadedTaroMesh {
 pub struct TaroMesh {
     vertices: Box<[Vertex]>,
     indices: Box<[u16]>,
-    cache: HashMap<HardwareId, UploadedTaroMesh>,
+    mesh_cache: SyncCache<HardwareId, UploadedTaroMesh>,
 }
 
 impl TaroMesh {
@@ -55,14 +55,13 @@ impl TaroMesh {
         Self {
             vertices: Box::<[Vertex]>::from(vertices),
             indices: Box::<[u16]>::from(indices),
-            cache: HashMap::default(),
+            mesh_cache: Default::default(),
         }
     }
 
-    pub fn upload(&mut self, hardware: &TaroHardware) -> &UploadedTaroMesh {
-        return match self.cache.entry(hardware.id().clone()) {
-            Entry::Occupied(e) => &*e.into_mut(),
-            Entry::Vacant(e) => &*e.insert(UploadedTaroMesh {
+    pub fn upload(&self, hardware: &TaroHardware) -> &UploadedTaroMesh {
+        self.mesh_cache
+            .get_or_init(hardware.id(), || UploadedTaroMesh {
                 hardware_id: hardware.id().clone(),
                 vertex_buffer: MeshBuffer {
                     length: self.vertices.len() as u32,
@@ -84,7 +83,6 @@ impl TaroMesh {
                         },
                     ),
                 },
-            }),
-        };
+            })
     }
 }
