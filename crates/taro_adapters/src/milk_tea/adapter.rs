@@ -4,7 +4,7 @@ use log::error;
 use milk_tea::{stages::MilkTeaSize, winit::window::Window, MilkTeaAdapter, MilkTeaPlugin};
 use taro_renderer::{
     stages::{OnTaroRender, TaroSurfaceManager},
-    TaroHardware, TaroRenderPearls, TaroSurface,
+    TaroCameras, TaroHardware, TaroRenderPearls, TaroSurface,
 };
 
 use super::TaroMilkTeaResizeListener;
@@ -72,5 +72,6 @@ impl MilkTeaPlugin for TaroMilkTea {
         main_stages.append(OnTaroRender::<TaroMilkTea>::default());
         registry.add(&TaroMilkTeaResizeListener.wrap_pearl());
         resources.add(TaroRenderPearls::default());
+        resources.add(TaroCameras::default());
     }
 }
