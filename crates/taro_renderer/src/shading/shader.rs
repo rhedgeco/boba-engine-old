@@ -1,5 +1,5 @@
 use boba_3d::glam::Mat4;
-use sync_cache::SyncCache;
+use once_map::OnceMap;
 
 use crate::{data_types::TaroMesh, HardwareId, TaroHardware};
 
@@ -20,7 +20,7 @@ pub trait TaroMeshShader: TaroCoreShader {
 
 #[derive(Clone)]
 pub struct TaroShader<T> {
-    shader_cache: SyncCache<HardwareId, T>,
+    shader_cache: OnceMap<HardwareId, T>,
 }
 
 impl<T> Default for TaroShader<T> {
