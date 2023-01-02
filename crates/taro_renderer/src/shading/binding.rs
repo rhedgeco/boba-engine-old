@@ -16,6 +16,15 @@ pub struct TaroBinding<T> {
 
 impl<T> TaroBinding<T>
 where
+    T: TaroBindingBuilder + Default,
+{
+    pub fn new_default(layout: &wgpu::BindGroupLayout, hardware: &TaroHardware) -> Self {
+        Self::new(T::default(), layout, hardware)
+    }
+}
+
+impl<T> TaroBinding<T>
+where
     T: TaroBindingBuilder,
 {
     pub fn new(item: T, layout: &wgpu::BindGroupLayout, hardware: &TaroHardware) -> Self {
