@@ -1,9 +1,12 @@
 use std::{any::type_name, marker::PhantomData};
 
-use bytemuck::Pod;
 use wgpu::{util::DeviceExt, BindGroup};
 
 use crate::TaroHardware;
+
+pub trait TaroBindingBuilder {
+    fn build_bytes(&self) -> &[u8];
+}
 
 pub struct TaroBinding<T> {
     buffer: wgpu::Buffer,
@@ -13,14 +16,14 @@ pub struct TaroBinding<T> {
 
 impl<T> TaroBinding<T>
 where
-    T: Pod + Default,
+    T: TaroBindingBuilder,
 {
     pub fn new(item: T, layout: &wgpu::BindGroupLayout, hardware: &TaroHardware) -> Self {
         let buffer = hardware
             .device()
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(&format!("{} Buffer", type_name::<T>())),
-                contents: bytemuck::cast_slice(&[item]),
+                contents: item.build_bytes(),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             });
 
@@ -49,6 +52,6 @@ where
     pub fn write(&self, item: T, hardware: &TaroHardware) {
         hardware
             .queue()
-            .write_buffer(&self.buffer, 0, bytemuck::cast_slice(&[item]))
+            .write_buffer(&self.buffer, 0, item.build_bytes())
     }
 }
