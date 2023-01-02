@@ -1,5 +1,5 @@
 use boba_3d::{
-    glam::{Mat4, Quat, Vec3},
+    glam::{EulerRot, Mat4, Quat, Vec3},
     pearls::BobaTransform,
 };
 use boba_core::Pearl;
@@ -90,6 +90,6 @@ impl TaroCamera {
         let view = Mat4::look_at_rh(position, target, Vec3::Y);
         let proj = Mat4::perspective_rh(settings.fovy, aspect, settings.znear, settings.zfar);
 
-        view * proj
+        proj * view
     }
 }
