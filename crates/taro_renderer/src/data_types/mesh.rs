@@ -1,4 +1,4 @@
-use sync_cache::SyncCache;
+use once_map::OnceMap;
 use wgpu::util::DeviceExt;
 
 use crate::{HardwareId, TaroHardware};
@@ -47,7 +47,7 @@ impl UploadedTaroMesh {
 pub struct TaroMesh {
     vertices: Box<[Vertex]>,
     indices: Box<[u16]>,
-    mesh_cache: SyncCache<HardwareId, UploadedTaroMesh>,
+    mesh_cache: OnceMap<HardwareId, UploadedTaroMesh>,
 }
 
 impl TaroMesh {
