@@ -7,13 +7,6 @@ use boba_core::Pearl;
 use hashbrown::HashMap;
 use indexmap::IndexSet;
 use log::error;
-use wgpu::RenderPass;
-
-use crate::TaroHardware;
-
-pub trait TaroRender: 'static {
-    fn render<'pass>(&'pass mut self, pass: &mut RenderPass<'pass>, hardware: &'pass TaroHardware);
-}
 
 #[derive(Default)]
 pub struct TaroRenderPearls {
