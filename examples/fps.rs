@@ -1,5 +1,4 @@
 use boba::prelude::*;
-use milk_tea::stages::MilkTeaUpdate;
 
 pub struct FpsPrinter;
 
@@ -9,7 +8,7 @@ impl RegisterStages for FpsPrinter {
     }
 }
 
-impl PearlStage<MilkTeaUpdate> for FpsPrinter {
+impl PearlStage<BobaUpdate> for FpsPrinter {
     fn update(&mut self, delta: &f32, _: &mut BobaResources) -> BobaResult {
         println!("FPS: {:.0}", 1. / delta);
         Ok(())
