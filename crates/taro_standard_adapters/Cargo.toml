@@ -1,5 +1,5 @@
 [package]
-name = "taro_adapters"
+name = "taro_standard_adapters"
 version = "0.1.0"
 edition = "2021"
 
