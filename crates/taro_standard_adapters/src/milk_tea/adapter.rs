@@ -1,11 +1,10 @@
-use boba_core::{BobaResources, PearlRegistry, StageCollection, WrapPearl};
+use boba_core::{BobaResources, Pearl, PearlRegistry, StageCollection};
 
 use log::error;
 use milk_tea::{stages::MilkTeaSize, winit::window::Window, MilkTeaAdapter, MilkTeaPlugin};
-
-use crate::{
+use taro_renderer::{
     stages::{OnTaroRender, TaroSurfaceManager},
-    TaroHardware, TaroRenderPasses, TaroRenderPearls, TaroSurface,
+    TaroHardware, TaroSurface,
 };
 
 use super::TaroMilkTeaResizeListener;
@@ -43,6 +42,13 @@ impl TaroSurfaceManager for TaroMilkTea {
     fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture, wgpu::SurfaceError> {
         self.taro_surface.surface.get_current_texture()
     }
+
+    fn get_surface_size(&self) -> (u32, u32) {
+        (
+            self.taro_surface.config.width,
+            self.taro_surface.config.height,
+        )
+    }
 }
 
 impl MilkTeaAdapter for TaroMilkTea {
@@ -68,11 +74,9 @@ impl MilkTeaPlugin for TaroMilkTea {
         registry: &mut PearlRegistry,
         _: &mut StageCollection,
         main_stages: &mut StageCollection,
-        resources: &mut BobaResources,
+        _resources: &mut BobaResources,
     ) {
         main_stages.append(OnTaroRender::<TaroMilkTea>::default());
-        resources.add(TaroRenderPearls::default());
-        resources.add(TaroRenderPasses::default());
-        registry.add(&TaroMilkTeaResizeListener.wrap_pearl());
+        registry.add(&Pearl::wrap(TaroMilkTeaResizeListener));
     }
 }

@@ -1,5 +1,6 @@
 use std::any::TypeId;
 
+use boba_3d::glam::Mat4;
 use indexmap::IndexMap;
 
 use crate::{passes::BlankRenderPass, TaroHardware, TaroRenderPearls};
@@ -8,6 +9,7 @@ pub trait TaroRenderPass: 'static {
     fn render(
         &mut self,
         pearls: &TaroRenderPearls,
+        camera_matrix: &Mat4,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
@@ -87,12 +89,13 @@ impl TaroRenderPasses {
     pub fn render(
         &mut self,
         pearls: &TaroRenderPearls,
+        camera_matrix: &Mat4,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
         for pass in self.passes.values_mut() {
-            pass.dynamic_render(pearls, view, encoder, hardware);
+            pass.dynamic_render(pearls, camera_matrix, view, encoder, hardware);
         }
     }
 }
@@ -102,6 +105,7 @@ trait DynamicPassRenderer {
     fn dynamic_render(
         &mut self,
         pearls: &TaroRenderPearls,
+        camera_matrix: &Mat4,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
@@ -119,10 +123,11 @@ where
     fn dynamic_render(
         &mut self,
         pearls: &TaroRenderPearls,
+        camera_matrix: &Mat4,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
-        self.render(pearls, view, encoder, hardware);
+        self.render(pearls, camera_matrix, view, encoder, hardware);
     }
 }

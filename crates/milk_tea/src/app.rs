@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use boba_core::{BobaResources, BobaStage, PearlRegistry, StageCollection};
+use boba_core::{stages::BobaUpdate, BobaResources, BobaStage, PearlRegistry, StageCollection};
 
 use winit::{
     error::OsError,
@@ -10,7 +10,7 @@ use winit::{
 };
 
 use crate::{
-    stages::{MilkTeaSize, MilkTeaUpdate, OnMilkTeaResize},
+    stages::{MilkTeaSize, OnMilkTeaResize},
     MilkTeaPlugin,
 };
 pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
@@ -43,8 +43,8 @@ where
             _renderer: Default::default(),
         };
 
-        // add default milk tea stages
-        new.main_stages.append(MilkTeaUpdate::default());
+        // add default stages
+        new.main_stages.append(BobaUpdate::default());
 
         // set up render plugin
         Renderer::setup(

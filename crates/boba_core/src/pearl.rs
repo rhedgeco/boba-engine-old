@@ -145,23 +145,6 @@ impl<T> Pearl<T> {
     }
 }
 
-/// Used to wrap an object in a new Pearl
-pub trait WrapPearl<T>
-where
-    T: RegisterStages,
-{
-    fn wrap_pearl(self) -> Pearl<T>;
-}
-
-impl<T> WrapPearl<T> for T
-where
-    T: RegisterStages,
-{
-    fn wrap_pearl(self) -> Pearl<T> {
-        Pearl::wrap(self)
-    }
-}
-
 /// Base trait for being able to register stages with the boba system
 pub trait RegisterStages: 'static
 where

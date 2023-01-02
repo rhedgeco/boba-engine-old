@@ -13,5 +13,8 @@ members = [
 
 [dependencies]
 boba_core = { path = "./crates/boba_core" }
+boba_3d = { path = "./crates/boba_3d" }
 milk_tea = { path = "./crates/milk_tea" }
 taro_renderer = { path = "./crates/taro_renderer" }
+taro_standard_adapters = { path = "./crates/taro_standard_adapters" }
+taro_standard_shaders = { path = "./crates/taro_standard_shaders" }

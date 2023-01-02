@@ -1,13 +1,13 @@
 use std::marker::PhantomData;
 
 use boba_core::{BobaResources, BobaResult, BobaStage, PearlRegistry};
-use log::warn;
 
-use crate::{TaroHardware, TaroRenderPasses, TaroRenderPearls};
+use crate::{TaroCameras, TaroHardware, TaroRenderPearls};
 
 pub trait TaroSurfaceManager: 'static {
     fn get_hardware(&self) -> &TaroHardware;
     fn get_current_texture(&self) -> Result<wgpu::SurfaceTexture, wgpu::SurfaceError>;
+    fn get_surface_size(&self) -> (u32, u32);
 }
 
 pub struct OnTaroRender<T>
@@ -38,29 +38,32 @@ where
         // run pearls that are listening for this stage
         registry.run_stage::<OnTaroRender<T>>(&(), resources);
 
-        let surface = resources.get::<T>()?;
+        // collect all necessary resources
+        let mut cameras = resources.get_mut::<TaroCameras>()?;
         let pearls = resources.get::<TaroRenderPearls>()?;
-        let mut passes = resources.get_mut::<TaroRenderPasses>()?;
-        if passes.len() == 0 {
-            warn!("No render passes. Skipping render stage");
-            return Ok(());
+        let surface = resources.get::<T>()?;
+
+        // get the graphics hardware
+        let hardware = surface.get_hardware();
+
+        // get and create the view for rendering output
+        let output = surface.get_current_texture()?;
+        let view = output.texture.create_view(&Default::default());
+
+        // create the command encoder for rendering
+        const COMMAND_ENCODER: wgpu::CommandEncoderDescriptor = wgpu::CommandEncoderDescriptor {
+            label: Some("OnTaroRender Command Encoder"),
+        };
+        let mut encoder = hardware.device().create_command_encoder(&COMMAND_ENCODER);
+
+        // render all cameras
+        let size = surface.get_surface_size();
+        for camera in cameras.cameras.iter_mut() {
+            camera.aspect = size.0 as f32 / size.1 as f32;
+            camera.render(&*pearls, &view, &mut encoder, hardware);
         }
 
-        let hardware = surface.get_hardware();
-        let output = surface.get_current_texture()?;
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
-
-        let mut encoder =
-            hardware
-                .device()
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some("Render Encoder"),
-                });
-
-        passes.render(&pearls, &view, &mut encoder, hardware);
-
+        // submit and present the rendered frame
         hardware.queue().submit(std::iter::once(encoder.finish()));
         Ok(output.present())
     }

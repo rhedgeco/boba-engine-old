@@ -1,18 +1,18 @@
 use std::time::Instant;
 
-use boba_core::{BobaResources, BobaResult, BobaStage, PearlRegistry};
+use crate::{BobaResources, BobaResult, BobaStage, PearlRegistry};
 
-pub struct MilkTeaUpdate {
+pub struct BobaUpdate {
     instant: Option<Instant>,
 }
 
-impl Default for MilkTeaUpdate {
+impl Default for BobaUpdate {
     fn default() -> Self {
         Self { instant: None }
     }
 }
 
-impl BobaStage for MilkTeaUpdate {
+impl BobaStage for BobaUpdate {
     type Data = f32;
 
     fn run(&mut self, registry: &mut PearlRegistry, resources: &mut BobaResources) -> BobaResult {
@@ -23,7 +23,7 @@ impl BobaStage for MilkTeaUpdate {
 
         self.instant = Some(Instant::now());
 
-        registry.run_stage::<MilkTeaUpdate>(&delta, resources);
+        registry.run_stage::<BobaUpdate>(&delta, resources);
 
         Ok(())
     }

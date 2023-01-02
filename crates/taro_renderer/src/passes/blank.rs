@@ -1,3 +1,5 @@
+use boba_3d::glam::Mat4;
+
 use crate::TaroRenderPass;
 
 pub struct BlankRenderPass;
@@ -6,6 +8,7 @@ impl TaroRenderPass for BlankRenderPass {
     fn render(
         &mut self,
         _pearls: &crate::TaroRenderPearls,
+        _camera_matrix: &Mat4,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         _hardware: &crate::TaroHardware,
@@ -20,7 +23,7 @@ impl TaroRenderPass for BlankRenderPass {
                         r: 0.0,
                         g: 0.0,
                         b: 0.0,
-                        a: 0.0,
+                        a: 1.0,
                     }),
                     store: true,
                 },

@@ -7,13 +7,6 @@ use boba_core::Pearl;
 use hashbrown::HashMap;
 use indexmap::IndexSet;
 use log::error;
-use wgpu::RenderPass;
-
-use crate::TaroHardware;
-
-pub trait TaroRender: 'static {
-    fn render<'pass>(&'pass mut self, pass: &mut RenderPass<'pass>, hardware: &'pass TaroHardware);
-}
 
 #[derive(Default)]
 pub struct TaroRenderPearls {
@@ -21,10 +14,7 @@ pub struct TaroRenderPearls {
 }
 
 impl TaroRenderPearls {
-    pub fn add<T>(&mut self, pearl: Pearl<T>)
-    where
-        T: TaroRender,
-    {
+    pub fn add<T: 'static>(&mut self, pearl: Pearl<T>) {
         let typeid = TypeId::of::<T>();
         match self.pearls.get_mut(&typeid) {
             Some(any_set) => {
@@ -41,10 +31,7 @@ impl TaroRenderPearls {
         }
     }
 
-    pub fn remove<T>(&mut self, pearl: &Pearl<T>)
-    where
-        T: TaroRender,
-    {
+    pub fn remove<T: 'static>(&mut self, pearl: &Pearl<T>) {
         let typeid = TypeId::of::<T>();
         match self.pearls.get_mut(&typeid) {
             Some(any_set) => {
@@ -57,10 +44,7 @@ impl TaroRenderPearls {
         }
     }
 
-    pub fn collect<T>(&self) -> Vec<Ref<T>>
-    where
-        T: TaroRender,
-    {
+    pub fn collect<T: 'static>(&self) -> Vec<Ref<T>> {
         let typeid = TypeId::of::<T>();
         return match self.pearls.get(&typeid) {
             None => Vec::new(),
@@ -80,10 +64,7 @@ impl TaroRenderPearls {
         };
     }
 
-    pub fn collect_mut<T>(&self) -> Vec<RefMut<T>>
-    where
-        T: TaroRender,
-    {
+    pub fn collect_mut<T: 'static>(&self) -> Vec<RefMut<T>> {
         let typeid = TypeId::of::<T>();
         return match self.pearls.get(&typeid) {
             None => Vec::new(),
