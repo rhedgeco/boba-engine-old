@@ -13,3 +13,5 @@ pub mod passes;
 pub mod pearls;
 pub mod shading;
 pub mod stages;
+
+pub use wgpu;
