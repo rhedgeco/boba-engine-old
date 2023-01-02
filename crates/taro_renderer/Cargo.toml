@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 log = "0.4"
 wgpu = "0.14"
+thiserror = "1.0"
 pollster = "0.2"
 indexmap = "1.9"
 hashbrown = "0.13"
