@@ -1,5 +1,5 @@
 use boba_3d::{
-    glam::{EulerRot, Mat4, Quat, Vec3},
+    glam::{Mat4, Quat, Vec3},
     pearls::BobaTransform,
 };
 use boba_core::Pearl;
