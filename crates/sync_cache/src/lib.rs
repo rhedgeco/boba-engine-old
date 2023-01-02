@@ -8,7 +8,7 @@ use hashbrown::{hash_map::Entry, HashMap};
 /// A caching system similar to OnceCell, but for a map of data.
 #[derive(Clone)]
 pub struct SyncCache<K, V> {
-    cache: Arc<RwLock<HashMap<K, V>>>,
+    cache: Arc<RwLock<HashMap<K, Arc<V>>>>,
 }
 
 impl<K, V> Default for SyncCache<K, V> {
@@ -33,7 +33,7 @@ impl<K, V> SyncCache<K, V> {
         // This is safe because the data, once in the hashmap, will never be modified or destroyed, and will live as long as the SyncCache.
         let map = self.cache.read().unwrap();
         match map.get(key) {
-            Some(shader) => return unsafe { std::mem::transmute(shader) },
+            Some(shader) => return unsafe { &*Arc::<V>::as_ptr(shader) },
             _ => (),
         }
 
@@ -41,8 +41,8 @@ impl<K, V> SyncCache<K, V> {
         let mut map = self.cache.write().unwrap();
         return match map.entry(key.clone()) {
             // if somehow the shader has been compiled between locks, well great! We will return it now.
-            Entry::Occupied(e) => unsafe { std::mem::transmute(&*e.into_mut()) },
-            Entry::Vacant(e) => unsafe { std::mem::transmute(&*e.insert(f())) },
+            Entry::Occupied(e) => unsafe { &*Arc::<V>::as_ptr(e.into_mut()) },
+            Entry::Vacant(e) => unsafe { &*Arc::<V>::as_ptr(e.insert(Arc::new(f()))) },
         };
     }
 }
