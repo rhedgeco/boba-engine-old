@@ -36,6 +36,7 @@ impl<K, V> SyncCache<K, V> {
             Some(shader) => return unsafe { &*Arc::<V>::as_ptr(shader) },
             _ => (),
         }
+        drop(map);
 
         // If the shader has not been uploaded before, we need get a write lock and create the new entry for the shader.
         let mut map = self.cache.write().unwrap();
