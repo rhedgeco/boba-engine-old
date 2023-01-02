@@ -3,14 +3,14 @@ use sync_cache::SyncCache;
 
 use crate::{data_types::TaroMesh, HardwareId, TaroHardware};
 
-pub trait TaroCoreShader {
+pub trait TaroCoreShader: 'static {
     fn build_instance(hardware: &TaroHardware) -> Self;
 }
 
-pub trait TaroMeshShader {
+pub trait TaroMeshShader: TaroCoreShader {
     fn render<'pass>(
         &'pass self,
-        pass: &'pass mut wgpu::RenderPass<'pass>,
+        pass: &mut wgpu::RenderPass<'pass>,
         mesh: &'pass TaroMesh,
         camera_matrix: &Mat4,
         model_matrix: &Mat4,
