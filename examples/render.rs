@@ -52,26 +52,28 @@ fn main() {
     let mut app = Bobarista::<TaroMilkTea>::default();
 
     // create camera with transform
-    let mut camera_transform = BobaTransform::from_position(Vec3::new(0., 1., 2.));
-    camera_transform.look_at(Vec3::ZERO);
-    let camera_transform = Pearl::wrap(camera_transform);
-    let mut camera = TaroCamera::new(
+    let mut camera = TaroCamera::new_simple(
+        BobaTransform::from_position_look_at(Vec3::new(0., 1., 2.), Vec3::ZERO),
         TaroCameraSettings {
             fovy: 45.0,
             znear: 0.1,
             zfar: 100.0,
         },
-        camera_transform,
     );
+
+    // add unlit render pass for testing
     camera.passes.append(UnlitRenderPass);
 
     // create a mesh to be rendered
-    let model_transform = Pearl::wrap(BobaTransform::from_position(Vec3::ZERO));
-    let shader = TaroShader::<UnlitShader>::new();
-    let mesh = TaroMesh::new(VERTICES, INDICES);
-    let renderer = Pearl::wrap(TaroMeshRenderer::new(model_transform.clone(), mesh, shader));
+    let renderer = TaroMeshRenderer::new_simple(
+        BobaTransform::from_position(Vec3::ZERO),
+        TaroMesh::new(VERTICES, INDICES),
+        TaroShader::<UnlitShader>::new(),
+    );
+
+    // create a rotator object that links to the renderers transform
     let rotator = Pearl::wrap(Rotator {
-        transform: model_transform,
+        transform: renderer.transform.clone(),
         current_rot: 0.,
         speed: 1.,
     });
@@ -84,7 +86,7 @@ fn main() {
 
     // create TaroRenderPearls resource and add it
     let mut render_pearls = TaroRenderPearls::default();
-    render_pearls.add(renderer);
+    render_pearls.add(Pearl::wrap(renderer));
     app.resources.add(render_pearls);
 
     // run the app

@@ -30,6 +30,12 @@ impl BobaTransform {
         Self::new(position, Quat::IDENTITY, Vec3::ONE)
     }
 
+    pub fn from_position_look_at(position: Vec3, look: Vec3) -> Self {
+        let mut new = Self::new(position, Quat::IDENTITY, Vec3::ONE);
+        new.look_at(look);
+        new
+    }
+
     pub fn new(position: Vec3, rotation: Quat, scale: Vec3) -> Self {
         let matrix = Mat4::from_scale_rotation_translation(scale, rotation, position);
 
