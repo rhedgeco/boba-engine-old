@@ -1,7 +1,12 @@
-use boba_3d::glam::Mat4;
 use once_map::OnceMap;
 
-use crate::{data_types::TaroMesh, HardwareId, TaroHardware};
+use crate::{
+    data_types::{
+        buffers::{CameraMatrix, TransformMatrix},
+        TaroBuffer, UploadedTaroMesh,
+    },
+    HardwareId, TaroHardware,
+};
 
 pub trait TaroCoreShader: 'static {
     fn build_instance(hardware: &TaroHardware) -> Self;
@@ -11,9 +16,9 @@ pub trait TaroMeshShader: TaroCoreShader {
     fn render<'pass>(
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
-        mesh: &'pass TaroMesh,
-        camera_matrix: &Mat4,
-        model_matrix: &Mat4,
+        mesh: &'pass UploadedTaroMesh,
+        camera_matrix: &'pass TaroBuffer<CameraMatrix>,
+        model_matrix: &'pass TaroBuffer<TransformMatrix>,
         hardware: &TaroHardware,
     );
 }
@@ -42,5 +47,6 @@ where
     pub fn upload(&self, hardware: &TaroHardware) -> &T {
         self.shader_cache
             .get_or_init(hardware.id(), || T::build_instance(hardware))
+            .into_data()
     }
 }

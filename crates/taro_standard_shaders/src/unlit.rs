@@ -1,17 +1,18 @@
 use once_cell::sync::OnceCell;
 use taro_renderer::{
-    data_types::Vertex,
-    shading::{TaroBinding, TaroCoreShader, TaroMeshShader},
+    data_types::{
+        buffers::{CameraMatrix, TransformMatrix},
+        TaroBuffer, UploadedTaroMesh, Vertex,
+    },
+    shading::{TaroCoreShader, TaroMeshShader},
     wgpu,
 };
-use taro_standard_bindings::Mat4Binding;
 
 static PIPELINE: OnceCell<wgpu::RenderPipeline> = OnceCell::new();
 static MATRIX_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
 
 pub struct UnlitShader {
-    camera_matrix: TaroBinding<Mat4Binding>,
-    model_matrix: TaroBinding<Mat4Binding>,
+    _private: (),
 }
 
 impl TaroCoreShader for UnlitShader {
@@ -91,10 +92,7 @@ impl TaroCoreShader for UnlitShader {
                 })
         });
 
-        Self {
-            camera_matrix: TaroBinding::new_default(matrix_layout, hardware),
-            model_matrix: TaroBinding::new_default(matrix_layout, hardware),
-        }
+        Self { _private: () }
     }
 }
 
@@ -102,23 +100,25 @@ impl TaroMeshShader for UnlitShader {
     fn render<'pass>(
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
-        mesh: &'pass taro_renderer::data_types::TaroMesh,
-        camera_matrix: &boba_3d::glam::Mat4,
-        model_matrix: &boba_3d::glam::Mat4,
+        mesh: &'pass UploadedTaroMesh,
+        camera_matrix: &'pass TaroBuffer<CameraMatrix>,
+        model_matrix: &'pass TaroBuffer<TransformMatrix>,
         hardware: &taro_renderer::TaroHardware,
     ) {
-        self.camera_matrix.write(camera_matrix.into(), hardware);
-        self.model_matrix.write(model_matrix.into(), hardware);
-        let uploaded_mesh = mesh.upload(hardware);
+        let camera_bind =
+            camera_matrix.get_or_init_binding(self, MATRIX_LAYOUT.get().unwrap(), hardware);
+
+        let model_bind =
+            model_matrix.get_or_init_binding(self, MATRIX_LAYOUT.get().unwrap(), hardware);
 
         pass.set_pipeline(PIPELINE.get().unwrap());
-        pass.set_bind_group(0, self.camera_matrix.bind_group(), &[]);
-        pass.set_bind_group(1, self.model_matrix.bind_group(), &[]);
-        pass.set_vertex_buffer(0, uploaded_mesh.vertex_buffer().raw_buffer.slice(..));
+        pass.set_bind_group(0, camera_bind, &[]);
+        pass.set_bind_group(1, model_bind, &[]);
+        pass.set_vertex_buffer(0, mesh.vertex_buffer().raw_buffer().slice(..));
         pass.set_index_buffer(
-            uploaded_mesh.index_buffer().raw_buffer.slice(..),
+            mesh.index_buffer().raw_buffer().slice(..),
             wgpu::IndexFormat::Uint16,
         );
-        pass.draw_indexed(0..uploaded_mesh.index_buffer().length, 0, 0..1);
+        pass.draw_indexed(0..mesh.index_buffer().len(), 0, 0..1);
     }
 }

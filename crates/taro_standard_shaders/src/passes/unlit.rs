@@ -1,4 +1,8 @@
-use taro_renderer::{pearls::TaroMeshRenderer, wgpu, TaroRenderPass};
+use taro_renderer::{
+    data_types::{buffers::CameraMatrix, TaroBuffer},
+    pearls::TaroMeshRenderer,
+    wgpu, TaroRenderPass,
+};
 
 use crate::UnlitShader;
 
@@ -8,7 +12,7 @@ impl TaroRenderPass for UnlitRenderPass {
     fn render(
         &mut self,
         pearls: &taro_renderer::TaroRenderPearls,
-        camera_matrix: &boba_3d::glam::Mat4,
+        camera_matrix: &TaroBuffer<CameraMatrix>,
         view: &taro_renderer::wgpu::TextureView,
         encoder: &mut taro_renderer::wgpu::CommandEncoder,
         hardware: &taro_renderer::TaroHardware,
