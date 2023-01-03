@@ -1,6 +1,6 @@
 use once_map::OnceMap;
 
-use crate::{data_types::TaroMesh, HardwareId, TaroHardware};
+use crate::{data_types::UploadedTaroMesh, HardwareId, TaroHardware};
 
 use super::bindings::{CameraMatrix, TransformMatrix};
 
@@ -12,7 +12,7 @@ pub trait TaroMeshShader: TaroCoreShader {
     fn render<'pass>(
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
-        mesh: &'pass TaroMesh,
+        mesh: &'pass UploadedTaroMesh,
         camera_matrix: &CameraMatrix,
         model_matrix: &TransformMatrix,
         hardware: &TaroHardware,
@@ -43,5 +43,6 @@ where
     pub fn upload(&self, hardware: &TaroHardware) -> &T {
         self.shader_cache
             .get_or_init(hardware.id(), || T::build_instance(hardware))
+            .into_data()
     }
 }

@@ -6,12 +6,13 @@ use crate::{
     data_types::TaroMesh,
     shading::{
         bindings::{CameraMatrix, TransformMatrix},
-        TaroMeshShader, TaroShader,
+        TaroMap, TaroMeshShader, TaroShader,
     },
     TaroHardware,
 };
 
 pub struct TaroMeshRenderer<T> {
+    map: TaroMap<TaroMesh>,
     model_matrix: TransformMatrix,
 
     pub mesh: TaroMesh,
@@ -33,6 +34,7 @@ where
         };
 
         Self {
+            map: Default::default(),
             model_matrix,
             mesh,
             shader,
@@ -53,9 +55,10 @@ where
             }
         }
 
+        let uploaded_mesh = self.map.get_or_upload(&self.mesh, hardware);
         self.shader.upload(hardware).render(
             pass,
-            &self.mesh,
+            uploaded_mesh,
             camera_matrix,
             &self.model_matrix,
             hardware,

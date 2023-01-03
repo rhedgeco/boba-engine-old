@@ -1,6 +1,6 @@
 use once_cell::sync::OnceCell;
 use taro_renderer::{
-    data_types::Vertex,
+    data_types::{UploadedTaroMesh, Vertex},
     shading::{
         bindings::{CameraMatrix, TransformMatrix},
         TaroBinding, TaroCoreShader, TaroMeshShader,
@@ -104,23 +104,22 @@ impl TaroMeshShader for UnlitShader {
     fn render<'pass>(
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
-        mesh: &'pass taro_renderer::data_types::TaroMesh,
+        mesh: &'pass UploadedTaroMesh,
         camera_matrix: &CameraMatrix,
         model_matrix: &TransformMatrix,
         hardware: &taro_renderer::TaroHardware,
     ) {
         self.camera_matrix.write(camera_matrix, hardware);
         self.model_matrix.write(model_matrix, hardware);
-        let uploaded_mesh = mesh.upload(hardware);
 
         pass.set_pipeline(PIPELINE.get().unwrap());
         pass.set_bind_group(0, self.camera_matrix.bind_group(), &[]);
         pass.set_bind_group(1, self.model_matrix.bind_group(), &[]);
-        pass.set_vertex_buffer(0, uploaded_mesh.vertex_buffer().raw_buffer.slice(..));
+        pass.set_vertex_buffer(0, mesh.vertex_buffer().raw_buffer().slice(..));
         pass.set_index_buffer(
-            uploaded_mesh.index_buffer().raw_buffer.slice(..),
+            mesh.index_buffer().raw_buffer().slice(..),
             wgpu::IndexFormat::Uint16,
         );
-        pass.draw_indexed(0..uploaded_mesh.index_buffer().length, 0, 0..1);
+        pass.draw_indexed(0..mesh.index_buffer().len(), 0, 0..1);
     }
 }

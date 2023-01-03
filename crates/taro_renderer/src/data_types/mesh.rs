@@ -1,7 +1,14 @@
-use once_map::OnceMap;
+use std::{
+    marker::PhantomData,
+    sync::atomic::{AtomicU32, Ordering},
+};
+
 use wgpu::util::DeviceExt;
 
-use crate::{HardwareId, TaroHardware};
+use crate::{
+    shading::{TaroData, TaroDataUploader},
+    HardwareId, TaroHardware,
+};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
@@ -19,15 +26,72 @@ impl Vertex {
     };
 }
 
-pub struct MeshBuffer {
-    pub raw_buffer: wgpu::Buffer,
-    pub length: u32,
+pub struct MeshBuffer<T> {
+    raw_buffer: wgpu::Buffer,
+    length: AtomicU32,
+    _type: PhantomData<T>,
+}
+
+impl<T> MeshBuffer<T> {
+    pub fn len(&self) -> u32 {
+        self.length.load(Ordering::Relaxed)
+    }
+
+    pub fn raw_buffer(&self) -> &wgpu::Buffer {
+        &self.raw_buffer
+    }
+}
+
+impl MeshBuffer<Vertex> {
+    fn new(vertices: &[Vertex], hardware: &TaroHardware) -> Self {
+        Self {
+            _type: Default::default(),
+            length: AtomicU32::new(vertices.len() as u32),
+            raw_buffer: hardware
+                .device()
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: bytemuck::cast_slice(&vertices),
+                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                }),
+        }
+    }
+
+    fn write(&self, vertices: &[Vertex], hardware: &TaroHardware) {
+        hardware
+            .queue()
+            .write_buffer(&self.raw_buffer, 0, bytemuck::cast_slice(vertices));
+        self.length.store(vertices.len() as u32, Ordering::Relaxed);
+    }
+}
+
+impl MeshBuffer<u16> {
+    fn new(indices: &[u16], hardware: &TaroHardware) -> Self {
+        Self {
+            _type: Default::default(),
+            length: AtomicU32::new(indices.len() as u32),
+            raw_buffer: hardware
+                .device()
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: bytemuck::cast_slice(&indices),
+                    usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+                }),
+        }
+    }
+
+    fn write(&self, indices: &[u16], hardware: &TaroHardware) {
+        hardware
+            .queue()
+            .write_buffer(&self.raw_buffer, 0, bytemuck::cast_slice(indices));
+        self.length.store(indices.len() as u32, Ordering::Relaxed);
+    }
 }
 
 pub struct UploadedTaroMesh {
     hardware_id: HardwareId,
-    vertex_buffer: MeshBuffer,
-    index_buffer: MeshBuffer,
+    vertex_buffer: MeshBuffer<Vertex>,
+    index_buffer: MeshBuffer<u16>,
 }
 
 impl UploadedTaroMesh {
@@ -35,19 +99,25 @@ impl UploadedTaroMesh {
         &self.hardware_id
     }
 
-    pub fn vertex_buffer(&self) -> &MeshBuffer {
+    pub fn vertex_buffer(&self) -> &MeshBuffer<Vertex> {
         &self.vertex_buffer
     }
 
-    pub fn index_buffer(&self) -> &MeshBuffer {
+    pub fn index_buffer(&self) -> &MeshBuffer<u16> {
         &self.index_buffer
+    }
+}
+
+impl TaroData<TaroMesh> for UploadedTaroMesh {
+    fn write_new(&self, new_data: &TaroMesh, hardware: &TaroHardware) {
+        self.vertex_buffer.write(&new_data.vertices, hardware);
+        self.index_buffer.write(&new_data.indices, hardware);
     }
 }
 
 pub struct TaroMesh {
     vertices: Box<[Vertex]>,
     indices: Box<[u16]>,
-    mesh_cache: OnceMap<HardwareId, UploadedTaroMesh>,
 }
 
 impl TaroMesh {
@@ -55,34 +125,18 @@ impl TaroMesh {
         Self {
             vertices: Box::<[Vertex]>::from(vertices),
             indices: Box::<[u16]>::from(indices),
-            mesh_cache: Default::default(),
         }
     }
+}
 
-    pub fn upload(&self, hardware: &TaroHardware) -> &UploadedTaroMesh {
-        self.mesh_cache
-            .get_or_init(hardware.id(), || UploadedTaroMesh {
-                hardware_id: hardware.id().clone(),
-                vertex_buffer: MeshBuffer {
-                    length: self.vertices.len() as u32,
-                    raw_buffer: hardware.device().create_buffer_init(
-                        &wgpu::util::BufferInitDescriptor {
-                            label: Some("Vertex Buffer"),
-                            contents: bytemuck::cast_slice(&self.vertices),
-                            usage: wgpu::BufferUsages::VERTEX,
-                        },
-                    ),
-                },
-                index_buffer: MeshBuffer {
-                    length: self.indices.len() as u32,
-                    raw_buffer: hardware.device().create_buffer_init(
-                        &wgpu::util::BufferInitDescriptor {
-                            label: Some("Index Buffer"),
-                            contents: bytemuck::cast_slice(&self.indices),
-                            usage: wgpu::BufferUsages::INDEX,
-                        },
-                    ),
-                },
-            })
+impl TaroDataUploader for TaroMesh {
+    type UploadData = UploadedTaroMesh;
+
+    fn new_upload(&self, hardware: &TaroHardware) -> Self::UploadData {
+        UploadedTaroMesh {
+            hardware_id: hardware.id().clone(),
+            vertex_buffer: MeshBuffer::<Vertex>::new(&self.vertices, hardware),
+            index_buffer: MeshBuffer::<u16>::new(&self.indices, hardware),
+        }
     }
 }
