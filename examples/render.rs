@@ -29,11 +29,7 @@ pub struct Rotator {
     pub speed: f32,
 }
 
-impl RegisterStages for Rotator {
-    fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar) {
-        stages.add(pearl.clone());
-    }
-}
+register_pearl_stages!(Rotator: BobaUpdate);
 
 impl PearlStage<BobaUpdate> for Rotator {
     fn update(&mut self, delta: &f32, _resources: &mut BobaResources) -> BobaResult {
