@@ -1,11 +1,13 @@
-use boba_core::{BobaResources, BobaResult, Pearl, PearlStage, RegisterStages, StageRegistrar};
+use boba_core::{
+    BobaResources, BobaResult, Pearl, PearlStage, RegisterPearlStages, StageRegistrar,
+};
 use milk_tea::stages::{MilkTeaSize, OnMilkTeaResize};
 
 use super::TaroMilkTea;
 
 pub struct TaroMilkTeaResizeListener;
 
-impl RegisterStages for TaroMilkTeaResizeListener {
+impl RegisterPearlStages for TaroMilkTeaResizeListener {
     fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar) {
         stages.add(pearl.clone());
     }

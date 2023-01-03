@@ -146,16 +146,36 @@ impl<T> Pearl<T> {
 }
 
 /// Base trait for being able to register stages with the boba system
-pub trait RegisterStages: 'static
+pub trait RegisterPearlStages: 'static
 where
     Self: Sized,
 {
     fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar);
 }
 
-pub trait PearlStage<Stage>: RegisterStages
+pub trait PearlStage<Stage>: RegisterPearlStages
 where
     Stage: BobaStage,
 {
     fn update(&mut self, data: &Stage::Data, resources: &mut BobaResources) -> BobaResult;
+}
+
+#[macro_export]
+macro_rules! register_pearl_stages {
+    ($type:ty: $($item:ty),+ $(,)?) => {
+        // weird hack to check if type implements all provided traits
+        // uses trait bounds to prevent compilation and show error message
+        const _: fn() = || {
+            fn assert_impl_all<T: ?Sized $(+ $crate::PearlStage<$item>)+>() {}
+            assert_impl_all::<$type>();
+        };
+
+        impl $crate::RegisterPearlStages for $type {
+            fn register(pearl: &$crate::Pearl<Self>, stages: &mut impl $crate::StageRegistrar) {
+                $(
+                    stages.add::<$type, $item>(pearl.clone());
+                )*
+            }
+        }
+    };
 }

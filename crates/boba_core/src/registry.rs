@@ -8,7 +8,9 @@ use hashbrown::HashMap;
 use indexmap::IndexSet;
 use log::{error, info};
 
-use crate::{BobaResources, BobaStage, Pearl, PearlId, PearlMutError, PearlStage, RegisterStages};
+use crate::{
+    BobaResources, BobaStage, Pearl, PearlId, PearlMutError, PearlStage, RegisterPearlStages,
+};
 
 /// A collection of pearls, all registered to their respective stages.
 ///
@@ -21,7 +23,7 @@ pub struct PearlRegistry {
 impl PearlRegistry {
     pub fn add<T>(&mut self, pearl: &Pearl<T>)
     where
-        T: RegisterStages,
+        T: RegisterPearlStages,
     {
         T::register(&pearl, self);
     }
@@ -48,7 +50,7 @@ pub trait StageRegistrar {
     fn add<Update, Stage>(&mut self, pearl: Pearl<Update>)
     where
         Stage: BobaStage,
-        Update: PearlStage<Stage> + RegisterStages;
+        Update: PearlStage<Stage> + RegisterPearlStages;
 }
 
 impl StageRegistrar for PearlRegistry {
@@ -56,7 +58,7 @@ impl StageRegistrar for PearlRegistry {
     fn add<Update, Stage>(&mut self, pearl: Pearl<Update>)
     where
         Stage: BobaStage,
-        Update: PearlStage<Stage> + RegisterStages,
+        Update: PearlStage<Stage> + RegisterPearlStages,
     {
         let stageid = TypeId::of::<Stage>();
         match self.pearls.get_mut(&stageid) {
