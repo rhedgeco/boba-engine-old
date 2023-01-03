@@ -1,17 +1,19 @@
 use once_cell::sync::OnceCell;
 use taro_renderer::{
     data_types::Vertex,
-    shading::{TaroBinding, TaroCoreShader, TaroMeshShader},
+    shading::{
+        bindings::{CameraMatrix, TransformMatrix},
+        TaroBinding, TaroCoreShader, TaroMeshShader,
+    },
     wgpu,
 };
-use taro_standard_bindings::Mat4Binding;
 
 static PIPELINE: OnceCell<wgpu::RenderPipeline> = OnceCell::new();
 static MATRIX_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
 
 pub struct UnlitShader {
-    camera_matrix: TaroBinding<Mat4Binding>,
-    model_matrix: TaroBinding<Mat4Binding>,
+    camera_matrix: TaroBinding<CameraMatrix>,
+    model_matrix: TaroBinding<TransformMatrix>,
 }
 
 impl TaroCoreShader for UnlitShader {
@@ -103,12 +105,12 @@ impl TaroMeshShader for UnlitShader {
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
         mesh: &'pass taro_renderer::data_types::TaroMesh,
-        camera_matrix: &boba_3d::glam::Mat4,
-        model_matrix: &boba_3d::glam::Mat4,
+        camera_matrix: &CameraMatrix,
+        model_matrix: &TransformMatrix,
         hardware: &taro_renderer::TaroHardware,
     ) {
-        self.camera_matrix.write(camera_matrix.into(), hardware);
-        self.model_matrix.write(model_matrix.into(), hardware);
+        self.camera_matrix.write(camera_matrix, hardware);
+        self.model_matrix.write(model_matrix, hardware);
         let uploaded_mesh = mesh.upload(hardware);
 
         pass.set_pipeline(PIPELINE.get().unwrap());

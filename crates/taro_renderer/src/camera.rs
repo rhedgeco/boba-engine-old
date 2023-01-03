@@ -5,7 +5,7 @@ use boba_3d::{
 use boba_core::Pearl;
 use log::error;
 
-use crate::{TaroHardware, TaroRenderPasses, TaroRenderPearls};
+use crate::{shading::bindings::CameraMatrix, TaroHardware, TaroRenderPasses, TaroRenderPearls};
 
 #[derive(Default)]
 pub struct TaroCameras {
@@ -21,7 +21,7 @@ pub struct TaroCameraSettings {
 
 pub struct TaroCamera {
     pub(crate) aspect: f32,
-    view_proj_matrix: Mat4,
+    view_proj_matrix: CameraMatrix,
 
     pub transform: Pearl<BobaTransform>,
     pub settings: TaroCameraSettings,
@@ -85,11 +85,11 @@ impl TaroCamera {
         rotation: Quat,
         aspect: f32,
         settings: &TaroCameraSettings,
-    ) -> Mat4 {
+    ) -> CameraMatrix {
         let target = position + rotation * Vec3::Z;
         let view = Mat4::look_at_rh(position, target, Vec3::Y);
         let proj = Mat4::perspective_rh(settings.fovy, aspect, settings.znear, settings.zfar);
 
-        proj * view
+        (proj * view).into()
     }
 }

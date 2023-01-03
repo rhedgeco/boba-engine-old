@@ -58,7 +58,7 @@ where
         &self.bind_group
     }
 
-    pub fn write(&self, item: T, hardware: &TaroHardware) {
+    pub fn write(&self, item: &T, hardware: &TaroHardware) {
         hardware
             .queue()
             .write_buffer(&self.buffer, 0, item.build_bytes())
