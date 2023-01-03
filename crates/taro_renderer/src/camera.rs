@@ -5,7 +5,11 @@ use boba_3d::{
 use boba_core::Pearl;
 use log::error;
 
-use crate::{shading::bindings::CameraMatrix, TaroHardware, TaroRenderPasses, TaroRenderPearls};
+use crate::{
+    data_types::buffers::CameraMatrix,
+    shading::{TaroDataUploader, TaroMap},
+    TaroHardware, TaroRenderPasses, TaroRenderPearls,
+};
 
 #[derive(Default)]
 pub struct TaroCameras {
@@ -20,9 +24,9 @@ pub struct TaroCameraSettings {
 }
 
 pub struct TaroCamera {
-    pub(crate) aspect: f32,
-    view_proj_matrix: CameraMatrix,
+    camera_matrix: TaroMap<CameraMatrix>,
 
+    pub(crate) aspect: f32,
     pub transform: Pearl<BobaTransform>,
     pub settings: TaroCameraSettings,
     pub passes: TaroRenderPasses,
@@ -31,22 +35,11 @@ pub struct TaroCamera {
 impl TaroCamera {
     pub fn new(settings: TaroCameraSettings, transform: Pearl<BobaTransform>) -> Self {
         let aspect = 1f32;
-        let view_proj_matrix = match transform.borrow() {
-            Ok(transform) => Self::calculate_matrix(
-                transform.world_position(),
-                transform.world_rotation(),
-                aspect,
-                &settings,
-            ),
-            Err(e) => {
-                error!("Error when creating camera. Resorting to default view-projection matrix. Error: {e}");
-                Self::calculate_matrix(Vec3::ZERO, Quat::IDENTITY, aspect, &settings)
-            }
-        };
+        let camera_matrix = TaroMap::new();
 
         Self {
             aspect,
-            view_proj_matrix,
+            camera_matrix,
             transform,
             settings,
             passes: Default::default(),
@@ -60,24 +53,24 @@ impl TaroCamera {
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
-        match self.transform.borrow() {
+        let matrix = match self.transform.borrow() {
             Ok(t) => {
-                self.view_proj_matrix = Self::calculate_matrix(
+                let matrix = Self::calculate_matrix(
                     t.world_position(),
                     t.world_rotation(),
                     self.aspect,
                     &self.settings,
                 );
+                self.camera_matrix.upload_new(&matrix, hardware)
             }
             Err(e) => {
-                error!(
-                    "Error when recalculating camera matrix. Resorting to previously calculated matrix. Error: {e}"
-                )
+                error!("Error when calculating camera matrix. Error: {e}");
+                self.camera_matrix
+                    .get_or_upload(|| CameraMatrix::default().new_upload(hardware), hardware)
             }
-        }
+        };
 
-        self.passes
-            .render(pearls, &self.view_proj_matrix, view, encoder, hardware);
+        self.passes.render(pearls, matrix, view, encoder, hardware);
     }
 
     pub fn calculate_matrix(

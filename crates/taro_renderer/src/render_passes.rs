@@ -2,14 +2,16 @@ use indexmap::IndexMap;
 use std::any::TypeId;
 
 use crate::{
-    passes::BlankRenderPass, shading::bindings::CameraMatrix, TaroHardware, TaroRenderPearls,
+    data_types::{buffers::CameraMatrix, TaroBuffer},
+    passes::BlankRenderPass,
+    TaroHardware, TaroRenderPearls,
 };
 
 pub trait TaroRenderPass: 'static {
     fn render(
         &mut self,
         pearls: &TaroRenderPearls,
-        camera_matrix: &CameraMatrix,
+        camera_matrix: &TaroBuffer<CameraMatrix>,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
@@ -89,7 +91,7 @@ impl TaroRenderPasses {
     pub fn render(
         &mut self,
         pearls: &TaroRenderPearls,
-        camera_matrix: &CameraMatrix,
+        camera_matrix: &TaroBuffer<CameraMatrix>,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
@@ -105,7 +107,7 @@ trait DynamicPassRenderer {
     fn dynamic_render(
         &mut self,
         pearls: &TaroRenderPearls,
-        camera_matrix: &CameraMatrix,
+        camera_matrix: &TaroBuffer<CameraMatrix>,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
@@ -123,7 +125,7 @@ where
     fn dynamic_render(
         &mut self,
         pearls: &TaroRenderPearls,
-        camera_matrix: &CameraMatrix,
+        camera_matrix: &TaroBuffer<CameraMatrix>,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,

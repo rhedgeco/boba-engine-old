@@ -40,10 +40,11 @@ where
         Default::default()
     }
 
-    pub fn get_or_upload(&self, data: &T, hardware: &TaroHardware) -> &T::UploadData {
-        self.cache
-            .get_or_init(hardware.id(), || data.new_upload(hardware))
-            .into_data()
+    pub fn get_or_upload<F>(&self, f: F, hardware: &TaroHardware) -> &T::UploadData
+    where
+        F: FnOnce() -> T::UploadData,
+    {
+        self.cache.get_or_init(hardware.id(), f).into_data()
     }
 
     pub fn upload_new(&self, data: &T, hardware: &TaroHardware) -> &T::UploadData {

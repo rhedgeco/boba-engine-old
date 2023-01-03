@@ -1,10 +1,10 @@
 use once_cell::sync::OnceCell;
 use taro_renderer::{
-    data_types::{UploadedTaroMesh, Vertex},
-    shading::{
-        bindings::{CameraMatrix, TransformMatrix},
-        TaroBinding, TaroCoreShader, TaroMeshShader,
+    data_types::{
+        buffers::{CameraMatrix, TransformMatrix},
+        TaroBuffer, UploadedTaroMesh, Vertex,
     },
+    shading::{TaroCoreShader, TaroMeshShader},
     wgpu,
 };
 
@@ -12,8 +12,7 @@ static PIPELINE: OnceCell<wgpu::RenderPipeline> = OnceCell::new();
 static MATRIX_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
 
 pub struct UnlitShader {
-    camera_matrix: TaroBinding<CameraMatrix>,
-    model_matrix: TaroBinding<TransformMatrix>,
+    _private: (),
 }
 
 impl TaroCoreShader for UnlitShader {
@@ -93,10 +92,7 @@ impl TaroCoreShader for UnlitShader {
                 })
         });
 
-        Self {
-            camera_matrix: TaroBinding::new_default(matrix_layout, hardware),
-            model_matrix: TaroBinding::new_default(matrix_layout, hardware),
-        }
+        Self { _private: () }
     }
 }
 
@@ -105,16 +101,19 @@ impl TaroMeshShader for UnlitShader {
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
         mesh: &'pass UploadedTaroMesh,
-        camera_matrix: &CameraMatrix,
-        model_matrix: &TransformMatrix,
+        camera_matrix: &'pass TaroBuffer<CameraMatrix>,
+        model_matrix: &'pass TaroBuffer<TransformMatrix>,
         hardware: &taro_renderer::TaroHardware,
     ) {
-        self.camera_matrix.write(camera_matrix, hardware);
-        self.model_matrix.write(model_matrix, hardware);
+        let camera_bind =
+            camera_matrix.get_or_init_binding(self, MATRIX_LAYOUT.get().unwrap(), hardware);
+
+        let model_bind =
+            model_matrix.get_or_init_binding(self, MATRIX_LAYOUT.get().unwrap(), hardware);
 
         pass.set_pipeline(PIPELINE.get().unwrap());
-        pass.set_bind_group(0, self.camera_matrix.bind_group(), &[]);
-        pass.set_bind_group(1, self.model_matrix.bind_group(), &[]);
+        pass.set_bind_group(0, camera_bind, &[]);
+        pass.set_bind_group(1, model_bind, &[]);
         pass.set_vertex_buffer(0, mesh.vertex_buffer().raw_buffer().slice(..));
         pass.set_index_buffer(
             mesh.index_buffer().raw_buffer().slice(..),

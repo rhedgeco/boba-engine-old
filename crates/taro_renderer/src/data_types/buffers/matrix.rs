@@ -1,6 +1,6 @@
 use boba_3d::glam::{Mat4, Vec3};
 
-use crate::shading::TaroBindingBuilder;
+use crate::data_types::TaroBytesBuilder;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -12,6 +12,18 @@ pub struct TransformMatrix {
 #[derive(Debug, Copy, Clone)]
 pub struct CameraMatrix {
     matrix_data: [[f32; 4]; 4],
+}
+
+impl TaroBytesBuilder for TransformMatrix {
+    fn as_bytes(&self) -> &[u8] {
+        bytemuck::cast_slice(&self.matrix_data)
+    }
+}
+
+impl TaroBytesBuilder for CameraMatrix {
+    fn as_bytes(&self) -> &[u8] {
+        bytemuck::cast_slice(&self.matrix_data)
+    }
 }
 
 impl Default for TransformMatrix {
@@ -27,18 +39,6 @@ impl Default for CameraMatrix {
         Self {
             matrix_data: Mat4::look_at_rh(Vec3::ZERO, Vec3::Z, Vec3::Y).to_cols_array_2d(),
         }
-    }
-}
-
-impl TaroBindingBuilder for TransformMatrix {
-    fn build_bytes(&self) -> &[u8] {
-        bytemuck::cast_slice(&self.matrix_data)
-    }
-}
-
-impl TaroBindingBuilder for CameraMatrix {
-    fn build_bytes(&self) -> &[u8] {
-        bytemuck::cast_slice(&self.matrix_data)
     }
 }
 
