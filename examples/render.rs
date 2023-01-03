@@ -1,12 +1,6 @@
 use boba::prelude::*;
 use std::f32::consts::PI;
-
-use taro_renderer::{
-    data_types::{TaroMesh, Vertex},
-    pearls::TaroMeshRenderer,
-    shading::TaroShader,
-    TaroCamera, TaroCameraSettings, TaroCameras, TaroRenderPearls,
-};
+use taro_renderer::data_types::Vertex;
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader};
 
 #[rustfmt::skip]

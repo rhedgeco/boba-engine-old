@@ -10,4 +10,9 @@ pub mod prelude {
     pub use boba_core::*;
     pub use milk_tea::Bobarista;
     pub use taro_standard_adapters::milk_tea::TaroMilkTea;
+
+    pub use taro_renderer::{
+        data_types::TaroMesh, pearls::TaroMeshRenderer, shading::TaroShader, TaroCamera,
+        TaroCameraSettings, TaroCameras, TaroRenderPearls,
+    };
 }
