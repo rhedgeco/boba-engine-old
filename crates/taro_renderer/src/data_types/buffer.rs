@@ -88,3 +88,51 @@ where
             .into_data()
     }
 }
+
+pub struct ShaderParameter<T> {
+    buffer: wgpu::Buffer,
+    bind_group: wgpu::BindGroup,
+    _type: PhantomData<T>,
+}
+
+impl<T> ShaderParameter<T>
+where
+    T: TaroBytesBuilder,
+{
+    pub fn bind_group(&self) -> &wgpu::BindGroup {
+        &self.bind_group
+    }
+
+    pub fn new(initial_value: &T, layout: &wgpu::BindGroupLayout, hardware: &TaroHardware) -> Self {
+        let buffer = hardware
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("{} Buffer", type_name::<T>())),
+                contents: initial_value.as_bytes(),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            });
+
+        let bind_group = hardware
+            .device()
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: buffer.as_entire_binding(),
+                }],
+                label: Some(&format!("{} BindGroup", type_name::<T>())),
+            });
+
+        Self {
+            buffer,
+            bind_group,
+            _type: Default::default(),
+        }
+    }
+
+    pub fn write(&self, new_data: &T, hardware: &TaroHardware) {
+        hardware
+            .queue()
+            .write_buffer(&self.buffer, 0, new_data.as_bytes());
+    }
+}
