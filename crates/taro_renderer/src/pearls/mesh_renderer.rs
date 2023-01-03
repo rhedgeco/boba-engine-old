@@ -34,6 +34,16 @@ where
         }
     }
 
+    pub fn new_simple(transform: BobaTransform, mesh: TaroMesh, shader: TaroShader<T>) -> Self {
+        Self {
+            map: Default::default(),
+            model_matrix: TaroMap::new(),
+            mesh,
+            shader,
+            transform: Pearl::wrap(transform),
+        }
+    }
+
     pub fn render<'pass>(
         &'pass mut self,
         pass: &mut wgpu::RenderPass<'pass>,

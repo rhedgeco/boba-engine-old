@@ -33,7 +33,7 @@ pub struct TaroCamera {
 }
 
 impl TaroCamera {
-    pub fn new(settings: TaroCameraSettings, transform: Pearl<BobaTransform>) -> Self {
+    pub fn new(transform: Pearl<BobaTransform>, settings: TaroCameraSettings) -> Self {
         let aspect = 1f32;
         let camera_matrix = TaroMap::new();
 
@@ -41,6 +41,19 @@ impl TaroCamera {
             aspect,
             camera_matrix,
             transform,
+            settings,
+            passes: Default::default(),
+        }
+    }
+
+    pub fn new_simple(transform: BobaTransform, settings: TaroCameraSettings) -> Self {
+        let aspect = 1f32;
+        let camera_matrix = TaroMap::new();
+
+        Self {
+            aspect,
+            camera_matrix,
+            transform: Pearl::wrap(transform),
             settings,
             passes: Default::default(),
         }
