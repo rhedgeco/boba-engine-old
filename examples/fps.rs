@@ -2,11 +2,7 @@ use boba::prelude::*;
 
 pub struct FpsPrinter;
 
-impl RegisterPearlStages for FpsPrinter {
-    fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar) {
-        stages.add(pearl.clone());
-    }
-}
+register_pearl_stages!(FpsPrinter: BobaUpdate);
 
 impl PearlStage<BobaUpdate> for FpsPrinter {
     fn update(&mut self, delta: &f32, _: &mut BobaResources) -> BobaResult {
