@@ -13,11 +13,11 @@ static MATRIX_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
 static COLOR_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
 
 pub struct UnlitShaderParameters {
-    pub color: Color,
+    pub color: wgpu::Color,
 }
 
 impl UnlitShaderParameters {
-    pub fn new(color: Color) -> Self {
+    pub fn new(color: wgpu::Color) -> Self {
         Self { color }
     }
 }
@@ -127,7 +127,7 @@ impl TaroCoreShader for UnlitShader {
         });
 
         Self {
-            color: ShaderParameter::new(&parameters.color, color_layout, hardware),
+            color: ShaderParameter::new(&parameters.color.into(), color_layout, hardware),
         }
     }
 }

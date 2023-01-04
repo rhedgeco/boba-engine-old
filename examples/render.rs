@@ -1,6 +1,6 @@
 use boba::prelude::*;
 use std::f32::consts::PI;
-use taro_renderer::data_types::{buffers::Color, Vertex};
+use taro_renderer::{data_types::Vertex, wgpu::Color};
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderParameters};
 
 #[rustfmt::skip]
