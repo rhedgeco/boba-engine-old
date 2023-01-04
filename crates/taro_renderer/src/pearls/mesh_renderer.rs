@@ -7,11 +7,14 @@ use crate::{
         buffers::{CameraMatrix, TransformMatrix},
         TaroBuffer, TaroMesh,
     },
-    shading::{TaroDataUploader, TaroMap, TaroMeshShader, TaroShader},
+    shading::{TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader},
     TaroHardware,
 };
 
-pub struct TaroMeshRenderer<T> {
+pub struct TaroMeshRenderer<T>
+where
+    T: TaroCoreShader,
+{
     map: TaroMap<TaroMesh>,
     model_matrix: TaroMap<TransformMatrix>,
 

@@ -8,7 +8,7 @@ use wgpu::util::DeviceExt;
 
 use crate::{
     shading::{TaroCoreShader, TaroData, TaroDataUploader},
-    TaroHardware,
+    HardwareId, TaroHardware,
 };
 
 pub trait TaroBytesBuilder {
@@ -90,6 +90,7 @@ where
 }
 
 pub struct ShaderParameter<T> {
+    hardware_id: HardwareId,
     buffer: wgpu::Buffer,
     bind_group: wgpu::BindGroup,
     _type: PhantomData<T>,
@@ -124,6 +125,7 @@ where
             });
 
         Self {
+            hardware_id: hardware.id().clone(),
             buffer,
             bind_group,
             _type: Default::default(),
@@ -131,6 +133,13 @@ where
     }
 
     pub fn write(&self, new_data: &T, hardware: &TaroHardware) {
+        if hardware.id() != &self.hardware_id {
+            panic!(
+                "Tried to set ShaderParameter<{:?}> with TaroHardware that does not match the original.",
+                type_name::<T>()
+            )
+        }
+
         hardware
             .queue()
             .write_buffer(&self.buffer, 0, new_data.as_bytes());
