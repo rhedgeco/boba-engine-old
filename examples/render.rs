@@ -1,7 +1,7 @@
 use boba::prelude::*;
 use std::f32::consts::PI;
-use taro_renderer::data_types::Vertex;
-use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader};
+use taro_renderer::data_types::{buffers::Color, Vertex};
+use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderParameters};
 
 #[rustfmt::skip]
 const VERTICES: &[Vertex] = &[
@@ -58,7 +58,7 @@ fn main() {
     let renderer = TaroMeshRenderer::new_simple(
         BobaTransform::from_position(Vec3::ZERO),
         TaroMesh::new(VERTICES, INDICES),
-        TaroShader::<UnlitShader>::new(),
+        TaroShader::<UnlitShader>::new(UnlitShaderParameters::new(Color::RED)),
     );
 
     // create a rotator object that links to the renderers transform

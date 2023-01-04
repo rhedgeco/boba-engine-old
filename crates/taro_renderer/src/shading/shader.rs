@@ -9,7 +9,8 @@ use crate::{
 };
 
 pub trait TaroCoreShader: 'static {
-    fn build_instance(hardware: &TaroHardware) -> Self;
+    type InitialParameters;
+    fn build_instance(parameters: &Self::InitialParameters, hardware: &TaroHardware) -> Self;
 }
 
 pub trait TaroMeshShader: TaroCoreShader {
@@ -24,29 +25,30 @@ pub trait TaroMeshShader: TaroCoreShader {
 }
 
 #[derive(Clone)]
-pub struct TaroShader<T> {
+pub struct TaroShader<T>
+where
+    T: TaroCoreShader,
+{
+    parameters: T::InitialParameters,
     shader_cache: OnceMap<HardwareId, T>,
-}
-
-impl<T> Default for TaroShader<T> {
-    fn default() -> Self {
-        Self {
-            shader_cache: Default::default(),
-        }
-    }
 }
 
 impl<T> TaroShader<T>
 where
     T: TaroCoreShader,
 {
-    pub fn new() -> Self {
-        Default::default()
+    pub fn new(parameters: T::InitialParameters) -> Self {
+        Self {
+            parameters,
+            shader_cache: Default::default(),
+        }
     }
 
     pub fn upload(&self, hardware: &TaroHardware) -> &T {
         self.shader_cache
-            .get_or_init(hardware.id(), || T::build_instance(hardware))
+            .get_or_init(hardware.id(), || {
+                T::build_instance(&self.parameters, hardware)
+            })
             .into_data()
     }
 }

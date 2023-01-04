@@ -1,8 +1,8 @@
 use once_cell::sync::OnceCell;
 use taro_renderer::{
     data_types::{
-        buffers::{CameraMatrix, TransformMatrix},
-        TaroBuffer, UploadedTaroMesh, Vertex,
+        buffers::{CameraMatrix, Color, TransformMatrix},
+        ShaderParameter, TaroBuffer, UploadedTaroMesh, Vertex,
     },
     shading::{TaroCoreShader, TaroMeshShader},
     wgpu,
@@ -10,13 +10,29 @@ use taro_renderer::{
 
 static PIPELINE: OnceCell<wgpu::RenderPipeline> = OnceCell::new();
 static MATRIX_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
+static COLOR_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
+
+pub struct UnlitShaderParameters {
+    pub color: Color,
+}
+
+impl UnlitShaderParameters {
+    pub fn new(color: Color) -> Self {
+        Self { color }
+    }
+}
 
 pub struct UnlitShader {
-    _private: (),
+    pub color: ShaderParameter<Color>,
 }
 
 impl TaroCoreShader for UnlitShader {
-    fn build_instance(hardware: &taro_renderer::TaroHardware) -> Self {
+    type InitialParameters = UnlitShaderParameters;
+
+    fn build_instance(
+        parameters: &UnlitShaderParameters,
+        hardware: &taro_renderer::TaroHardware,
+    ) -> Self {
         let matrix_layout = MATRIX_LAYOUT.get_or_init(|| {
             hardware
                 .device()
@@ -35,13 +51,31 @@ impl TaroCoreShader for UnlitShader {
                 })
         });
 
+        let color_layout = COLOR_LAYOUT.get_or_init(|| {
+            hardware
+                .device()
+                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    entries: &[wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    }],
+                    label: Some("Unlit Shader Color Bind Group"),
+                })
+        });
+
         PIPELINE.get_or_init(|| {
             let pipeline_layout =
                 hardware
                     .device()
                     .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                         label: Some("Render Pipeline Layout"),
-                        bind_group_layouts: &[&matrix_layout, &matrix_layout],
+                        bind_group_layouts: &[&matrix_layout, &matrix_layout, &color_layout],
                         push_constant_ranges: &[],
                     });
 
@@ -92,7 +126,9 @@ impl TaroCoreShader for UnlitShader {
                 })
         });
 
-        Self { _private: () }
+        Self {
+            color: ShaderParameter::new(&parameters.color, color_layout, hardware),
+        }
     }
 }
 
@@ -114,6 +150,7 @@ impl TaroMeshShader for UnlitShader {
         pass.set_pipeline(PIPELINE.get().unwrap());
         pass.set_bind_group(0, camera_bind, &[]);
         pass.set_bind_group(1, model_bind, &[]);
+        pass.set_bind_group(2, self.color.bind_group(), &[]);
         pass.set_vertex_buffer(0, mesh.vertex_buffer().raw_buffer().slice(..));
         pass.set_index_buffer(
             mesh.index_buffer().raw_buffer().slice(..),
