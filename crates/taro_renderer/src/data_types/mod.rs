@@ -1,7 +1,5 @@
-mod buffer;
 mod mesh;
+mod texture;
 
-pub use buffer::*;
 pub use mesh::*;
-
-pub mod buffers;
+pub use texture::*;

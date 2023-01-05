@@ -9,10 +9,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use crate::{
-    stages::{MilkTeaSize, OnMilkTeaResize},
-    MilkTeaPlugin,
-};
+use crate::{event_types::MilkTeaSize, MilkTeaEvent, MilkTeaPlugin};
 pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
     fn build(window: Window) -> Self;
 }
@@ -87,16 +84,26 @@ where
                 Event::WindowEvent { ref event, .. } => match event {
                     WindowEvent::CloseRequested => control_flow.set_exit(),
                     WindowEvent::Resized(size) => {
-                        let mut resize =
-                            OnMilkTeaResize::new(MilkTeaSize::new(size.width, size.height));
-                        resize.run(&mut self.registry, &mut self.resources).unwrap();
+                        MilkTeaEvent::new(MilkTeaSize::new(size.width, size.height))
+                            .run(&mut self.registry, &mut self.resources)
+                            .unwrap();
                     }
                     WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                        let mut resize = OnMilkTeaResize::new(MilkTeaSize::new(
+                        MilkTeaEvent::new(MilkTeaSize::new(
                             new_inner_size.width,
                             new_inner_size.height,
-                        ));
-                        resize.run(&mut self.registry, &mut self.resources).unwrap();
+                        ))
+                        .run(&mut self.registry, &mut self.resources)
+                        .unwrap();
+                    }
+                    WindowEvent::KeyboardInput {
+                        device_id: _,
+                        input,
+                        is_synthetic: _,
+                    } => {
+                        MilkTeaEvent::new(input.clone())
+                            .run(&mut self.registry, &mut self.resources)
+                            .unwrap();
                     }
                     _ => (),
                 },

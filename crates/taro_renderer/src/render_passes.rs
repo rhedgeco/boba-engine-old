@@ -2,8 +2,8 @@ use indexmap::IndexMap;
 use std::any::TypeId;
 
 use crate::{
-    data_types::{buffers::CameraMatrix, TaroBuffer},
     passes::BlankRenderPass,
+    shading::{buffers::CameraMatrix, TaroBuffer},
     TaroHardware, TaroRenderPearls,
 };
 

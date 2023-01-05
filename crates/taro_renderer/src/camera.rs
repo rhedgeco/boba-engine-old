@@ -6,8 +6,7 @@ use boba_core::Pearl;
 use log::error;
 
 use crate::{
-    data_types::buffers::CameraMatrix,
-    shading::{TaroDataUploader, TaroMap},
+    shading::{buffers::CameraMatrix, TaroDataUploader, TaroMap},
     TaroHardware, TaroRenderPasses, TaroRenderPearls,
 };
 

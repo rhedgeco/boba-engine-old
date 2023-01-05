@@ -3,11 +3,11 @@ use boba_core::Pearl;
 use log::error;
 
 use crate::{
-    data_types::{
+    data_types::TaroMesh,
+    shading::{
         buffers::{CameraMatrix, TransformMatrix},
-        TaroBuffer, TaroMesh,
+        TaroBuffer, TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader,
     },
-    shading::{TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader},
     TaroHardware,
 };
 
@@ -67,7 +67,7 @@ where
         let uploaded_mesh = self
             .map
             .get_or_upload(|| self.mesh.new_upload(hardware), hardware);
-        self.shader.upload(hardware).render(
+        self.shader.get(hardware).render(
             pass,
             uploaded_mesh,
             camera_matrix,

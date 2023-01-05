@@ -26,13 +26,13 @@ impl Vertex {
     };
 }
 
-pub struct MeshBuffer<T> {
+pub struct MeshData<T> {
     raw_buffer: wgpu::Buffer,
     length: AtomicU32,
     _type: PhantomData<T>,
 }
 
-impl<T> MeshBuffer<T> {
+impl<T> MeshData<T> {
     pub fn len(&self) -> u32 {
         self.length.load(Ordering::Relaxed)
     }
@@ -42,7 +42,7 @@ impl<T> MeshBuffer<T> {
     }
 }
 
-impl MeshBuffer<Vertex> {
+impl MeshData<Vertex> {
     fn new(vertices: &[Vertex], hardware: &TaroHardware) -> Self {
         Self {
             _type: Default::default(),
@@ -65,7 +65,7 @@ impl MeshBuffer<Vertex> {
     }
 }
 
-impl MeshBuffer<u16> {
+impl MeshData<u16> {
     fn new(indices: &[u16], hardware: &TaroHardware) -> Self {
         Self {
             _type: Default::default(),
@@ -88,27 +88,27 @@ impl MeshBuffer<u16> {
     }
 }
 
-pub struct UploadedTaroMesh {
+pub struct TaroMeshBuffer {
     hardware_id: HardwareId,
-    vertex_buffer: MeshBuffer<Vertex>,
-    index_buffer: MeshBuffer<u16>,
+    vertex_buffer: MeshData<Vertex>,
+    index_buffer: MeshData<u16>,
 }
 
-impl UploadedTaroMesh {
+impl TaroMeshBuffer {
     pub fn hardware_id(&self) -> &HardwareId {
         &self.hardware_id
     }
 
-    pub fn vertex_buffer(&self) -> &MeshBuffer<Vertex> {
+    pub fn vertex_buffer(&self) -> &MeshData<Vertex> {
         &self.vertex_buffer
     }
 
-    pub fn index_buffer(&self) -> &MeshBuffer<u16> {
+    pub fn index_buffer(&self) -> &MeshData<u16> {
         &self.index_buffer
     }
 }
 
-impl TaroData<TaroMesh> for UploadedTaroMesh {
+impl TaroData<TaroMesh> for TaroMeshBuffer {
     fn write_new(&self, new_data: &TaroMesh, hardware: &TaroHardware) {
         self.vertex_buffer.write(&new_data.vertices, hardware);
         self.index_buffer.write(&new_data.indices, hardware);
@@ -130,13 +130,13 @@ impl TaroMesh {
 }
 
 impl TaroDataUploader for TaroMesh {
-    type UploadData = UploadedTaroMesh;
+    type UploadData = TaroMeshBuffer;
 
     fn new_upload(&self, hardware: &TaroHardware) -> Self::UploadData {
-        UploadedTaroMesh {
+        TaroMeshBuffer {
             hardware_id: hardware.id().clone(),
-            vertex_buffer: MeshBuffer::<Vertex>::new(&self.vertices, hardware),
-            index_buffer: MeshBuffer::<u16>::new(&self.indices, hardware),
+            vertex_buffer: MeshData::<Vertex>::new(&self.vertices, hardware),
+            index_buffer: MeshData::<u16>::new(&self.indices, hardware),
         }
     }
 }

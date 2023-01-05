@@ -14,4 +14,5 @@ pub mod pearls;
 pub mod shading;
 pub mod stages;
 
+pub use image;
 pub use wgpu;

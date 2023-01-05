@@ -1,7 +1,7 @@
 use boba_core::{BobaResources, Pearl, PearlRegistry, StageCollection};
 
 use log::error;
-use milk_tea::{stages::MilkTeaSize, winit::window::Window, MilkTeaAdapter, MilkTeaPlugin};
+use milk_tea::{event_types::MilkTeaSize, winit::window::Window, MilkTeaAdapter, MilkTeaPlugin};
 use taro_renderer::{
     stages::{OnTaroRender, TaroSurfaceManager},
     TaroHardware, TaroSurface,

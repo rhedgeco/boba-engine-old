@@ -1,6 +1,6 @@
 use taro_renderer::{
-    data_types::{buffers::CameraMatrix, TaroBuffer},
     pearls::TaroMeshRenderer,
+    shading::{buffers::CameraMatrix, TaroBuffer},
     wgpu, TaroRenderPass,
 };
 
