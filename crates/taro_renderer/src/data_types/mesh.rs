@@ -26,13 +26,13 @@ impl Vertex {
     };
 }
 
-pub struct MeshDataBuffer<T> {
+pub struct MeshData<T> {
     raw_buffer: wgpu::Buffer,
     length: AtomicU32,
     _type: PhantomData<T>,
 }
 
-impl<T> MeshDataBuffer<T> {
+impl<T> MeshData<T> {
     pub fn len(&self) -> u32 {
         self.length.load(Ordering::Relaxed)
     }
@@ -42,7 +42,7 @@ impl<T> MeshDataBuffer<T> {
     }
 }
 
-impl MeshDataBuffer<Vertex> {
+impl MeshData<Vertex> {
     fn new(vertices: &[Vertex], hardware: &TaroHardware) -> Self {
         Self {
             _type: Default::default(),
@@ -65,7 +65,7 @@ impl MeshDataBuffer<Vertex> {
     }
 }
 
-impl MeshDataBuffer<u16> {
+impl MeshData<u16> {
     fn new(indices: &[u16], hardware: &TaroHardware) -> Self {
         Self {
             _type: Default::default(),
@@ -90,8 +90,8 @@ impl MeshDataBuffer<u16> {
 
 pub struct TaroMeshBuffer {
     hardware_id: HardwareId,
-    vertex_buffer: MeshDataBuffer<Vertex>,
-    index_buffer: MeshDataBuffer<u16>,
+    vertex_buffer: MeshData<Vertex>,
+    index_buffer: MeshData<u16>,
 }
 
 impl TaroMeshBuffer {
@@ -99,11 +99,11 @@ impl TaroMeshBuffer {
         &self.hardware_id
     }
 
-    pub fn vertex_buffer(&self) -> &MeshDataBuffer<Vertex> {
+    pub fn vertex_buffer(&self) -> &MeshData<Vertex> {
         &self.vertex_buffer
     }
 
-    pub fn index_buffer(&self) -> &MeshDataBuffer<u16> {
+    pub fn index_buffer(&self) -> &MeshData<u16> {
         &self.index_buffer
     }
 }
@@ -135,8 +135,8 @@ impl TaroDataUploader for TaroMesh {
     fn new_upload(&self, hardware: &TaroHardware) -> Self::UploadData {
         TaroMeshBuffer {
             hardware_id: hardware.id().clone(),
-            vertex_buffer: MeshDataBuffer::<Vertex>::new(&self.vertices, hardware),
-            index_buffer: MeshDataBuffer::<u16>::new(&self.indices, hardware),
+            vertex_buffer: MeshData::<Vertex>::new(&self.vertices, hardware),
+            index_buffer: MeshData::<u16>::new(&self.indices, hardware),
         }
     }
 }
