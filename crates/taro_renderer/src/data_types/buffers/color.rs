@@ -3,7 +3,7 @@ use crate::shading::TaroBytesBuilder;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Color {
-    pub values: [f64; 4],
+    pub values: [f32; 4],
 }
 
 impl Default for Color {
@@ -19,7 +19,7 @@ impl TaroBytesBuilder for Color {
 }
 
 impl Color {
-    pub fn from_rgba(r: f64, g: f64, b: f64, a: f64) -> Self {
+    pub fn from_rgba(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self {
             values: [r, g, b, a],
         }
@@ -29,7 +29,12 @@ impl Color {
 impl From<wgpu::Color> for Color {
     fn from(value: wgpu::Color) -> Self {
         Color {
-            values: [value.r, value.g, value.b, value.a],
+            values: [
+                value.r as f32,
+                value.g as f32,
+                value.b as f32,
+                value.a as f32,
+            ],
         }
     }
 }
@@ -37,7 +42,12 @@ impl From<wgpu::Color> for Color {
 impl From<&wgpu::Color> for Color {
     fn from(value: &wgpu::Color) -> Self {
         Color {
-            values: [value.r, value.g, value.b, value.a],
+            values: [
+                value.r as f32,
+                value.g as f32,
+                value.b as f32,
+                value.a as f32,
+            ],
         }
     }
 }
