@@ -4,7 +4,10 @@ use milk_tea::{
     MilkTeaEvent,
 };
 use std::f32::consts::PI;
-use taro_renderer::{data_types::Vertex, wgpu::Color};
+use taro_renderer::{
+    data_types::{TaroTexture, Vertex},
+    image,
+};
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderInit};
 
 #[rustfmt::skip]
@@ -82,11 +85,15 @@ fn main() {
     // add unlit render pass for testing
     camera.passes.append(UnlitRenderPass);
 
+    // create texture for mesh
+    let image = image::load_from_memory(include_bytes!("happy-tree.png")).unwrap();
+    let texture = TaroTexture::new(image);
+
     // create a mesh to be rendered
     let renderer = TaroMeshRenderer::new_simple(
         BobaTransform::from_position(Vec3::ZERO),
         TaroMesh::new(VERTICES, INDICES),
-        TaroShader::<UnlitShader>::new(UnlitShaderInit::new(Color::RED)),
+        TaroShader::<UnlitShader>::new(UnlitShaderInit::new(texture)),
     );
 
     // create a rotator object that links to the renderers transform

@@ -131,7 +131,7 @@ where
     }
 }
 
-pub trait ShaderExt {
+pub trait ShaderBufferExt {
     fn get_or_init_binding<'a, Data>(
         &'a self,
         buffer: &'a TaroBuffer<Data>,
@@ -140,7 +140,7 @@ pub trait ShaderExt {
     ) -> &wgpu::BindGroup;
 }
 
-impl<T> ShaderExt for T
+impl<T> ShaderBufferExt for T
 where
     T: TaroCoreShader,
 {
