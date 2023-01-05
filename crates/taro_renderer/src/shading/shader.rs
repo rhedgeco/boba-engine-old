@@ -73,6 +73,7 @@ pub trait TaroBytesBuilder {
 
 /// A buffer manager for uploaded GPU data.
 pub struct TaroBuffer<T> {
+    hardware_id: HardwareId,
     buffer: wgpu::Buffer,
     binding_cache: OnceMap<TypeId, wgpu::BindGroup>,
     _type: PhantomData<T>,
@@ -95,7 +96,17 @@ where
     T: TaroBytesBuilder,
 {
     /// Writes `new data` to the internal buffer associated with `hardware`
+    ///
+    /// # Panics
+    /// This will panic if it is written to with different `hardware` than it was created with.
     fn write_new(&self, new_data: &T, hardware: &TaroHardware) {
+        if hardware.id() != &self.hardware_id {
+            panic!(
+                "Tried to write to TaroBuffer<{:?}> with TaroHardware that does not match the original compiler.",
+                std::any::type_name::<T>()
+            );
+        }
+
         hardware
             .queue()
             .write_buffer(&self.buffer, 0, new_data.as_bytes());
@@ -111,6 +122,7 @@ where
         Self {
             _type: Default::default(),
             binding_cache: OnceMap::new(),
+            hardware_id: hardware.id().clone(),
             buffer: hardware
                 .device()
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -135,15 +147,25 @@ impl<T> ShaderExt for T
 where
     T: TaroCoreShader,
 {
-    /// Creates or gets a BindGroup associated with `hardware`
+    /// Creates or gets a BindGroup associated with the provided `buffer`
     ///
-    /// If the BindGroup does not exist, it will initialize it using 'layout'
+    /// If the BindGroup does not exist for this shader, it will initialize it using `layout`
+    ///
+    /// # Panics
+    /// This will panic if it is retrieved to with different `hardware` than it was created with.
     fn get_or_init_binding<'a, Data>(
         &'a self,
         buffer: &'a TaroBuffer<Data>,
         layout: &wgpu::BindGroupLayout,
         hardware: &TaroHardware,
     ) -> &wgpu::BindGroup {
+        if &buffer.hardware_id != hardware.id() {
+            panic!(
+                "Tried to get TaroBuffer<{:?}> with TaroHardware that does not match the original compiler.",
+                std::any::type_name::<Data>()
+            );
+        }
+
         let typeid = TypeId::of::<Self>();
         buffer
             .binding_cache
@@ -212,7 +234,7 @@ where
     /// Writes `new_data` to the ShaderParameter
     ///
     /// # Panics
-    /// This will panic if it is written to with different hardware than it was created with.
+    /// This will panic if it is written to with different `hardware` than it was created with.
     pub fn write(&self, new_data: &T, hardware: &TaroHardware) {
         if hardware.id() != &self.hardware_id {
             panic!(
