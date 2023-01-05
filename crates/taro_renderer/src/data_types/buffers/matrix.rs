@@ -1,6 +1,6 @@
 use boba_3d::glam::{Mat4, Vec3};
 
-use crate::data_types::TaroBytesBuilder;
+use crate::shading::TaroBytesBuilder;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

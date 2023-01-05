@@ -5,9 +5,9 @@ use log::error;
 use crate::{
     data_types::{
         buffers::{CameraMatrix, TransformMatrix},
-        TaroBuffer, TaroMesh,
+        TaroMesh,
     },
-    shading::{TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader},
+    shading::{TaroBuffer, TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader},
     TaroHardware,
 };
 

@@ -1,4 +1,4 @@
-use crate::data_types::TaroBytesBuilder;
+use crate::shading::TaroBytesBuilder;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

@@ -1,7 +1,6 @@
 use taro_renderer::{
-    data_types::{buffers::CameraMatrix, TaroBuffer},
-    pearls::TaroMeshRenderer,
-    wgpu, TaroRenderPass,
+    data_types::buffers::CameraMatrix, pearls::TaroMeshRenderer, shading::TaroBuffer, wgpu,
+    TaroRenderPass,
 };
 
 use crate::UnlitShader;

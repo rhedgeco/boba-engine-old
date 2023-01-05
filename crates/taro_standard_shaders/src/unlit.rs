@@ -2,9 +2,9 @@ use once_cell::sync::OnceCell;
 use taro_renderer::{
     data_types::{
         buffers::{CameraMatrix, Color, TransformMatrix},
-        ShaderParameter, TaroBuffer, UploadedTaroMesh, Vertex,
+        TaroMeshBuffer, Vertex,
     },
-    shading::{TaroCoreShader, TaroMeshShader},
+    shading::{ShaderExt, ShaderParameter, TaroBuffer, TaroCoreShader, TaroMeshShader},
     wgpu,
 };
 
@@ -12,11 +12,11 @@ static PIPELINE: OnceCell<wgpu::RenderPipeline> = OnceCell::new();
 static MATRIX_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
 static COLOR_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
 
-pub struct UnlitShaderParameters {
+pub struct UnlitShaderInit {
     pub color: wgpu::Color,
 }
 
-impl UnlitShaderParameters {
+impl UnlitShaderInit {
     pub fn new(color: wgpu::Color) -> Self {
         Self { color }
     }
@@ -27,12 +27,9 @@ pub struct UnlitShader {
 }
 
 impl TaroCoreShader for UnlitShader {
-    type InitialParameters = UnlitShaderParameters;
+    type InitParameters = UnlitShaderInit;
 
-    fn build_instance(
-        parameters: &UnlitShaderParameters,
-        hardware: &taro_renderer::TaroHardware,
-    ) -> Self {
+    fn build_instance(init: &UnlitShaderInit, hardware: &taro_renderer::TaroHardware) -> Self {
         let matrix_layout = MATRIX_LAYOUT.get_or_init(|| {
             hardware
                 .device()
@@ -127,7 +124,7 @@ impl TaroCoreShader for UnlitShader {
         });
 
         Self {
-            color: ShaderParameter::new(&parameters.color.into(), color_layout, hardware),
+            color: ShaderParameter::new(&init.color.into(), color_layout, hardware),
         }
     }
 }
@@ -136,16 +133,16 @@ impl TaroMeshShader for UnlitShader {
     fn render<'pass>(
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
-        mesh: &'pass UploadedTaroMesh,
+        mesh: &'pass TaroMeshBuffer,
         camera_matrix: &'pass TaroBuffer<CameraMatrix>,
         model_matrix: &'pass TaroBuffer<TransformMatrix>,
         hardware: &taro_renderer::TaroHardware,
     ) {
         let camera_bind =
-            camera_matrix.get_or_init_binding(self, MATRIX_LAYOUT.get().unwrap(), hardware);
+            self.get_or_init_binding(camera_matrix, MATRIX_LAYOUT.get().unwrap(), hardware);
 
         let model_bind =
-            model_matrix.get_or_init_binding(self, MATRIX_LAYOUT.get().unwrap(), hardware);
+            self.get_or_init_binding(model_matrix, MATRIX_LAYOUT.get().unwrap(), hardware);
 
         pass.set_pipeline(PIPELINE.get().unwrap());
         pass.set_bind_group(0, camera_bind, &[]);

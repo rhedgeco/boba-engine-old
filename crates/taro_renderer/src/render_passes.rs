@@ -2,9 +2,8 @@ use indexmap::IndexMap;
 use std::any::TypeId;
 
 use crate::{
-    data_types::{buffers::CameraMatrix, TaroBuffer},
-    passes::BlankRenderPass,
-    TaroHardware, TaroRenderPearls,
+    data_types::buffers::CameraMatrix, passes::BlankRenderPass, shading::TaroBuffer, TaroHardware,
+    TaroRenderPearls,
 };
 
 pub trait TaroRenderPass: 'static {
