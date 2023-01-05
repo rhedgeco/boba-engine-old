@@ -67,7 +67,7 @@ where
         let uploaded_mesh = self
             .map
             .get_or_upload(|| self.mesh.new_upload(hardware), hardware);
-        self.shader.upload(hardware).render(
+        self.shader.get(hardware).render(
             pass,
             uploaded_mesh,
             camera_matrix,

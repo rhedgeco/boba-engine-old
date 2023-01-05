@@ -10,11 +10,15 @@ use once_map::OnceMap;
 use std::{any::TypeId, marker::PhantomData};
 use wgpu::util::DeviceExt;
 
+/// The base trait for any shader type.
+///
+/// To be a shader, this *must* be implemented.
 pub trait TaroCoreShader: 'static {
     type InitParameters;
     fn build_instance(init: &Self::InitParameters, hardware: &TaroHardware) -> Self;
 }
 
+/// The base trait for a shader that can render a mesh on screen.
 pub trait TaroMeshShader: TaroCoreShader {
     fn render<'pass>(
         &'pass self,
@@ -26,6 +30,7 @@ pub trait TaroMeshShader: TaroCoreShader {
     );
 }
 
+/// The main struct to hold and manage shaders for TaroRenderers
 #[derive(Clone)]
 pub struct TaroShader<T>
 where
@@ -39,14 +44,18 @@ impl<T> TaroShader<T>
 where
     T: TaroCoreShader,
 {
-    pub fn new(parameters: T::InitParameters) -> Self {
+    /// Creates a new TaroShader with `init` parameters
+    pub fn new(init: T::InitParameters) -> Self {
         Self {
-            parameters,
+            parameters: init,
             shader_cache: Default::default(),
         }
     }
 
-    pub fn upload(&self, hardware: &TaroHardware) -> &T {
+    /// Gets the compiled shader associated with `hardware`
+    ///
+    /// If the shader has not been compiled yet, it will be now.
+    pub fn get(&self, hardware: &TaroHardware) -> &T {
         self.shader_cache
             .get_or_init(hardware.id(), || {
                 T::build_instance(&self.parameters, hardware)
@@ -55,10 +64,14 @@ where
     }
 }
 
+/// The base trait for structs that can be built into an array of bytes.
+///
+/// This is useful for when data needs to be uploaded to the GPU
 pub trait TaroBytesBuilder {
     fn as_bytes(&self) -> &[u8];
 }
 
+/// A buffer manager for uploaded GPU data.
 pub struct TaroBuffer<T> {
     buffer: wgpu::Buffer,
     binding_cache: OnceMap<TypeId, wgpu::BindGroup>,
@@ -71,6 +84,7 @@ where
 {
     type UploadData = TaroBuffer<T>;
 
+    /// Compiles a new instance of the buffer data using `hardware`
     fn new_upload(&self, hardware: &TaroHardware) -> Self::UploadData {
         TaroBuffer::<T>::new(self, hardware)
     }
@@ -80,6 +94,7 @@ impl<T> TaroData<T> for TaroBuffer<T>
 where
     T: TaroBytesBuilder,
 {
+    /// Writes `new data` to the internal buffer associated with `hardware`
     fn write_new(&self, new_data: &T, hardware: &TaroHardware) {
         hardware
             .queue()
@@ -91,6 +106,7 @@ impl<T> TaroBuffer<T>
 where
     T: TaroBytesBuilder,
 {
+    /// Creates a new TaroBuffer and initializes a buffer associated with `hardware`
     fn new(data: &T, hardware: &TaroHardware) -> Self {
         Self {
             _type: Default::default(),
@@ -119,6 +135,9 @@ impl<T> ShaderExt for T
 where
     T: TaroCoreShader,
 {
+    /// Creates or gets a BindGroup associated with `hardware`
+    ///
+    /// If the BindGroup does not exist, it will initialize it using 'layout'
     fn get_or_init_binding<'a, Data>(
         &'a self,
         buffer: &'a TaroBuffer<Data>,
@@ -144,6 +163,7 @@ where
     }
 }
 
+/// A struct to help with managing parameters attached directly to a shader
 pub struct ShaderParameter<T> {
     hardware_id: HardwareId,
     buffer: wgpu::Buffer,
@@ -155,10 +175,12 @@ impl<T> ShaderParameter<T>
 where
     T: TaroBytesBuilder,
 {
+    /// Gets the internal bind group associated with this parameter
     pub fn bind_group(&self) -> &wgpu::BindGroup {
         &self.bind_group
     }
 
+    /// Creates a new ShaderParameter instance, and initializes it.
     pub fn new(initial_value: &T, layout: &wgpu::BindGroupLayout, hardware: &TaroHardware) -> Self {
         let buffer = hardware
             .device()
@@ -187,6 +209,10 @@ where
         }
     }
 
+    /// Writes `new_data` to the ShaderParameter
+    ///
+    /// # Panics
+    /// This will panic if it is written to with different hardware than it was created with.
     pub fn write(&self, new_data: &T, hardware: &TaroHardware) {
         if hardware.id() != &self.hardware_id {
             panic!(
