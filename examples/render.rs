@@ -1,4 +1,8 @@
 use boba::prelude::*;
+use milk_tea::{
+    winit::event::{ElementState, KeyboardInput, VirtualKeyCode},
+    MilkTeaEvent,
+};
 use std::f32::consts::PI;
 use taro_renderer::{data_types::Vertex, wgpu::Color};
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderInit};
@@ -18,15 +22,39 @@ const INDICES: &[u16] = &[
 ];
 
 pub struct Rotator {
+    pub rotate: bool,
     pub transform: Pearl<BobaTransform>,
     pub current_rot: f32,
     pub speed: f32,
 }
 
-register_pearl_stages!(Rotator: BobaUpdate);
+register_pearl_stages!(Rotator: BobaUpdate, MilkTeaEvent<KeyboardInput>);
+
+impl PearlStage<MilkTeaEvent<KeyboardInput>> for Rotator {
+    fn update(&mut self, data: &KeyboardInput, _: &mut BobaResources) -> BobaResult {
+        let Some(key) = &data.virtual_keycode else {
+            return Ok(());
+        };
+
+        if key != &VirtualKeyCode::Space {
+            return Ok(());
+        }
+
+        match data.state {
+            ElementState::Pressed => self.rotate = true,
+            ElementState::Released => self.rotate = false,
+        }
+
+        Ok(())
+    }
+}
 
 impl PearlStage<BobaUpdate> for Rotator {
     fn update(&mut self, delta: &f32, _resources: &mut BobaResources) -> BobaResult {
+        if !self.rotate {
+            return Ok(());
+        }
+
         let mut transform = self.transform.borrow_mut()?;
 
         self.current_rot += self.speed * delta;
@@ -63,9 +91,10 @@ fn main() {
 
     // create a rotator object that links to the renderers transform
     let rotator = Pearl::wrap(Rotator {
+        rotate: false,
         transform: renderer.transform.clone(),
         current_rot: 0.,
-        speed: 1.,
+        speed: 3.,
     });
     app.registry.add(&rotator);
 
