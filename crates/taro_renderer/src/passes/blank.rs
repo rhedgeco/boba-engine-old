@@ -1,4 +1,7 @@
-use crate::{data_types::buffers::CameraMatrix, shading::TaroBuffer, TaroRenderPass};
+use crate::{
+    shading::{buffers::CameraMatrix, TaroBuffer},
+    TaroRenderPass,
+};
 
 pub struct BlankRenderPass;
 

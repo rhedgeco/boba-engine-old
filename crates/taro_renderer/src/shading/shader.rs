@@ -1,11 +1,8 @@
-use super::{TaroData, TaroDataUploader};
-use crate::{
-    data_types::{
-        buffers::{CameraMatrix, TransformMatrix},
-        TaroMeshBuffer,
-    },
-    HardwareId, TaroHardware,
+use super::{
+    buffers::{CameraMatrix, TransformMatrix},
+    TaroData, TaroDataUploader,
 };
+use crate::{data_types::TaroMeshBuffer, HardwareId, TaroHardware};
 use once_map::OnceMap;
 use std::{any::TypeId, marker::PhantomData};
 use wgpu::util::DeviceExt;
