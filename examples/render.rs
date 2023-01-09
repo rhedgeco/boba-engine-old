@@ -83,7 +83,7 @@ fn main() {
     camera.passes.append(UnlitRenderPass);
 
     // create texture for mesh
-    let texture = Texture2D::new(include_bytes!("happy-tree.png")).unwrap();
+    let texture = Texture2D::new(include_bytes!("boba-logo.png")).unwrap();
     let tex_view = Texture2DView::new(texture);
 
     // create a mesh to be rendered

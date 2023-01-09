@@ -231,12 +231,12 @@ pub struct SamplerSettings {
 impl Default for SamplerSettings {
     fn default() -> Self {
         Self {
-            address_mode_u: Default::default(),
-            address_mode_v: Default::default(),
-            address_mode_w: Default::default(),
-            mag_filter: Default::default(),
-            min_filter: Default::default(),
-            mipmap_filter: Default::default(),
+            address_mode_u: wgpu::AddressMode::Repeat,
+            address_mode_v: wgpu::AddressMode::Repeat,
+            address_mode_w: wgpu::AddressMode::Repeat,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::FilterMode::Linear,
             lod_min_clamp: 0.0,
             lod_max_clamp: std::f32::MAX,
             compare: None,
@@ -270,13 +270,7 @@ impl TaroBindingBuilder for TaroSampler {
 impl TaroSampler {
     /// Creates a new TaroSampler with default settings
     pub fn new() -> Self {
-        Self::from_settings(SamplerSettings {
-            address_mode_u: wgpu::AddressMode::Repeat,
-            address_mode_v: wgpu::AddressMode::Repeat,
-            address_mode_w: wgpu::AddressMode::Repeat,
-            mag_filter: wgpu::FilterMode::Linear,
-            ..Default::default()
-        })
+        Self::from_settings(SamplerSettings::default())
     }
 
     /// Creates a new TaroSampler with provided `settings`
