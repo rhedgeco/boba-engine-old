@@ -1,7 +1,4 @@
-use crate::{
-    shading::{buffers::CameraMatrix, TaroBuffer},
-    TaroRenderPass,
-};
+use crate::{shading::buffers::CameraMatrix, TaroRenderPass};
 
 pub struct BlankRenderPass;
 
@@ -9,7 +6,7 @@ impl TaroRenderPass for BlankRenderPass {
     fn render(
         &mut self,
         _pearls: &crate::TaroRenderPearls,
-        _camera_matrix: &TaroBuffer<CameraMatrix>,
+        _camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
         encoder: &mut wgpu::CommandEncoder,
         _hardware: &crate::TaroHardware,

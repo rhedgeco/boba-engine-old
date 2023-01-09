@@ -44,13 +44,13 @@ where
     where
         F: FnOnce() -> T::UploadData,
     {
-        self.cache.get_or_init(hardware.id(), f).into_data()
+        self.cache.get_or_init(hardware.id().clone(), f).into_data()
     }
 
     pub fn upload_new(&self, data: &T, hardware: &TaroHardware) -> &T::UploadData {
         return match self
             .cache
-            .get_or_init(hardware.id(), || data.new_upload(hardware))
+            .get_or_init(hardware.id().clone(), || data.new_upload(hardware))
         {
             GetOrInitData::Init(d) => d,
             GetOrInitData::Get(d) => {

@@ -15,13 +15,13 @@ pub struct CameraMatrix {
 }
 
 impl TaroBytesBuilder for TransformMatrix {
-    fn as_bytes(&self) -> &[u8] {
+    fn build_bytes(&self) -> &[u8] {
         bytemuck::cast_slice(&self.matrix_data)
     }
 }
 
 impl TaroBytesBuilder for CameraMatrix {
-    fn as_bytes(&self) -> &[u8] {
+    fn build_bytes(&self) -> &[u8] {
         bytemuck::cast_slice(&self.matrix_data)
     }
 }

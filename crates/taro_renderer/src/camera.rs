@@ -5,10 +5,7 @@ use boba_3d::{
 use boba_core::Pearl;
 use log::error;
 
-use crate::{
-    shading::{buffers::CameraMatrix, TaroDataUploader, TaroMap},
-    TaroHardware, TaroRenderPasses, TaroRenderPearls,
-};
+use crate::{shading::buffers::CameraMatrix, TaroHardware, TaroRenderPasses, TaroRenderPearls};
 
 #[derive(Default)]
 pub struct TaroCameras {
@@ -23,7 +20,7 @@ pub struct TaroCameraSettings {
 }
 
 pub struct TaroCamera {
-    camera_matrix: TaroMap<CameraMatrix>,
+    camera_matrix: CameraMatrix,
 
     pub(crate) aspect: f32,
     pub transform: Pearl<BobaTransform>,
@@ -33,12 +30,9 @@ pub struct TaroCamera {
 
 impl TaroCamera {
     pub fn new(transform: Pearl<BobaTransform>, settings: TaroCameraSettings) -> Self {
-        let aspect = 1f32;
-        let camera_matrix = TaroMap::new();
-
         Self {
-            aspect,
-            camera_matrix,
+            aspect: 1.,
+            camera_matrix: CameraMatrix::default(),
             transform,
             settings,
             passes: Default::default(),
@@ -46,12 +40,9 @@ impl TaroCamera {
     }
 
     pub fn new_simple(transform: BobaTransform, settings: TaroCameraSettings) -> Self {
-        let aspect = 1f32;
-        let camera_matrix = TaroMap::new();
-
         Self {
-            aspect,
-            camera_matrix,
+            aspect: 1.,
+            camera_matrix: CameraMatrix::default(),
             transform: Pearl::wrap(transform),
             settings,
             passes: Default::default(),
@@ -65,24 +56,22 @@ impl TaroCamera {
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
-        let matrix = match self.transform.borrow() {
+        match self.transform.borrow() {
             Ok(t) => {
-                let matrix = Self::calculate_matrix(
+                self.camera_matrix = Self::calculate_matrix(
                     t.world_position(),
                     t.world_rotation(),
                     self.aspect,
                     &self.settings,
                 );
-                self.camera_matrix.upload_new(&matrix, hardware)
             }
             Err(e) => {
                 error!("Error when calculating camera matrix. Error: {e}");
-                self.camera_matrix
-                    .get_or_upload(|| CameraMatrix::default().new_upload(hardware), hardware)
             }
         };
 
-        self.passes.render(pearls, matrix, view, encoder, hardware);
+        self.passes
+            .render(pearls, &self.camera_matrix, view, encoder, hardware);
     }
 
     pub fn calculate_matrix(

@@ -5,8 +5,8 @@ use milk_tea::{
 };
 use std::f32::consts::PI;
 use taro_renderer::{
-    data_types::{TaroTexture, Vertex},
-    image,
+    data_types::Vertex,
+    shading::data_types::{TaroSampler, Texture2D, Texture2DView},
 };
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderInit};
 
@@ -86,14 +86,14 @@ fn main() {
     camera.passes.append(UnlitRenderPass);
 
     // create texture for mesh
-    let image = image::load_from_memory(include_bytes!("happy-tree.png")).unwrap();
-    let texture = TaroTexture::new(image);
+    let texture = Texture2D::new(include_bytes!("happy-tree.png")).unwrap();
+    let tex_view = Texture2DView::new(texture);
 
     // create a mesh to be rendered
     let renderer = TaroMeshRenderer::new_simple(
         BobaTransform::from_position(Vec3::ZERO),
         TaroMesh::new(VERTICES, INDICES),
-        TaroShader::<UnlitShader>::new(UnlitShaderInit::new(texture)),
+        TaroShader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, TaroSampler::new())),
     );
 
     // create a rotator object that links to the renderers transform

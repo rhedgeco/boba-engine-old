@@ -6,7 +6,7 @@ use crate::{
     data_types::TaroMesh,
     shading::{
         buffers::{CameraMatrix, TransformMatrix},
-        TaroBuffer, TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader,
+        TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader,
     },
     TaroHardware,
 };
@@ -16,7 +16,7 @@ where
     T: TaroCoreShader,
 {
     map: TaroMap<TaroMesh>,
-    model_matrix: TaroMap<TransformMatrix>,
+    model_matrix: TransformMatrix,
 
     pub mesh: TaroMesh,
     pub shader: TaroShader<T>,
@@ -30,7 +30,7 @@ where
     pub fn new(transform: Pearl<BobaTransform>, mesh: TaroMesh, shader: TaroShader<T>) -> Self {
         Self {
             map: Default::default(),
-            model_matrix: TaroMap::new(),
+            model_matrix: TransformMatrix::default(),
             mesh,
             shader,
             transform,
@@ -40,7 +40,7 @@ where
     pub fn new_simple(transform: BobaTransform, mesh: TaroMesh, shader: TaroShader<T>) -> Self {
         Self {
             map: Default::default(),
-            model_matrix: TaroMap::new(),
+            model_matrix: TransformMatrix::default(),
             mesh,
             shader,
             transform: Pearl::wrap(transform),
@@ -50,29 +50,23 @@ where
     pub fn render<'pass>(
         &'pass mut self,
         pass: &mut wgpu::RenderPass<'pass>,
-        camera_matrix: &'pass TaroBuffer<CameraMatrix>,
+        camera_matrix: &CameraMatrix,
         hardware: &TaroHardware,
     ) {
-        let model_matrix = match self.transform.borrow() {
-            Ok(t) => self
-                .model_matrix
-                .upload_new(&t.world_matrix().into(), hardware),
+        match self.transform.borrow() {
+            Ok(t) => self.model_matrix = t.world_matrix().into(),
             Err(e) => {
                 error!("Error when recalculating model matrix. Error: {e}");
-                self.model_matrix
-                    .get_or_upload(|| TransformMatrix::default().new_upload(hardware), hardware)
             }
         };
 
         let uploaded_mesh = self
             .map
             .get_or_upload(|| self.mesh.new_upload(hardware), hardware);
-        self.shader.get(hardware).render(
-            pass,
-            uploaded_mesh,
-            camera_matrix,
-            model_matrix,
-            hardware,
-        );
+
+        let shader = self.shader.get(hardware);
+        shader.set_camera_matrix(camera_matrix, hardware);
+        shader.set_model_matrix(&self.model_matrix, hardware);
+        shader.render(pass, uploaded_mesh, hardware);
     }
 }

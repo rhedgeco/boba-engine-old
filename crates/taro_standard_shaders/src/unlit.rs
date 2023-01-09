@@ -1,35 +1,39 @@
 use once_cell::sync::OnceCell;
 use taro_renderer::{
-    data_types::{ShaderTextureExt, TaroMeshBuffer, TaroTexture, Vertex},
+    data_types::{TaroMeshBuffer, Vertex},
     shading::{
         buffers::{CameraMatrix, TransformMatrix},
-        ShaderBufferExt, TaroBuffer, TaroCoreShader, TaroMeshShader,
+        data_types::{TaroSampler, Texture2DView},
+        BindGroup, BindGroupBuilder, TaroBinding, TaroCoreShader, TaroMeshShader, UniformBuffer,
     },
-    wgpu,
+    wgpu, TaroHardware,
 };
 
 static PIPELINE: OnceCell<wgpu::RenderPipeline> = OnceCell::new();
 static MATRIX_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
-static TEXTURE_LAYOUT: OnceCell<wgpu::BindGroupLayout> = OnceCell::new();
 
 pub struct UnlitShaderInit {
-    pub texture: TaroTexture,
+    pub view: Texture2DView,
+    pub sampler: TaroSampler,
 }
 
 impl UnlitShaderInit {
-    pub fn new(texture: TaroTexture) -> Self {
-        Self { texture }
+    pub fn new(view: Texture2DView, sampler: TaroSampler) -> Self {
+        Self { view, sampler }
     }
 }
 
 pub struct UnlitShader {
-    pub texture: TaroTexture,
+    pub texture: BindGroup,
+    pub camera_matrix: TaroBinding<UniformBuffer<CameraMatrix>>,
+    pub model_matrix: TaroBinding<UniformBuffer<TransformMatrix>>,
+    _pivate: (),
 }
 
 impl TaroCoreShader for UnlitShader {
     type InitParameters = UnlitShaderInit;
 
-    fn build_instance(init: &UnlitShaderInit, hardware: &taro_renderer::TaroHardware) -> Self {
+    fn build_instance(init: &UnlitShaderInit, hardware: &TaroHardware) -> Self {
         let matrix_layout = MATRIX_LAYOUT.get_or_init(|| {
             hardware
                 .device()
@@ -48,31 +52,12 @@ impl TaroCoreShader for UnlitShader {
                 })
         });
 
-        let texture_layout = TEXTURE_LAYOUT.get_or_init(|| {
-            hardware
-                .device()
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label: Some("Unlit Shader Texture Bind Group Layout"),
-                    entries: &[
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 0,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Texture {
-                                multisampled: false,
-                                view_dimension: wgpu::TextureViewDimension::D2,
-                                sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                            },
-                            count: None,
-                        },
-                        wgpu::BindGroupLayoutEntry {
-                            binding: 1,
-                            visibility: wgpu::ShaderStages::FRAGMENT,
-                            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
-                            count: None,
-                        },
-                    ],
-                })
-        });
+        let view_bind = TaroBinding::new(init.view.clone(), wgpu::ShaderStages::FRAGMENT);
+        let sampler_bind = TaroBinding::new(init.sampler.clone(), wgpu::ShaderStages::FRAGMENT);
+        let texture = BindGroupBuilder::new()
+            .set_binding(0, view_bind)
+            .set_binding(1, sampler_bind)
+            .build();
 
         PIPELINE.get_or_init(|| {
             let pipeline_layout =
@@ -80,7 +65,11 @@ impl TaroCoreShader for UnlitShader {
                     .device()
                     .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                         label: Some("Render Pipeline Layout"),
-                        bind_group_layouts: &[&matrix_layout, &matrix_layout, &texture_layout],
+                        bind_group_layouts: &[
+                            &matrix_layout,
+                            &matrix_layout,
+                            &texture.get_or_compile(hardware).layout,
+                        ],
                         push_constant_ranges: &[],
                     });
 
@@ -132,34 +121,41 @@ impl TaroCoreShader for UnlitShader {
         });
 
         Self {
-            texture: init.texture.clone(),
+            texture,
+            camera_matrix: TaroBinding::new(UniformBuffer::new(), wgpu::ShaderStages::VERTEX),
+            model_matrix: TaroBinding::new(UniformBuffer::new(), wgpu::ShaderStages::VERTEX),
+            _pivate: (),
         }
     }
 }
 
 impl TaroMeshShader for UnlitShader {
+    fn set_camera_matrix(&self, data: &CameraMatrix, hardware: &TaroHardware) {
+        self.camera_matrix
+            .binding_data()
+            .write_buffer(data, hardware);
+    }
+
+    fn set_model_matrix(&self, data: &TransformMatrix, hardware: &TaroHardware) {
+        self.model_matrix
+            .binding_data()
+            .write_buffer(data, hardware);
+    }
+
     fn render<'pass>(
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
         mesh: &'pass TaroMeshBuffer,
-        camera_matrix: &'pass TaroBuffer<CameraMatrix>,
-        model_matrix: &'pass TaroBuffer<TransformMatrix>,
-        hardware: &taro_renderer::TaroHardware,
+        hardware: &TaroHardware,
     ) {
-        let camera_bind =
-            self.get_or_init_binding(camera_matrix, MATRIX_LAYOUT.get().unwrap(), hardware);
-
-        let model_bind =
-            self.get_or_init_binding(model_matrix, MATRIX_LAYOUT.get().unwrap(), hardware);
-
-        let texture = self.texture.get_uploaded(hardware);
-        let texture_bind =
-            self.get_or_init_texture_binding(texture, TEXTURE_LAYOUT.get().unwrap(), hardware);
+        let camera_bind = self.camera_matrix.get_or_compile_single(hardware);
+        let model_bind = self.model_matrix.get_or_compile_single(hardware);
+        let texture_bind = self.texture.get_or_compile(hardware);
 
         pass.set_pipeline(PIPELINE.get().unwrap());
-        pass.set_bind_group(0, camera_bind, &[]);
-        pass.set_bind_group(1, model_bind, &[]);
-        pass.set_bind_group(2, texture_bind, &[]);
+        pass.set_bind_group(0, &camera_bind.bind_group, &[]);
+        pass.set_bind_group(1, &model_bind.bind_group, &[]);
+        pass.set_bind_group(2, &texture_bind.bind_group, &[]);
         pass.set_vertex_buffer(0, mesh.vertex_buffer().raw_buffer().slice(..));
         pass.set_index_buffer(
             mesh.index_buffer().raw_buffer().slice(..),
