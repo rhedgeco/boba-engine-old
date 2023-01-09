@@ -4,10 +4,7 @@ use milk_tea::{
     MilkTeaEvent,
 };
 use std::f32::consts::PI;
-use taro_renderer::{
-    data_types::Vertex,
-    shading::data_types::{TaroSampler, Texture2D, Texture2DView},
-};
+use taro_renderer::shading::data_types::Vertex;
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderInit};
 
 #[rustfmt::skip]
