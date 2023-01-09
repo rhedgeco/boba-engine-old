@@ -1,5 +1,8 @@
-use super::buffers::{CameraMatrix, TransformMatrix};
-use crate::{data_types::TaroMeshBuffer, HardwareId, TaroHardware};
+use super::{
+    buffers::{CameraMatrix, TransformMatrix},
+    data_types::TaroMeshBuffer,
+};
+use crate::{HardwareId, TaroHardware};
 use once_map::OnceMap;
 
 /// The base trait for any shader type.

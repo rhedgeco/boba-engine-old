@@ -3,9 +3,9 @@ use boba_core::Pearl;
 use log::error;
 
 use crate::{
-    data_types::TaroMesh,
     shading::{
         buffers::{CameraMatrix, TransformMatrix},
+        data_types::TaroMesh,
         TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader,
     },
     TaroHardware,
