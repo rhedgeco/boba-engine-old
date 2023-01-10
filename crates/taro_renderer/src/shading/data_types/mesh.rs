@@ -118,7 +118,7 @@ impl Mesh {
         let (models, _) = tobj::load_obj_buf(
             &mut reader,
             &tobj::LoadOptions {
-                single_index: false,
+                single_index: true,
                 triangulate: true,
                 ignore_points: true,
                 ignore_lines: true,
@@ -126,21 +126,31 @@ impl Mesh {
             |_| Ok(Default::default()),
         )?;
 
-        let mesh = &models[0].mesh;
         let mut vertices = Vec::<Vertex>::new();
         let mut indices = Vec::<u16>::new();
 
-        for i in 0..mesh.indices.len() / 3 {
-            let i1 = i;
-            let i2 = i + 1;
-            let i3 = i + 2;
+        for model in models {
+            let mesh = model.mesh;
+            for index in &mesh.indices {
+                let pos_offset = (3 * index) as usize;
+                let texcoord_offset = (2 * index) as usize;
 
-            indices.push(i as u16);
-            vertices.push(Vertex {
-                position: [mesh.positions[i1], mesh.positions[i2], mesh.positions[i3]],
-                uv: [0., 0.],
-                normal: [0., 0., 0.],
-            });
+                let vertex = Vertex {
+                    position: [
+                        mesh.positions[pos_offset + 0],
+                        mesh.positions[pos_offset + 1],
+                        mesh.positions[pos_offset + 2],
+                    ],
+                    uv: [
+                        mesh.texcoords[texcoord_offset + 0],
+                        1. - mesh.texcoords[texcoord_offset + 1],
+                    ],
+                    normal: [0., 0., 0.],
+                };
+
+                vertices.push(vertex);
+                indices.push(indices.len() as u16);
+            }
         }
 
         Ok(Self::from_vertices(&vertices, &indices))
