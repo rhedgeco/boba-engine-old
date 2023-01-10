@@ -67,15 +67,40 @@ fn main() {
     // add unlit render pass for testing
     camera.passes.append(UnlitRenderPass);
 
+    // create mesh
+    let mesh = Mesh::new(File::open("cube.obj").unwrap()).unwrap();
+
     // create texture for mesh
     let tex_view = Texture2DView::new(include_bytes!("boba-logo.png")).unwrap();
+
+    // create shader for the mesh
+    let shader = TaroShader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, Sampler::new()));
 
     // create a mesh to be rendered
     let renderer = TaroMeshRenderer::new_simple(
         BobaTransform::from_position(Vec3::ZERO),
-        Mesh::new(File::open("cube.obj").unwrap()).unwrap(),
-        TaroShader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, Sampler::new())),
+        mesh.clone(),
+        shader.clone(),
     );
+
+    // create another mesh to be rendered
+    let renderer2 = TaroMeshRenderer::new_simple(
+        BobaTransform::from_position(Vec3::new(1.5, 0., -1.5)),
+        mesh.clone(),
+        shader.clone(),
+    );
+
+    // create another mesh to be rendered
+    let mut renderer3 = TaroMeshRenderer::new_simple(
+        BobaTransform::from_position(Vec3::new(-1.5, 0., -1.5)),
+        mesh.clone(),
+        shader.clone(),
+    );
+
+    renderer3
+        .transform
+        .set_parent(renderer.transform.clone())
+        .unwrap();
 
     // create a rotator object that links to the renderers transform
     let rotator = Pearl::wrap(Rotator {
@@ -94,6 +119,8 @@ fn main() {
     // create TaroRenderPearls resource and add it
     let mut render_pearls = TaroRenderPearls::default();
     render_pearls.add(Pearl::wrap(renderer));
+    render_pearls.add(Pearl::wrap(renderer2));
+    render_pearls.add(Pearl::wrap(renderer3));
     app.resources.add(render_pearls);
 
     // run the app

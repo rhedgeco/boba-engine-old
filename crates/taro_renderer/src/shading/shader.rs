@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::{
     buffers::{CameraMatrix, TransformMatrix},
     data_types::MeshBuffer,
@@ -26,13 +28,24 @@ pub trait TaroMeshShader: TaroCoreShader {
 }
 
 /// The main struct to hold and manage shaders for TaroRenderers
-#[derive(Clone)]
 pub struct TaroShader<T>
 where
     T: TaroCoreShader,
 {
-    parameters: T::InitParameters,
+    parameters: Arc<T::InitParameters>,
     shader_cache: OnceMap<HardwareId, T>,
+}
+
+impl<T> Clone for TaroShader<T>
+where
+    T: TaroCoreShader,
+{
+    fn clone(&self) -> Self {
+        Self {
+            parameters: self.parameters.clone(),
+            shader_cache: self.shader_cache.clone(),
+        }
+    }
 }
 
 impl<T> TaroShader<T>
@@ -42,7 +55,7 @@ where
     /// Creates a new TaroShader with `init` parameters
     pub fn new(init: T::InitParameters) -> Self {
         Self {
-            parameters: init,
+            parameters: Arc::new(init),
             shader_cache: Default::default(),
         }
     }

@@ -2,6 +2,7 @@ use boba_core::{Pearl, PearlId, PearlMutError};
 use glam::{Mat4, Quat, Vec3, Vec4};
 use indexmap::IndexSet;
 use log::error;
+use thiserror::Error;
 
 pub struct BobaTransform {
     world_position: Vec3,
@@ -156,8 +157,11 @@ impl BobaTransform {
     }
 }
 
+#[derive(Debug, Error)]
 pub enum SetParentError {
+    #[error("A parent child relationship was recursive")]
     RecursionError,
+    #[error("There was an error accessing one a pearl. Error: {0}")]
     PearlError(PearlMutError),
 }
 
