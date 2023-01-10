@@ -247,3 +247,41 @@ impl TaroBindBuilder for Taro<Sampler> {
         wgpu::BindingResource::Sampler(self.get_or_compile(hardware))
     }
 }
+
+pub struct DepthView {
+    size: (u32, u32),
+}
+
+impl DepthView {
+    pub const FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;
+
+    pub fn new(size: (u32, u32)) -> Taro<DepthView> {
+        Taro::new(DepthView { size })
+    }
+}
+
+impl TaroBuilder for DepthView {
+    type Compiled = wgpu::TextureView;
+
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
+        let size = wgpu::Extent3d {
+            width: self.size.0,
+            height: self.size.1,
+            depth_or_array_layers: 1,
+        };
+
+        let desc = wgpu::TextureDescriptor {
+            label: Some("Taro Depth Texture"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: Self::FORMAT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
+        };
+
+        let texture = hardware.device().create_texture(&desc);
+
+        texture.create_view(&wgpu::TextureViewDescriptor::default())
+    }
+}

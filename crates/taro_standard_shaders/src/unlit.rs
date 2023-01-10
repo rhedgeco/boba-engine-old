@@ -2,7 +2,7 @@ use once_cell::sync::OnceCell;
 use taro_renderer::{
     shading::{
         buffers::{CameraMatrix, TransformMatrix, UniformBuffer},
-        data_types::{MeshBuffer, Sampler, Texture2DView, Vertex},
+        data_types::{DepthView, MeshBuffer, Sampler, Texture2DView, Vertex},
         Bind, BindGroup, BindGroupBuilder, Taro, TaroBindSingle, TaroCoreShader, TaroMeshShader,
     },
     wgpu, TaroHardware,
@@ -109,7 +109,13 @@ impl TaroCoreShader for UnlitShader {
                         unclipped_depth: false,
                         conservative: false,
                     },
-                    depth_stencil: None,
+                    depth_stencil: Some(wgpu::DepthStencilState {
+                        format: DepthView::FORMAT,
+                        depth_write_enabled: true,
+                        depth_compare: wgpu::CompareFunction::Less,
+                        stencil: wgpu::StencilState::default(),
+                        bias: wgpu::DepthBiasState::default(),
+                    }),
                     multisample: wgpu::MultisampleState {
                         count: 1,
                         mask: !0,

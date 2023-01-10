@@ -2,7 +2,9 @@ use indexmap::IndexMap;
 use std::any::TypeId;
 
 use crate::{
-    passes::BlankRenderPass, shading::buffers::CameraMatrix, TaroHardware, TaroRenderPearls,
+    passes::BlankRenderPass,
+    shading::{buffers::CameraMatrix, data_types::DepthView, Taro},
+    TaroHardware, TaroRenderPearls,
 };
 
 pub trait TaroRenderPass: 'static {
@@ -11,6 +13,7 @@ pub trait TaroRenderPass: 'static {
         pearls: &TaroRenderPearls,
         camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     );
@@ -91,11 +94,12 @@ impl TaroRenderPasses {
         pearls: &TaroRenderPearls,
         camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
         for pass in self.passes.values_mut() {
-            pass.dynamic_render(pearls, camera_matrix, view, encoder, hardware);
+            pass.dynamic_render(pearls, camera_matrix, view, depth, encoder, hardware);
         }
     }
 }
@@ -107,6 +111,7 @@ trait DynamicPassRenderer {
         pearls: &TaroRenderPearls,
         camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     );
@@ -125,9 +130,10 @@ where
         pearls: &TaroRenderPearls,
         camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
-        self.render(pearls, camera_matrix, view, encoder, hardware);
+        self.render(pearls, camera_matrix, view, depth, encoder, hardware);
     }
 }
