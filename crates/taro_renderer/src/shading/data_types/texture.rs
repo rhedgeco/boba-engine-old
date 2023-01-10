@@ -1,22 +1,21 @@
-use std::{
-    num::{NonZeroU32, NonZeroU8},
-    sync::Arc,
-};
+use std::num::{NonZeroU32, NonZeroU8};
 
-use image::{GenericImageView, ImageResult, RgbaImage};
-use once_map::OnceMap;
+use image::{ImageResult, RgbaImage};
 use wgpu::util::DeviceExt;
 
-use crate::{shading::TaroBindingBuilder, HardwareId, TaroHardware};
+use crate::{
+    shading::{Taro, TaroBindBuilder, TaroBuilder},
+    TaroHardware,
+};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub enum DynamicImageFormat {
+pub enum ImageFormat {
     Srgb,
     Linear,
 }
 
-impl Into<wgpu::TextureFormat> for DynamicImageFormat {
+impl Into<wgpu::TextureFormat> for ImageFormat {
     fn into(self) -> wgpu::TextureFormat {
         match self {
             Self::Linear => wgpu::TextureFormat::Rgba8Unorm,
@@ -25,128 +24,104 @@ impl Into<wgpu::TextureFormat> for DynamicImageFormat {
     }
 }
 
-pub trait TextureDimensionExt {
-    fn into_view_dimension(self) -> wgpu::TextureViewDimension;
-}
-
-impl TextureDimensionExt for wgpu::TextureDimension {
-    fn into_view_dimension(self) -> wgpu::TextureViewDimension {
-        match self {
-            wgpu::TextureDimension::D1 => wgpu::TextureViewDimension::D1,
-            wgpu::TextureDimension::D2 => wgpu::TextureViewDimension::D2,
-            wgpu::TextureDimension::D3 => wgpu::TextureViewDimension::D3,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct TextureSettings {
-    /// Mip count of texture. For a texture with no extra mips, this must be 1.
-    pub mip_level_count: u32,
-    /// Sample count of texture. If this is not 1, texture must have [`BindingType::Texture::multisampled`] set to true.
-    pub sample_count: u32,
-    /// Format of rhe image
-    pub format: DynamicImageFormat,
-}
-
-struct InnerTexture {
-    buffer: RgbaImage,
-    settings: TextureSettings,
-    size: wgpu::Extent3d,
-}
-
-#[derive(Clone)]
 pub struct Texture2D {
-    inner: Arc<InnerTexture>,
-    cache: OnceMap<HardwareId, wgpu::Texture>,
+    size: (u32, u32),
+    image: RgbaImage,
+    format: ImageFormat,
 }
 
 impl Texture2D {
-    /// Creates a new TaroTexture out of `image` using the default settings
-    pub fn new(buffer: &[u8]) -> ImageResult<Self> {
-        let settings = TextureSettings {
-            mip_level_count: 1,
-            sample_count: 1,
-            format: DynamicImageFormat::Srgb,
-        };
-
-        Self::new_with_settings(buffer, settings)
+    pub fn new(buffer: &[u8]) -> ImageResult<Taro<Self>> {
+        Self::new_with_format(buffer, ImageFormat::Srgb)
     }
 
-    /// Creates a new TaroTexture out of `image` using custom `settings`
-    pub fn new_with_settings(buffer: &[u8], settings: TextureSettings) -> ImageResult<Self> {
+    pub fn new_with_format(buffer: &[u8], format: ImageFormat) -> ImageResult<Taro<Self>> {
         let image = image::load_from_memory(buffer)?;
-        let dimensions = image.dimensions();
+        Ok(Taro::new(Self {
+            size: (image.width(), image.height()),
+            image: image.into_rgba8(),
+            format,
+        }))
+    }
+
+    pub fn size(&self) -> &(u32, u32) {
+        &self.size
+    }
+}
+
+impl TaroBuilder for Texture2D {
+    type Compiled = wgpu::Texture;
+
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
         let size = wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
+            width: self.size.0,
+            height: self.size.1,
             depth_or_array_layers: 1,
         };
 
-        let inner = InnerTexture {
-            buffer: image.to_rgba8(),
-            settings,
+        let descriptor = wgpu::TextureDescriptor {
+            label: Some("Taro Texture"),
             size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: self.format.into(),
+            usage: wgpu::TextureUsages::TEXTURE_BINDING,
         };
 
-        Ok(Self {
-            inner: Arc::new(inner),
-            cache: Default::default(),
-        })
-    }
-
-    /// Gets the internal byte buffer used for this texture
-    pub fn buffer(&self) -> &[u8] {
-        &self.inner.buffer
-    }
-
-    /// Gets the internal `TextureSettings` used for this texture
-    pub fn settings(&self) -> &TextureSettings {
-        &self.inner.settings
-    }
-
-    /// Gets a GPU texture using the provided `hardware`
-    ///
-    /// If the texture has not been uploaded to the specified `hardware` yet. It will be done now.
-    pub fn get_or_compile(&self, hardware: &TaroHardware) -> &wgpu::Texture {
-        self.cache
-            .get_or_init(hardware.id().clone(), || {
-                let settings = self.settings();
-                let descriptor = wgpu::TextureDescriptor {
-                    label: Some("Taro Texture"),
-                    size: self.inner.size,
-                    mip_level_count: settings.mip_level_count,
-                    sample_count: settings.sample_count,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: settings.format.into(),
-                    usage: wgpu::TextureUsages::TEXTURE_BINDING,
-                };
-
-                hardware.device().create_texture_with_data(
-                    hardware.queue(),
-                    &descriptor,
-                    &self.buffer(),
-                )
-            })
-            .into_data()
+        hardware
+            .device()
+            .create_texture_with_data(hardware.queue(), &descriptor, &self.image)
     }
 }
 
-struct InnerTextureView {
-    texture: Texture2D,
-}
-
-#[derive(Clone)]
 pub struct Texture2DView {
-    inner: Arc<InnerTextureView>,
-    cache: OnceMap<HardwareId, wgpu::TextureView>,
+    texture: Taro<Texture2D>,
 }
 
-impl TaroBindingBuilder for Texture2DView {
+impl Texture2DView {
+    pub fn new(buffer: &[u8]) -> ImageResult<Taro<Self>> {
+        Self::new_with_format(buffer, ImageFormat::Srgb)
+    }
+
+    pub fn new_with_format(buffer: &[u8], format: ImageFormat) -> ImageResult<Taro<Self>> {
+        let texture = Texture2D::new_with_format(buffer, format)?;
+        Ok(Self::from_texture(texture))
+    }
+
+    pub fn from_texture(texture: Taro<Texture2D>) -> Taro<Self> {
+        Taro::new(Self { texture })
+    }
+
+    pub fn texture(&self) -> &Taro<Texture2D> {
+        &self.texture
+    }
+}
+
+impl TaroBuilder for Texture2DView {
+    type Compiled = wgpu::TextureView;
+
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
+        let descriptor = wgpu::TextureViewDescriptor {
+            label: Some("Taro Texture View"),
+            format: Some(self.texture.format.into()),
+            dimension: Some(wgpu::TextureViewDimension::D2),
+            aspect: wgpu::TextureAspect::All,
+            base_mip_level: 0,
+            mip_level_count: NonZeroU32::new(1),
+            base_array_layer: 0,
+            array_layer_count: None,
+        };
+        self.texture
+            .get_or_compile(hardware)
+            .create_view(&descriptor)
+    }
+}
+
+impl TaroBindBuilder for Taro<Texture2DView> {
     fn build_bind_type(&self) -> wgpu::BindingType {
-        let texture_settings = self.texture().settings();
         wgpu::BindingType::Texture {
-            multisampled: texture_settings.sample_count > 1,
+            multisampled: false,
             view_dimension: wgpu::TextureViewDimension::D2,
             sample_type: wgpu::TextureSampleType::Float { filterable: true },
         }
@@ -157,52 +132,7 @@ impl TaroBindingBuilder for Texture2DView {
     }
 }
 
-impl Texture2DView {
-    /// Creates a new TaroTextureView out of a TaroTexture.
-    ///
-    /// This does its best to assume the default settings for this texture base on its descriptor.
-    /// However, if you manually created the texture from raw bytes and a descriptor, not all assumptions may be covered.
-    pub fn new(texture: Texture2D) -> Self {
-        let inner = InnerTextureView { texture };
-
-        Self {
-            inner: Arc::new(inner),
-            cache: Default::default(),
-        }
-    }
-
-    /// Gets the internal texture used for this view
-    pub fn texture(&self) -> &Texture2D {
-        &self.inner.texture
-    }
-
-    /// Gets a GPU texture view using the provided `hardware`
-    ///
-    /// If the texture view has not been uploaded to the specified `hardware` yet. It will be done now.
-    pub fn get_or_compile(&self, hardware: &TaroHardware) -> &wgpu::TextureView {
-        self.cache
-            .get_or_init(hardware.id().clone(), || {
-                let settings = self.texture().settings();
-                let descriptor = wgpu::TextureViewDescriptor {
-                    label: Some("Taro Texture View"),
-                    format: Some(settings.format.into()),
-                    dimension: Some(wgpu::TextureViewDimension::D2),
-                    aspect: wgpu::TextureAspect::All,
-                    base_mip_level: 0,
-                    mip_level_count: NonZeroU32::new(settings.mip_level_count),
-                    base_array_layer: 0,
-                    array_layer_count: None,
-                };
-
-                self.inner
-                    .texture
-                    .get_or_compile(hardware)
-                    .create_view(&descriptor)
-            })
-            .into_data()
-    }
-}
-
+#[derive(Clone)]
 pub struct SamplerSettings {
     /// How to deal with out of bounds accesses in the u (i.e. x) direction
     pub address_mode_u: wgpu::AddressMode,
@@ -246,36 +176,24 @@ impl Default for SamplerSettings {
     }
 }
 
-struct InnerSampler {
-    binding_type: wgpu::SamplerBindingType,
+pub struct Sampler {
+    bind_type: wgpu::SamplerBindingType,
     settings: SamplerSettings,
 }
 
-#[derive(Clone)]
-pub struct TaroSampler {
-    inner: Arc<InnerSampler>,
-    cache: OnceMap<HardwareId, wgpu::Sampler>,
-}
-
-impl TaroBindingBuilder for TaroSampler {
-    fn build_bind_type(&self) -> wgpu::BindingType {
-        wgpu::BindingType::Sampler(self.inner.binding_type)
-    }
-
-    fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
-        wgpu::BindingResource::Sampler(self.get_or_compile(hardware))
+impl Default for Taro<Sampler> {
+    fn default() -> Self {
+        Sampler::new()
     }
 }
 
-impl TaroSampler {
-    /// Creates a new TaroSampler with default settings
-    pub fn new() -> Self {
-        Self::from_settings(SamplerSettings::default())
+impl Sampler {
+    pub fn new() -> Taro<Self> {
+        Self::from_settings(Default::default())
     }
 
-    /// Creates a new TaroSampler with provided `settings`
-    pub fn from_settings(settings: SamplerSettings) -> Self {
-        let binding_type = match &settings {
+    pub fn from_settings(settings: SamplerSettings) -> Taro<Self> {
+        let bind_type = match &settings {
             d if d.compare.is_some() => wgpu::SamplerBindingType::Comparison,
             d if d.mag_filter == wgpu::FilterMode::Linear
                 || d.min_filter == wgpu::FilterMode::Linear
@@ -286,46 +204,46 @@ impl TaroSampler {
             _ => wgpu::SamplerBindingType::NonFiltering,
         };
 
-        let inner = InnerSampler {
-            binding_type,
+        Taro::new(Self {
+            bind_type,
             settings,
-        };
-
-        Self {
-            inner: Arc::new(inner),
-            cache: Default::default(),
-        }
+        })
     }
 
-    /// Gets the internal `SamplerSettings` used for this texture
     pub fn settings(&self) -> &SamplerSettings {
-        &self.inner.settings
+        &self.settings
+    }
+}
+
+impl TaroBuilder for Sampler {
+    type Compiled = wgpu::Sampler;
+
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
+        let settings = self.settings();
+        let descriptor = wgpu::SamplerDescriptor {
+            label: Some("Taro Sampler"),
+            address_mode_u: settings.address_mode_u,
+            address_mode_v: settings.address_mode_v,
+            address_mode_w: settings.address_mode_w,
+            mag_filter: settings.mag_filter,
+            min_filter: settings.min_filter,
+            mipmap_filter: settings.mipmap_filter,
+            lod_max_clamp: settings.lod_max_clamp,
+            lod_min_clamp: settings.lod_min_clamp,
+            compare: settings.compare,
+            anisotropy_clamp: settings.anisotropy_clamp,
+            border_color: settings.border_color,
+        };
+        hardware.device().create_sampler(&descriptor)
+    }
+}
+
+impl TaroBindBuilder for Taro<Sampler> {
+    fn build_bind_type(&self) -> wgpu::BindingType {
+        wgpu::BindingType::Sampler(self.bind_type)
     }
 
-    /// Gets a GPU sampler using the provided `hardware`
-    ///
-    /// If the sampler has not been uploaded to the specified `hardware` yet. It will be done now.
-    pub fn get_or_compile(&self, hardware: &TaroHardware) -> &wgpu::Sampler {
-        self.cache
-            .get_or_init(hardware.id().clone(), || {
-                let settings = self.settings();
-                let descriptor = wgpu::SamplerDescriptor {
-                    label: Some("Taro Sampler"),
-                    address_mode_u: settings.address_mode_u,
-                    address_mode_v: settings.address_mode_v,
-                    address_mode_w: settings.address_mode_w,
-                    mag_filter: settings.mag_filter,
-                    min_filter: settings.min_filter,
-                    mipmap_filter: settings.mipmap_filter,
-                    lod_max_clamp: settings.lod_max_clamp,
-                    lod_min_clamp: settings.lod_min_clamp,
-                    compare: settings.compare,
-                    anisotropy_clamp: settings.anisotropy_clamp,
-                    border_color: settings.border_color,
-                };
-
-                hardware.device().create_sampler(&descriptor)
-            })
-            .into_data()
+    fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
+        wgpu::BindingResource::Sampler(self.get_or_compile(hardware))
     }
 }

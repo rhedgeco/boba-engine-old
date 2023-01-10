@@ -3,23 +3,8 @@ use milk_tea::{
     winit::event::{ElementState, KeyboardInput, VirtualKeyCode},
     MilkTeaEvent,
 };
-use std::f32::consts::PI;
-use taro_renderer::shading::data_types::Vertex;
+use std::{f32::consts::PI, fs::File};
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderInit};
-
-#[rustfmt::skip]
-const VERTICES: &[Vertex] = &[
-    Vertex { position: [-0.5, -0.5, 0.], normal: [1., 1., 1.], uv: [0., 1.] },
-    Vertex { position: [0.5, -0.5, 0.], normal: [1., 0., 0.], uv: [1., 1.] },
-    Vertex { position: [0.5, 0.5, 0.], normal: [0., 1., 0.], uv: [1., 0.] },
-    Vertex { position: [-0.5, 0.5, 0.], normal: [0., 0., 1.], uv: [0., 0.] },
-];
-
-#[rustfmt::skip]
-const INDICES: &[u16] = &[
-    0, 1, 2,
-    0, 2, 3,
-];
 
 pub struct Rotator {
     pub rotate: bool,
@@ -83,14 +68,13 @@ fn main() {
     camera.passes.append(UnlitRenderPass);
 
     // create texture for mesh
-    let texture = Texture2D::new(include_bytes!("boba-logo.png")).unwrap();
-    let tex_view = Texture2DView::new(texture);
+    let tex_view = Texture2DView::new(include_bytes!("boba-logo.png")).unwrap();
 
     // create a mesh to be rendered
     let renderer = TaroMeshRenderer::new_simple(
         BobaTransform::from_position(Vec3::ZERO),
-        TaroMesh::new(VERTICES, INDICES),
-        TaroShader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, TaroSampler::new())),
+        TaroMesh::new(File::open("cube.obj").unwrap()).unwrap(),
+        TaroShader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, Sampler::new())),
     );
 
     // create a rotator object that links to the renderers transform

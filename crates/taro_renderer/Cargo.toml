@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 log = "0.4"
+tobj = "3.2"
 wgpu = "0.14"
 thiserror = "1.0"
 pollster = "0.2"

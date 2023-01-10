@@ -1,166 +1,200 @@
-use std::{any::type_name, marker::PhantomData, sync::Arc};
-
+use crate::{HardwareId, TaroHardware};
 use indexmap::IndexMap;
 use once_map::OnceMap;
+use std::{marker::PhantomData, ops::Deref, sync::Arc};
 use wgpu::util::DeviceExt;
 
-use crate::{HardwareId, TaroHardware};
+/// A convenience type to simplify the creation of a single binding.
+pub type TaroBindSingle<T> = Taro<Bind<Taro<T>>>;
 
-pub trait TaroBindingBuilder: Clone {
+/// Base trait for items to be built into a Taro<T> object
+pub trait TaroBuilder {
+    type Compiled;
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled;
+}
+
+/// The core data type for TaroRenderer.
+///
+/// It holds read only data to be compiled and used on the GPU
+pub struct Taro<T: TaroBuilder> {
+    inner: Arc<T>,
+    cache: OnceMap<HardwareId, T::Compiled>,
+}
+
+impl<T: TaroBuilder> Clone for Taro<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            cache: self.cache.clone(),
+        }
+    }
+}
+
+impl<T: TaroBuilder> Deref for Taro<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<T: TaroBuilder> Taro<T> {
+    /// Creates a new Taro object containing `data`
+    pub fn new(data: T) -> Self {
+        Self {
+            inner: Arc::new(data),
+            cache: Default::default(),
+        }
+    }
+
+    /// Gets the compiled form of the internal data.
+    ///
+    /// If the data has been compiled already, it will be retrieved from the cache.
+    pub fn get_or_compile(&self, hardware: &TaroHardware) -> &T::Compiled {
+        self.cache
+            .get_or_init(hardware.id().clone(), || self.inner.compile(hardware))
+            .into_data()
+    }
+}
+
+/// Base trait for items to be built into a binding.
+pub trait TaroBindBuilder: 'static {
     fn build_bind_type(&self) -> wgpu::BindingType;
     fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource;
 }
 
-struct InnerBinding<T> {
-    visibility: wgpu::ShaderStages,
-    bind_type: wgpu::BindingType,
-    binder: T,
-}
-
+/// Compiled data for a bind group.
+///
+/// Contains the bind group itself, and the layout used to create it.
 pub struct BindGroupData {
     pub layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
 }
 
-pub struct TaroBinding<T>
-where
-    T: TaroBindingBuilder,
-{
-    inner: Arc<InnerBinding<T>>,
-    single_cache: OnceMap<HardwareId, BindGroupData>,
+/// Used to create and compile wgpu bind groups
+pub struct Bind<T: TaroBindBuilder> {
+    bind_type: wgpu::BindingType,
+    visibility: wgpu::ShaderStages,
+    data: T,
 }
 
-impl<T> TaroBinding<T>
-where
-    T: TaroBindingBuilder,
-{
-    pub fn new(binder: T, visibility: wgpu::ShaderStages) -> Self {
-        let inner = InnerBinding {
+impl<T: TaroBindBuilder> Bind<T> {
+    /// Creates a new bind with `visibility` using the provided `data`
+    pub fn new(data: T, visibility: wgpu::ShaderStages) -> Taro<Self> {
+        Taro::new(Self {
+            bind_type: data.build_bind_type(),
             visibility,
-            bind_type: binder.build_bind_type(),
-            binder,
-        };
-
-        Self {
-            inner: Arc::new(inner),
-            single_cache: Default::default(),
-        }
+            data,
+        })
     }
 
-    pub fn binding_data(&self) -> &T {
-        &self.inner.binder
-    }
-
-    pub fn get_or_compile_single<'a>(&'a self, hardware: &TaroHardware) -> &BindGroupData {
-        self.single_cache
-            .get_or_init(hardware.id().clone(), || {
-                let layout =
-                    hardware
-                        .device()
-                        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                            label: Some("TaroTextureViewBinding Bind Group Layout"),
-                            entries: &[wgpu::BindGroupLayoutEntry {
-                                binding: 0,
-                                visibility: self.inner.visibility,
-                                ty: self.inner.bind_type,
-                                count: None,
-                            }],
-                        });
-
-                let bind_group = hardware
-                    .device()
-                    .create_bind_group(&wgpu::BindGroupDescriptor {
-                        label: Some("TaroTextureViewBinding Bind Group"),
-                        layout: &layout,
-                        entries: &[wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: self.inner.binder.build_bind_resource(hardware),
-                        }],
-                    });
-
-                BindGroupData { layout, bind_group }
-            })
-            .into_data()
+    /// Gets the underlying data for the binding
+    pub fn data(&self) -> &T {
+        &self.data
     }
 }
 
-trait DynamicBindingBuilder {
+impl<T: TaroBindBuilder> TaroBuilder for Bind<T> {
+    type Compiled = BindGroupData;
+
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
+        let layout = hardware
+            .device()
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some(&format!("Taro Bind {}", std::any::type_name::<T>())),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: self.visibility,
+                    ty: self.bind_type,
+                    count: None,
+                }],
+            });
+
+        let bind_group = hardware
+            .device()
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("TaroTextureViewBinding Bind Group"),
+                layout: &layout,
+                entries: &[wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: self.data.build_bind_resource(hardware),
+                }],
+            });
+
+        BindGroupData { layout, bind_group }
+    }
+}
+
+trait DynamicBindBuilder {
     fn visibility(&self) -> wgpu::ShaderStages;
     fn build_bind_type(&self) -> wgpu::BindingType;
     fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource;
 }
 
-impl<T> DynamicBindingBuilder for TaroBinding<T>
-where
-    T: TaroBindingBuilder,
-{
+impl<T: TaroBindBuilder> DynamicBindBuilder for Taro<Bind<T>> {
     fn visibility(&self) -> wgpu::ShaderStages {
-        self.inner.visibility
+        self.visibility
     }
 
     fn build_bind_type(&self) -> wgpu::BindingType {
-        self.inner.binder.build_bind_type()
+        self.data.build_bind_type()
     }
 
     fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
-        self.inner.binder.build_bind_resource(hardware)
+        self.data.build_bind_resource(hardware)
     }
 }
 
 pub struct BindGroup {
-    bindings: Arc<IndexMap<u32, Box<dyn DynamicBindingBuilder>>>,
-    cache: OnceMap<HardwareId, BindGroupData>,
+    bindings: IndexMap<u32, Box<dyn DynamicBindBuilder>>,
 }
 
-impl BindGroup {
-    pub fn get_or_compile(&self, hardware: &TaroHardware) -> &BindGroupData {
-        self.cache
-            .get_or_init(hardware.id().clone(), || {
-                let layout_entries: Vec<_> = self
-                    .bindings
-                    .iter()
-                    .map(|(index, b)| wgpu::BindGroupLayoutEntry {
-                        binding: *index,
-                        visibility: b.visibility(),
-                        ty: b.build_bind_type(),
-                        count: None,
-                    })
-                    .collect();
+impl TaroBuilder for BindGroup {
+    type Compiled = BindGroupData;
 
-                let bind_group_entries: Vec<_> = self
-                    .bindings
-                    .iter()
-                    .map(|(index, b)| wgpu::BindGroupEntry {
-                        binding: *index,
-                        resource: b.build_bind_resource(hardware),
-                    })
-                    .collect();
-
-                let layout =
-                    hardware
-                        .device()
-                        .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                            label: Some("TaroBindGroup Layout"),
-                            entries: &layout_entries,
-                        });
-
-                let bind_group = hardware
-                    .device()
-                    .create_bind_group(&wgpu::BindGroupDescriptor {
-                        label: Some("TaroBindGroup"),
-                        layout: &layout,
-                        entries: &bind_group_entries,
-                    });
-
-                BindGroupData { layout, bind_group }
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
+        let layout_entries: Vec<_> = self
+            .bindings
+            .iter()
+            .map(|(index, b)| wgpu::BindGroupLayoutEntry {
+                binding: *index,
+                visibility: b.visibility(),
+                ty: b.build_bind_type(),
+                count: None,
             })
-            .into_data()
+            .collect();
+
+        let bind_group_entries: Vec<_> = self
+            .bindings
+            .iter()
+            .map(|(index, b)| wgpu::BindGroupEntry {
+                binding: *index,
+                resource: b.build_bind_resource(hardware),
+            })
+            .collect();
+
+        let layout = hardware
+            .device()
+            .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                label: Some("Taro BindGroup Layout"),
+                entries: &layout_entries,
+            });
+
+        let bind_group = hardware
+            .device()
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                label: Some("Taro BindGroup"),
+                layout: &layout,
+                entries: &bind_group_entries,
+            });
+
+        BindGroupData { layout, bind_group }
     }
 }
 
 #[derive(Default)]
 pub struct BindGroupBuilder {
-    bindings: IndexMap<u32, Box<dyn DynamicBindingBuilder>>,
+    bindings: IndexMap<u32, Box<dyn DynamicBindBuilder>>,
 }
 
 impl BindGroupBuilder {
@@ -168,62 +202,58 @@ impl BindGroupBuilder {
         Default::default()
     }
 
-    pub fn set_binding<T>(mut self, binding_index: u32, binding: TaroBinding<T>) -> Self
+    pub fn insert<T>(mut self, binding_index: u32, binding: Taro<Bind<T>>) -> Self
     where
-        T: TaroBindingBuilder + 'static,
+        T: TaroBindBuilder,
     {
         self.bindings.insert(binding_index, Box::new(binding));
         self
     }
 
-    pub fn build(self) -> BindGroup {
-        BindGroup {
-            bindings: Arc::new(self.bindings),
-            cache: Default::default(),
-        }
+    pub fn build(self) -> Taro<BindGroup> {
+        Taro::new(BindGroup {
+            bindings: self.bindings,
+        })
     }
 }
 
-pub trait TaroBytesBuilder: Default {
+pub trait TaroBytesBuilder: Default + 'static {
     fn build_bytes(&self) -> &[u8];
 }
 
-pub struct UniformBuffer<T>
-where
-    T: TaroBytesBuilder,
-{
-    cache: OnceMap<HardwareId, wgpu::Buffer>,
+pub struct UniformBuffer<T: TaroBytesBuilder> {
     _type: PhantomData<T>,
 }
 
-impl<T> Default for UniformBuffer<T>
-where
-    T: TaroBytesBuilder,
-{
+impl<T: TaroBytesBuilder> UniformBuffer<T> {
+    pub fn new() -> Taro<Self> {
+        Default::default()
+    }
+}
+
+impl<T: TaroBytesBuilder> Default for Taro<UniformBuffer<T>> {
     fn default() -> Self {
-        Self {
-            cache: Default::default(),
+        Taro::new(UniformBuffer {
             _type: Default::default(),
-        }
+        })
     }
 }
 
-impl<T> Clone for UniformBuffer<T>
-where
-    T: TaroBytesBuilder,
-{
-    fn clone(&self) -> Self {
-        Self {
-            cache: self.cache.clone(),
-            _type: self._type.clone(),
-        }
+impl<T: TaroBytesBuilder> TaroBuilder for UniformBuffer<T> {
+    type Compiled = wgpu::Buffer;
+
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
+        hardware
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("UniformBuffer<{}>", std::any::type_name::<T>())),
+                contents: T::default().build_bytes(),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            })
     }
 }
 
-impl<T> TaroBindingBuilder for UniformBuffer<T>
-where
-    T: TaroBytesBuilder,
-{
+impl<T: TaroBytesBuilder> TaroBindBuilder for Taro<UniformBuffer<T>> {
     fn build_bind_type(&self) -> wgpu::BindingType {
         wgpu::BindingType::Buffer {
             ty: wgpu::BufferBindingType::Uniform,
@@ -233,49 +263,16 @@ where
     }
 
     fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
-        self.get_or_default(hardware).as_entire_binding()
+        self.get_or_compile(hardware).as_entire_binding()
     }
 }
 
-impl<T> UniformBuffer<T>
-where
-    T: TaroBytesBuilder,
-{
-    pub fn new() -> Self {
-        Default::default()
-    }
-
+impl<T: TaroBytesBuilder> Taro<UniformBuffer<T>> {
     pub fn write_buffer(&self, data: &T, hardware: &TaroHardware) -> &wgpu::Buffer {
-        match self.cache.get_or_init(hardware.id().clone(), || {
-            hardware
-                .device()
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some(&format!("Taro Buffer<{:?}>", type_name::<T>())),
-                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                    contents: data.build_bytes(),
-                })
-        }) {
-            once_map::GetOrInitData::Init(buffer) => buffer,
-            once_map::GetOrInitData::Get(buffer) => {
-                hardware
-                    .queue()
-                    .write_buffer(&buffer, 0, data.build_bytes());
-                buffer
-            }
-        }
-    }
-
-    pub fn get_or_default(&self, hardware: &TaroHardware) -> &wgpu::Buffer {
-        self.cache
-            .get_or_init(hardware.id().clone(), || {
-                hardware
-                    .device()
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: Some(&format!("Taro Buffer<{:?}>", type_name::<T>())),
-                        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                        contents: T::default().build_bytes(),
-                    })
-            })
-            .into_data()
+        let buffer = self.get_or_compile(hardware);
+        hardware
+            .queue()
+            .write_buffer(&buffer, 0, data.build_bytes());
+        buffer
     }
 }

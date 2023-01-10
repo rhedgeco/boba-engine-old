@@ -1,8 +1,12 @@
 use std::{
+    fmt::Debug,
+    fs::File,
+    io::BufReader,
     marker::PhantomData,
     sync::atomic::{AtomicU32, Ordering},
 };
 
+use tobj::LoadError;
 use wgpu::util::DeviceExt;
 
 use crate::{
@@ -14,15 +18,15 @@ use crate::{
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     pub position: [f32; 3],
-    pub normal: [f32; 3],
     pub uv: [f32; 2],
+    pub normal: [f32; 3],
 }
 
 impl Vertex {
     pub const BUFFER_LAYOUT: wgpu::VertexBufferLayout<'_> = wgpu::VertexBufferLayout {
         array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
         step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x3, 2 => Float32x2],
+        attributes: &wgpu::vertex_attr_array![0 => Float32x3, 1 => Float32x2, 2 => Float32x3],
     };
 }
 
@@ -121,7 +125,40 @@ pub struct TaroMesh {
 }
 
 impl TaroMesh {
-    pub fn new(vertices: &[Vertex], indices: &[u16]) -> Self {
+    pub fn new(obj_file: File) -> Result<Self, LoadError> {
+        let mut reader = BufReader::new(obj_file);
+        let (models, _) = tobj::load_obj_buf(
+            &mut reader,
+            &tobj::LoadOptions {
+                single_index: false,
+                triangulate: true,
+                ignore_points: true,
+                ignore_lines: true,
+            },
+            |_| Ok(Default::default()),
+        )?;
+
+        let mesh = &models[0].mesh;
+        let mut vertices = Vec::<Vertex>::new();
+        let mut indices = Vec::<u16>::new();
+
+        for i in 0..mesh.indices.len() / 3 {
+            let i1 = i;
+            let i2 = i + 1;
+            let i3 = i + 2;
+
+            indices.push(i as u16);
+            vertices.push(Vertex {
+                position: [mesh.positions[i1], mesh.positions[i2], mesh.positions[i3]],
+                uv: [0., 0.],
+                normal: [0., 0., 0.],
+            });
+        }
+
+        Ok(Self::from_vertices(&vertices, &indices))
+    }
+
+    pub fn from_vertices(vertices: &[Vertex], indices: &[u16]) -> Self {
         Self {
             vertices: Box::<[Vertex]>::from(vertices),
             indices: Box::<[u16]>::from(indices),
