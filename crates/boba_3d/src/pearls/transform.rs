@@ -82,7 +82,7 @@ impl BobaTransform {
     }
 
     pub fn world_matrix(&self) -> Mat4 {
-        self.local_matrix * self.parent_matrix
+        self.parent_matrix * self.local_matrix
     }
 
     pub fn local_matrix(&self) -> Mat4 {
