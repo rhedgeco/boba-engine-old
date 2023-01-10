@@ -5,8 +5,8 @@ use log::error;
 use crate::{
     shading::{
         buffers::{CameraMatrix, TransformMatrix},
-        data_types::TaroMesh,
-        TaroCoreShader, TaroDataUploader, TaroMap, TaroMeshShader, TaroShader,
+        data_types::Mesh,
+        Taro, TaroCoreShader, TaroMeshShader, TaroShader,
     },
     TaroHardware,
 };
@@ -15,10 +15,9 @@ pub struct TaroMeshRenderer<T>
 where
     T: TaroCoreShader,
 {
-    map: TaroMap<TaroMesh>,
     model_matrix: TransformMatrix,
 
-    pub mesh: TaroMesh,
+    pub mesh: Taro<Mesh>,
     pub shader: TaroShader<T>,
     pub transform: Pearl<BobaTransform>,
 }
@@ -27,9 +26,8 @@ impl<T> TaroMeshRenderer<T>
 where
     T: TaroMeshShader,
 {
-    pub fn new(transform: Pearl<BobaTransform>, mesh: TaroMesh, shader: TaroShader<T>) -> Self {
+    pub fn new(transform: Pearl<BobaTransform>, mesh: Taro<Mesh>, shader: TaroShader<T>) -> Self {
         Self {
-            map: Default::default(),
             model_matrix: TransformMatrix::default(),
             mesh,
             shader,
@@ -37,14 +35,8 @@ where
         }
     }
 
-    pub fn new_simple(transform: BobaTransform, mesh: TaroMesh, shader: TaroShader<T>) -> Self {
-        Self {
-            map: Default::default(),
-            model_matrix: TransformMatrix::default(),
-            mesh,
-            shader,
-            transform: Pearl::wrap(transform),
-        }
+    pub fn new_simple(transform: BobaTransform, mesh: Taro<Mesh>, shader: TaroShader<T>) -> Self {
+        Self::new(Pearl::wrap(transform), mesh, shader)
     }
 
     pub fn render<'pass>(
@@ -60,10 +52,7 @@ where
             }
         };
 
-        let uploaded_mesh = self
-            .map
-            .get_or_upload(|| self.mesh.new_upload(hardware), hardware);
-
+        let uploaded_mesh = self.mesh.get_or_compile(hardware);
         let shader = self.shader.get(hardware);
         shader.set_camera_matrix(camera_matrix, hardware);
         shader.set_model_matrix(&self.model_matrix, hardware);

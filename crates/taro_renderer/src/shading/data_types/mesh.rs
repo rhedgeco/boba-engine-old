@@ -10,8 +10,8 @@ use tobj::LoadError;
 use wgpu::util::DeviceExt;
 
 use crate::{
-    shading::{TaroData, TaroDataUploader},
-    HardwareId, TaroHardware,
+    shading::{Taro, TaroBuilder},
+    TaroHardware,
 };
 
 #[repr(C)]
@@ -92,17 +92,12 @@ impl MeshData<u16> {
     }
 }
 
-pub struct TaroMeshBuffer {
-    hardware_id: HardwareId,
+pub struct MeshBuffer {
     vertex_buffer: MeshData<Vertex>,
     index_buffer: MeshData<u16>,
 }
 
-impl TaroMeshBuffer {
-    pub fn hardware_id(&self) -> &HardwareId {
-        &self.hardware_id
-    }
-
+impl MeshBuffer {
     pub fn vertex_buffer(&self) -> &MeshData<Vertex> {
         &self.vertex_buffer
     }
@@ -112,20 +107,13 @@ impl TaroMeshBuffer {
     }
 }
 
-impl TaroData<TaroMesh> for TaroMeshBuffer {
-    fn write_new(&self, new_data: &TaroMesh, hardware: &TaroHardware) {
-        self.vertex_buffer.write(&new_data.vertices, hardware);
-        self.index_buffer.write(&new_data.indices, hardware);
-    }
-}
-
-pub struct TaroMesh {
+pub struct Mesh {
     vertices: Box<[Vertex]>,
     indices: Box<[u16]>,
 }
 
-impl TaroMesh {
-    pub fn new(obj_file: File) -> Result<Self, LoadError> {
+impl Mesh {
+    pub fn new(obj_file: File) -> Result<Taro<Self>, LoadError> {
         let mut reader = BufReader::new(obj_file);
         let (models, _) = tobj::load_obj_buf(
             &mut reader,
@@ -158,22 +146,33 @@ impl TaroMesh {
         Ok(Self::from_vertices(&vertices, &indices))
     }
 
-    pub fn from_vertices(vertices: &[Vertex], indices: &[u16]) -> Self {
-        Self {
+    pub fn from_vertices(vertices: &[Vertex], indices: &[u16]) -> Taro<Self> {
+        Taro::new(Self {
             vertices: Box::<[Vertex]>::from(vertices),
             indices: Box::<[u16]>::from(indices),
+        })
+    }
+}
+
+impl TaroBuilder for Mesh {
+    type Compiled = MeshBuffer;
+
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
+        MeshBuffer {
+            vertex_buffer: MeshData::<Vertex>::new(&self.vertices, hardware),
+            index_buffer: MeshData::<u16>::new(&self.indices, hardware),
         }
     }
 }
 
-impl TaroDataUploader for TaroMesh {
-    type UploadData = TaroMeshBuffer;
+impl Taro<Mesh> {
+    pub fn write_vertices(&self, vertices: &[Vertex], hardware: &TaroHardware) {
+        let buffer = self.get_or_compile(hardware);
+        buffer.vertex_buffer.write(vertices, hardware);
+    }
 
-    fn new_upload(&self, hardware: &TaroHardware) -> Self::UploadData {
-        TaroMeshBuffer {
-            hardware_id: hardware.id().clone(),
-            vertex_buffer: MeshData::<Vertex>::new(&self.vertices, hardware),
-            index_buffer: MeshData::<u16>::new(&self.indices, hardware),
-        }
+    pub fn write_indices(&self, indices: &[u16], hardware: &TaroHardware) {
+        let buffer = self.get_or_compile(hardware);
+        buffer.index_buffer.write(indices, hardware);
     }
 }

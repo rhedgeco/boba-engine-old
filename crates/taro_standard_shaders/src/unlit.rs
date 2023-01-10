@@ -2,7 +2,7 @@ use once_cell::sync::OnceCell;
 use taro_renderer::{
     shading::{
         buffers::{CameraMatrix, TransformMatrix},
-        data_types::{Sampler, TaroMeshBuffer, Texture2DView, Vertex},
+        data_types::{MeshBuffer, Sampler, Texture2DView, Vertex},
         Bind, BindGroup, BindGroupBuilder, Taro, TaroBindSingle, TaroCoreShader, TaroMeshShader,
         UniformBuffer,
     },
@@ -141,7 +141,7 @@ impl TaroMeshShader for UnlitShader {
     fn render<'pass>(
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
-        mesh: &'pass TaroMeshBuffer,
+        mesh: &'pass MeshBuffer,
         hardware: &TaroHardware,
     ) {
         let camera_bind = self.camera_matrix.get_or_compile(hardware);

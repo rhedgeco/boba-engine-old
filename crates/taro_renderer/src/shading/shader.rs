@@ -1,6 +1,6 @@
 use super::{
     buffers::{CameraMatrix, TransformMatrix},
-    data_types::TaroMeshBuffer,
+    data_types::MeshBuffer,
 };
 use crate::{HardwareId, TaroHardware};
 use once_map::OnceMap;
@@ -20,7 +20,7 @@ pub trait TaroMeshShader: TaroCoreShader {
     fn render<'pass>(
         &'pass self,
         pass: &mut wgpu::RenderPass<'pass>,
-        mesh: &'pass TaroMeshBuffer,
+        mesh: &'pass MeshBuffer,
         hardware: &TaroHardware,
     );
 }

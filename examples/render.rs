@@ -73,7 +73,7 @@ fn main() {
     // create a mesh to be rendered
     let renderer = TaroMeshRenderer::new_simple(
         BobaTransform::from_position(Vec3::ZERO),
-        TaroMesh::new(File::open("cube.obj").unwrap()).unwrap(),
+        Mesh::new(File::open("cube.obj").unwrap()).unwrap(),
         TaroShader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, Sampler::new())),
     );
 
