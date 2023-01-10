@@ -31,6 +31,10 @@ impl BobaTransform {
         Self::new(position, Quat::IDENTITY, Vec3::ONE)
     }
 
+    pub fn from_position_scale(position: Vec3, scale: Vec3) -> Self {
+        Self::new(position, Quat::IDENTITY, scale)
+    }
+
     pub fn from_position_look_at(position: Vec3, look: Vec3) -> Self {
         let mut new = Self::new(position, Quat::IDENTITY, Vec3::ONE);
         new.look_at(look);

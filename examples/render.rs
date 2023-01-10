@@ -84,19 +84,24 @@ fn main() {
     );
 
     // create another mesh to be rendered
-    let renderer2 = TaroMeshRenderer::new_simple(
-        BobaTransform::from_position(Vec3::new(1.5, 0., -1.5)),
+    let mut renderer2 = TaroMeshRenderer::new_simple(
+        BobaTransform::from_position_scale(Vec3::X * 1.5, Vec3::ONE * 0.5),
         mesh.clone(),
         shader.clone(),
     );
 
     // create another mesh to be rendered
     let mut renderer3 = TaroMeshRenderer::new_simple(
-        BobaTransform::from_position(Vec3::new(-1.5, 0., -1.5)),
+        BobaTransform::from_position_scale(-Vec3::X * 1.5, Vec3::ONE * 0.5),
         mesh.clone(),
         shader.clone(),
     );
 
+    // set parents
+    renderer2
+        .transform
+        .set_parent(renderer.transform.clone())
+        .unwrap();
     renderer3
         .transform
         .set_parent(renderer.transform.clone())
