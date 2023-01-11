@@ -3,7 +3,7 @@ use std::any::TypeId;
 
 use crate::{
     passes::BlankRenderPass,
-    shading::{buffers::CameraMatrix, data_types::DepthView, Taro},
+    shading::{buffers::CameraMatrix, DepthView, Taro},
     TaroHardware, TaroRenderPearls,
 };
 

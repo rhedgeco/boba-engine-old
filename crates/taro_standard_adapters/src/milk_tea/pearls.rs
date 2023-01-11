@@ -1,7 +1,7 @@
 use boba_core::{
     BobaResources, BobaResult, Pearl, PearlStage, RegisterPearlStages, StageRegistrar,
 };
-use milk_tea::{event_types::MilkTeaSize, MilkTeaEvent};
+use milk_tea::events::{MilkTeaEvent, MilkTeaSize};
 
 use super::TaroMilkTea;
 
@@ -14,7 +14,11 @@ impl RegisterPearlStages for TaroMilkTeaResizeListener {
 }
 
 impl PearlStage<MilkTeaEvent<MilkTeaSize>> for TaroMilkTeaResizeListener {
-    fn update(&mut self, data: &MilkTeaSize, resources: &mut BobaResources) -> BobaResult {
+    fn update(
+        _pearl: &Pearl<Self>,
+        data: &MilkTeaSize,
+        resources: &mut BobaResources,
+    ) -> BobaResult {
         let mut surface = resources.get_mut::<TaroMilkTea>()?;
         surface.resize(data);
         Ok(())

@@ -9,7 +9,10 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use crate::{event_types::MilkTeaSize, MilkTeaEvent, MilkTeaPlugin};
+use crate::{
+    events::{MilkTeaEvent, MilkTeaSize},
+    MilkTeaPlugin,
+};
 pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
     fn build(window: Window) -> Self;
 }
