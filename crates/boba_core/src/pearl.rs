@@ -167,6 +167,13 @@ where
 
 #[macro_export]
 macro_rules! register_pearl_stages {
+    ($type:ty) => {
+        impl $crate::RegisterPearlStages for $type {
+            fn register(_pearl: &$crate::Pearl<Self>, _stages: &mut impl $crate::StageRegistrar) {
+                // do nothing
+            }
+        }
+    };
     ($type:ty: $($item:ty),+ $(,)?) => {
         // weird hack to check if type implements all provided traits
         // uses trait bounds to prevent compilation and show error message
