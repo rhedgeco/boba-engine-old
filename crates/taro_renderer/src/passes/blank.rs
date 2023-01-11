@@ -1,5 +1,5 @@
 use crate::{
-    shading::{buffers::CameraMatrix, TaroBuffer},
+    shading::{buffers::CameraMatrix, data_types::DepthView, Taro},
     TaroRenderPass,
 };
 
@@ -9,8 +9,9 @@ impl TaroRenderPass for BlankRenderPass {
     fn render(
         &mut self,
         _pearls: &crate::TaroRenderPearls,
-        _camera_matrix: &TaroBuffer<CameraMatrix>,
+        _camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        _depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         _hardware: &crate::TaroHardware,
     ) {

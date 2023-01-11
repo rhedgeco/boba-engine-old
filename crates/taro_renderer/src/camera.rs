@@ -6,7 +6,7 @@ use boba_core::Pearl;
 use log::error;
 
 use crate::{
-    shading::{buffers::CameraMatrix, TaroDataUploader, TaroMap},
+    shading::{buffers::CameraMatrix, data_types::DepthView, Taro},
     TaroHardware, TaroRenderPasses, TaroRenderPearls,
 };
 
@@ -23,9 +23,10 @@ pub struct TaroCameraSettings {
 }
 
 pub struct TaroCamera {
-    camera_matrix: TaroMap<CameraMatrix>,
+    size: (u32, u32),
+    camera_matrix: CameraMatrix,
+    depth_texture: Taro<DepthView>,
 
-    pub(crate) aspect: f32,
     pub transform: Pearl<BobaTransform>,
     pub settings: TaroCameraSettings,
     pub passes: TaroRenderPasses,
@@ -33,12 +34,10 @@ pub struct TaroCamera {
 
 impl TaroCamera {
     pub fn new(transform: Pearl<BobaTransform>, settings: TaroCameraSettings) -> Self {
-        let aspect = 1f32;
-        let camera_matrix = TaroMap::new();
-
         Self {
-            aspect,
-            camera_matrix,
+            size: (1, 1),
+            camera_matrix: CameraMatrix::default(),
+            depth_texture: DepthView::new((1, 1)),
             transform,
             settings,
             passes: Default::default(),
@@ -46,12 +45,10 @@ impl TaroCamera {
     }
 
     pub fn new_simple(transform: BobaTransform, settings: TaroCameraSettings) -> Self {
-        let aspect = 1f32;
-        let camera_matrix = TaroMap::new();
-
         Self {
-            aspect,
-            camera_matrix,
+            size: (1, 1),
+            camera_matrix: CameraMatrix::default(),
+            depth_texture: DepthView::new((1, 1)),
             transform: Pearl::wrap(transform),
             settings,
             passes: Default::default(),
@@ -65,24 +62,33 @@ impl TaroCamera {
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
-        let matrix = match self.transform.borrow() {
+        match self.transform.borrow() {
             Ok(t) => {
-                let matrix = Self::calculate_matrix(
+                self.camera_matrix = Self::calculate_matrix(
                     t.world_position(),
                     t.world_rotation(),
-                    self.aspect,
+                    self.size.0 as f32 / self.size.1 as f32,
                     &self.settings,
                 );
-                self.camera_matrix.upload_new(&matrix, hardware)
             }
             Err(e) => {
                 error!("Error when calculating camera matrix. Error: {e}");
-                self.camera_matrix
-                    .get_or_upload(|| CameraMatrix::default().new_upload(hardware), hardware)
             }
         };
 
-        self.passes.render(pearls, matrix, view, encoder, hardware);
+        self.passes.render(
+            pearls,
+            &self.camera_matrix,
+            view,
+            &self.depth_texture,
+            encoder,
+            hardware,
+        );
+    }
+
+    pub(crate) fn resize(&mut self, size: (u32, u32)) {
+        self.size = size;
+        self.depth_texture = DepthView::new(size);
     }
 
     pub fn calculate_matrix(
@@ -93,7 +99,12 @@ impl TaroCamera {
     ) -> CameraMatrix {
         let target = position + rotation * Vec3::Z;
         let view = Mat4::look_at_rh(position, target, Vec3::Y);
-        let proj = Mat4::perspective_rh(settings.fovy, aspect, settings.znear, settings.zfar);
+        let proj = Mat4::perspective_rh(
+            settings.fovy.to_radians(),
+            aspect,
+            settings.znear,
+            settings.zfar,
+        );
 
         (proj * view).into()
     }

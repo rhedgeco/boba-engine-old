@@ -1,7 +1,8 @@
-mod map;
+mod binding;
 mod shader;
 
-pub use map::*;
+pub use binding::*;
 pub use shader::*;
 
 pub mod buffers;
+pub mod data_types;

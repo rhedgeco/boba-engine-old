@@ -9,3 +9,4 @@ boba_core = { path = "../boba_core" }
 log = "0.4"
 glam = "0.22"
 indexmap = "1.9"
+thiserror = "1.0"

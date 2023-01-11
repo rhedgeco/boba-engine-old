@@ -12,7 +12,9 @@ pub mod prelude {
     pub use taro_standard_adapters::milk_tea::TaroMilkTea;
 
     pub use taro_renderer::{
-        data_types::TaroMesh, pearls::TaroMeshRenderer, shading::TaroShader, TaroCamera,
-        TaroCameraSettings, TaroCameras, TaroRenderPearls,
+        pearls::TaroMeshRenderer,
+        shading::data_types::{Mesh, Sampler, Texture2D, Texture2DView},
+        shading::Shader,
+        TaroCamera, TaroCameraSettings, TaroCameras, TaroRenderPearls,
     };
 }

@@ -1,5 +1,3 @@
-use crate::shading::TaroBytesBuilder;
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Color {
@@ -9,12 +7,6 @@ pub struct Color {
 impl Default for Color {
     fn default() -> Self {
         Self { values: [1.; 4] }
-    }
-}
-
-impl TaroBytesBuilder for Color {
-    fn as_bytes(&self) -> &[u8] {
-        bytemuck::cast_slice(&self.values)
     }
 }
 

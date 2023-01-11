@@ -1,6 +1,6 @@
 use boba_3d::glam::{Mat4, Vec3};
 
-use crate::shading::TaroBytesBuilder;
+use super::TaroBytesBuilder;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -15,13 +15,13 @@ pub struct CameraMatrix {
 }
 
 impl TaroBytesBuilder for TransformMatrix {
-    fn as_bytes(&self) -> &[u8] {
+    fn build_bytes(&self) -> &[u8] {
         bytemuck::cast_slice(&self.matrix_data)
     }
 }
 
 impl TaroBytesBuilder for CameraMatrix {
-    fn as_bytes(&self) -> &[u8] {
+    fn build_bytes(&self) -> &[u8] {
         bytemuck::cast_slice(&self.matrix_data)
     }
 }

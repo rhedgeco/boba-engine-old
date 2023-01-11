@@ -68,7 +68,7 @@ where
         let mut render_all_cameras = |pearls: &TaroRenderPearls| {
             let size = surface.get_surface_size();
             for camera in cameras.cameras.iter_mut() {
-                camera.aspect = size.0 as f32 / size.1 as f32;
+                camera.resize(size);
                 camera.render(&*pearls, &view, &mut encoder, hardware);
             }
         };

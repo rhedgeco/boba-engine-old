@@ -3,7 +3,7 @@ use std::any::TypeId;
 
 use crate::{
     passes::BlankRenderPass,
-    shading::{buffers::CameraMatrix, TaroBuffer},
+    shading::{buffers::CameraMatrix, data_types::DepthView, Taro},
     TaroHardware, TaroRenderPearls,
 };
 
@@ -11,8 +11,9 @@ pub trait TaroRenderPass: 'static {
     fn render(
         &mut self,
         pearls: &TaroRenderPearls,
-        camera_matrix: &TaroBuffer<CameraMatrix>,
+        camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     );
@@ -91,13 +92,14 @@ impl TaroRenderPasses {
     pub fn render(
         &mut self,
         pearls: &TaroRenderPearls,
-        camera_matrix: &TaroBuffer<CameraMatrix>,
+        camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
         for pass in self.passes.values_mut() {
-            pass.dynamic_render(pearls, camera_matrix, view, encoder, hardware);
+            pass.dynamic_render(pearls, camera_matrix, view, depth, encoder, hardware);
         }
     }
 }
@@ -107,8 +109,9 @@ trait DynamicPassRenderer {
     fn dynamic_render(
         &mut self,
         pearls: &TaroRenderPearls,
-        camera_matrix: &TaroBuffer<CameraMatrix>,
+        camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     );
@@ -125,11 +128,12 @@ where
     fn dynamic_render(
         &mut self,
         pearls: &TaroRenderPearls,
-        camera_matrix: &TaroBuffer<CameraMatrix>,
+        camera_matrix: &CameraMatrix,
         view: &wgpu::TextureView,
+        depth: &Taro<DepthView>,
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
-        self.render(pearls, camera_matrix, view, encoder, hardware);
+        self.render(pearls, camera_matrix, view, depth, encoder, hardware);
     }
 }
