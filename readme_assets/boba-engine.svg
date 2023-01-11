@@ -29,12 +29,12 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="1.7342944"
-     inkscape:cx="317.99677"
-     inkscape:cy="203.8293"
+     inkscape:cx="320.30317"
+     inkscape:cy="205.2708"
      inkscape:window-width="2264"
-     inkscape:window-height="1362"
-     inkscape:window-x="1508"
-     inkscape:window-y="40"
+     inkscape:window-height="1197"
+     inkscape:window-x="2351"
+     inkscape:window-y="118"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1" />
   <defs
@@ -96,9 +96,9 @@
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-1.6368144,-98.739243)"
-     inkscape:export-filename="../examples/boba-engine.svg"
-     inkscape:export-xdpi="96"
-     inkscape:export-ydpi="96">
+     inkscape:export-filename="../examples/boba-engine.png"
+     inkscape:export-xdpi="300"
+     inkscape:export-ydpi="300">
     <rect
        style="fill:#f9f5f3;fill-opacity:1;stroke:none;stroke-width:3.12373;stroke-dasharray:none;stroke-opacity:1"
        id="rect6647"
@@ -119,9 +119,9 @@
        inkscape:label="Engine"><tspan
          x="34.449219"
          y="742.56603"
-         id="tspan5960"><tspan
+         id="tspan7963"><tspan
            style="font-weight:900;font-family:'Adobe Clean Black';-inkscape-font-specification:'Adobe Clean Black,  Heavy'"
-           id="tspan5958">ENGINE</tspan></tspan></text>
+           id="tspan7961">ENGINE</tspan></tspan></text>
     <path
        id="path5471"
        style="fill:#262626;fill-opacity:1;stroke:none;stroke-width:3.9322;stroke-dasharray:none;stroke-opacity:1"
@@ -140,14 +140,15 @@
        inkscape:label="Logo">
       <g
          id="g35030"
-         transform="translate(-9.92894e-6)">
+         transform="translate(-9.92894e-6)"
+         inkscape:label="Liquid">
         <path
-           style="fill:#f4dcb2;fill-opacity:1;stroke:none;stroke-width:24;stroke-dasharray:none;stroke-opacity:1"
+           style="fill:#f7cf88;fill-opacity:1;stroke:none;stroke-width:24;stroke-dasharray:none;stroke-opacity:1"
            d="m 809.59798,376.62981 c 36.46475,-47.66362 179.46873,12.63057 219.61782,61.08552 40.1491,48.45495 106.2633,-3.56188 106.2633,-3.56188 l -19.4129,150.80468 -264.65824,37.54201 -50.52202,-129.00122 c 0,0 -26.52681,-68.86553 8.71204,-116.86911 z"
            id="path10368"
            inkscape:label="Back" />
         <path
-           style="fill:#e3bf82;fill-opacity:1;stroke:none;stroke-width:24;stroke-dasharray:none;stroke-opacity:1"
+           style="fill:#e7b461;fill-opacity:1;stroke:none;stroke-width:24;stroke-dasharray:none;stroke-opacity:1"
            d="m 811.58279,376.6727 c -39.27545,60.1603 55.18199,133.71869 118.02811,150.91636 62.84612,17.19767 131.5778,10.02282 150.5674,-16.53356 18.8103,-26.30574 14.7768,-50.99941 7.1242,-68.7341 -5.1872,-12.02125 -13.8643,-19.95999 -11.1783,-26.44581 2.0185,-4.87398 8.8215,-0.31541 15.8347,6.2639 8.8313,8.28505 17.6117,18.08735 13.2776,-2.65721 -3.6123,-17.28976 -37.975,-50.46239 -29.7473,-60.42034 8.2277,-9.95796 26.5936,6.66123 41.959,10.48169 15.3653,3.82046 24.3536,6.31619 37.664,21.10416 13.3104,14.78797 30.9207,24.97955 35.7205,45.30675 4.7998,20.32719 32.358,52.91824 27.4237,95.89588 -4.9343,42.97763 -41.319,154.70459 -121.3381,180.93819 -80.0191,26.23361 -109.02438,48.9102 -209.05387,16.40367 C 787.83495,696.68575 753.22292,570.89345 752.84613,553.5306 752.46934,536.16775 737.10692,449.81394 780.51478,395.10581 823.92264,340.39768 811.58279,376.6727 811.58279,376.6727 Z"
            id="path3064"
            sodipodi:nodetypes="csssssssssssssssc"

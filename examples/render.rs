@@ -66,7 +66,7 @@ fn main() {
     let mesh = Mesh::new(File::open("cube.obj").unwrap()).unwrap();
 
     // create texture for mesh
-    let tex_view = Texture2DView::new(include_bytes!("boba-logo.png")).unwrap();
+    let tex_view = Texture2DView::new(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
 
     // create shader for the mesh
     let shader = Shader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, Sampler::new()));
