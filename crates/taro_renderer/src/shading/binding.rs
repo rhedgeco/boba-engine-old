@@ -4,7 +4,7 @@ use once_map::OnceMap;
 use std::{ops::Deref, sync::Arc};
 
 /// A convenience type to simplify the creation of a single binding.
-pub type TaroBindSingle<T> = Taro<Bind<Taro<T>>>;
+pub type BindSingle<T> = Bind<Taro<T>>;
 
 /// Base trait for items to be built into a Taro<T> object
 pub trait TaroBuilder {

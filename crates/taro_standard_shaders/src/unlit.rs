@@ -3,7 +3,7 @@ use taro_renderer::{
     shading::{
         buffers::{CameraMatrix, TransformMatrix, UniformBuffer},
         data_types::{DepthView, MeshBuffer, Sampler, Texture2DView, Vertex},
-        Bind, BindGroup, BindGroupBuilder, Taro, TaroBindSingle, TaroCoreShader, TaroMeshShader,
+        Bind, BindGroup, BindGroupBuilder, BindSingle, Taro, TaroCoreShader, TaroMeshShader,
     },
     wgpu, TaroHardware,
 };
@@ -24,8 +24,8 @@ impl UnlitShaderInit {
 
 pub struct UnlitShader {
     pub texture: Taro<BindGroup>,
-    pub camera_matrix: TaroBindSingle<UniformBuffer<CameraMatrix>>,
-    pub model_matrix: TaroBindSingle<UniformBuffer<TransformMatrix>>,
+    pub camera_matrix: Taro<BindSingle<UniformBuffer<CameraMatrix>>>,
+    pub model_matrix: Taro<BindSingle<UniformBuffer<TransformMatrix>>>,
     _private: (),
 }
 
