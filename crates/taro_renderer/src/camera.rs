@@ -99,7 +99,12 @@ impl TaroCamera {
     ) -> CameraMatrix {
         let target = position + rotation * Vec3::Z;
         let view = Mat4::look_at_rh(position, target, Vec3::Y);
-        let proj = Mat4::perspective_rh(settings.fovy, aspect, settings.znear, settings.zfar);
+        let proj = Mat4::perspective_rh(
+            settings.fovy.to_radians(),
+            aspect,
+            settings.znear,
+            settings.zfar,
+        );
 
         (proj * view).into()
     }

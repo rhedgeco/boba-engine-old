@@ -52,6 +52,8 @@ impl PearlStage<BobaUpdate> for Rotator {
         self.current_rot %= 2. * PI;
 
         transform.set_local_rotation(Quat::from_axis_angle(Vec3::Y, self.current_rot));
+
+        println!("FPS: {}", 1. / delta);
         Ok(())
     }
 }
@@ -64,7 +66,7 @@ fn main() {
     let mut camera = TaroCamera::new_simple(
         BobaTransform::from_position_look_at(Vec3::new(0., 1., 2.), Vec3::ZERO),
         TaroCameraSettings {
-            fovy: 45.0,
+            fovy: 60.0,
             znear: 0.1,
             zfar: 100.0,
         },
