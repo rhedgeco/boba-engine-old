@@ -28,7 +28,9 @@ impl Rotator {
 register_pearl_stages!(Rotator: BobaUpdate, MilkTeaEvent<KeyboardInput>);
 
 impl PearlStage<MilkTeaEvent<KeyboardInput>> for Rotator {
-    fn update(&mut self, data: &KeyboardInput, _: &mut BobaResources) -> BobaResult {
+    fn update(pearl: &Pearl<Self>, data: &KeyboardInput, _: &mut BobaResources) -> BobaResult {
+        let mut pearl = pearl.borrow_mut()?;
+
         let rotate_direction = match &data.virtual_keycode {
             Some(VirtualKeyCode::Right) => 1.,
             Some(VirtualKeyCode::Left) => -1.,
@@ -36,8 +38,8 @@ impl PearlStage<MilkTeaEvent<KeyboardInput>> for Rotator {
         };
 
         match data.state {
-            ElementState::Pressed => self.rotate_direction = rotate_direction,
-            ElementState::Released => self.rotate_direction = 0.,
+            ElementState::Pressed => pearl.rotate_direction = rotate_direction,
+            ElementState::Released => pearl.rotate_direction = 0.,
         }
 
         Ok(())
@@ -45,13 +47,14 @@ impl PearlStage<MilkTeaEvent<KeyboardInput>> for Rotator {
 }
 
 impl PearlStage<BobaUpdate> for Rotator {
-    fn update(&mut self, delta: &f32, _resources: &mut BobaResources) -> BobaResult {
-        let mut transform = self.transform.borrow_mut()?;
+    fn update(pearl: &Pearl<Self>, delta: &f32, _resources: &mut BobaResources) -> BobaResult {
+        let mut pearl = pearl.borrow_mut()?;
 
-        self.current_rot += self.speed * self.rotate_direction * delta;
-        self.current_rot %= 2. * PI;
+        pearl.current_rot += pearl.speed * pearl.rotate_direction * delta;
+        pearl.current_rot %= 2. * PI;
 
-        transform.set_local_rotation(Quat::from_axis_angle(Vec3::Y, self.current_rot));
+        let mut transform = pearl.transform.borrow_mut()?;
+        transform.set_local_rotation(Quat::from_axis_angle(Vec3::Y, pearl.current_rot));
 
         println!("FPS: {}", 1. / delta);
         Ok(())

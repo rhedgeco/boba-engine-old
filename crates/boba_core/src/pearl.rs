@@ -29,10 +29,10 @@ impl PearlId {
     }
 }
 
-/// An error returned by [`Pearl::destroy`].
+/// An error returned by [`Pearl::is_destroyed`].
 #[derive(Debug, Error)]
-#[error("Pearl cannot be destroyed. Error: {0}")]
-pub struct PearlDestroyError(BorrowMutError);
+#[error("Could not check pearl state. Error: {0}")]
+pub struct IsPearlDestroyedError(BorrowError);
 
 /// An error returned by [`Pearl::borrow`].
 #[derive(Debug, Error)]
@@ -101,15 +101,19 @@ impl<T> Pearl<T> {
     /// Destroys the current pearl.
     ///
     /// Can fail if the pearl is currently being borrowed somewhere else.
-    pub fn destroy(&self) -> Result<(), PearlDestroyError> {
-        let mut borrow = match self.data.as_ref().try_borrow_mut() {
-            Ok(borrow) => borrow,
-            Err(e) => return Err(PearlDestroyError(e)),
-        };
-
+    pub fn destroy(&self) -> Result<(), BorrowMutError> {
+        let mut borrow = self.data.try_borrow_mut()?;
         drop(std::mem::replace(borrow.deref_mut(), None));
 
         Ok(())
+    }
+
+    /// Checks if the pearl is destroyed.
+    ///
+    /// Can fail if the pearl is currently being borrowed somewhere else.
+    pub fn is_destroyed(&self) -> Result<bool, BorrowError> {
+        let borrow = self.data.try_borrow()?;
+        Ok(borrow.is_none())
     }
 
     /// Gets the contents of the pearl as an immutable reference.
@@ -157,7 +161,8 @@ pub trait PearlStage<Stage>: RegisterPearlStages
 where
     Stage: BobaStage,
 {
-    fn update(&mut self, data: &Stage::Data, resources: &mut BobaResources) -> BobaResult;
+    fn update(pearl: &Pearl<Self>, data: &Stage::Data, resources: &mut BobaResources)
+        -> BobaResult;
 }
 
 #[macro_export]

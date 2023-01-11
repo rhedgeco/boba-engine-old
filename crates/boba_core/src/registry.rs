@@ -1,16 +1,14 @@
 use std::{
     any::{Any, TypeId},
-    cell::BorrowMutError,
+    cell::BorrowError,
     hash::Hash,
 };
 
 use hashbrown::HashMap;
 use indexmap::IndexSet;
-use log::{error, info};
+use log::{error, info, warn};
 
-use crate::{
-    BobaResources, BobaStage, Pearl, PearlId, PearlMutError, PearlStage, RegisterPearlStages,
-};
+use crate::{BobaResources, BobaStage, Pearl, PearlId, PearlStage, RegisterPearlStages};
 
 /// A collection of pearls, all registered to their respective stages.
 ///
@@ -110,10 +108,11 @@ where
     }
 }
 
+#[derive(Debug)]
 enum PearlStatus {
     Dead,
     Alive,
-    BorrowError(BorrowMutError),
+    BorrowError(BorrowError),
 }
 
 trait PearlRunner<Stage>
@@ -138,19 +137,16 @@ where
         data: &<Stage as BobaStage>::Data,
         resources: &mut BobaResources,
     ) -> PearlStatus {
-        let mut borrow = match self.borrow_mut() {
-            Ok(borrow) => borrow,
-            Err(PearlMutError::Destroyed) => return PearlStatus::Dead,
-            Err(PearlMutError::Borrowed(e)) => {
-                error!(
-                    "Cannot update Pearl<{}>. Error: {e}",
-                    std::any::type_name::<Update>()
-                );
+        match self.is_destroyed() {
+            Ok(false) => (),
+            Ok(true) => return PearlStatus::Dead,
+            Err(e) => {
+                warn!("Could not check status of pearl. Error: {e}");
                 return PearlStatus::BorrowError(e);
             }
-        };
+        }
 
-        if let Err(e) = borrow.update(data, resources) {
+        if let Err(e) = Update::update(self, data, resources) {
             error!(
                 "There was an error while updating Pearl<{}>. Error: {e}",
                 std::any::type_name::<Update>()

@@ -14,7 +14,11 @@ impl RegisterPearlStages for TaroMilkTeaResizeListener {
 }
 
 impl PearlStage<MilkTeaEvent<MilkTeaSize>> for TaroMilkTeaResizeListener {
-    fn update(&mut self, data: &MilkTeaSize, resources: &mut BobaResources) -> BobaResult {
+    fn update(
+        _pearl: &Pearl<Self>,
+        data: &MilkTeaSize,
+        resources: &mut BobaResources,
+    ) -> BobaResult {
         let mut surface = resources.get_mut::<TaroMilkTea>()?;
         surface.resize(data);
         Ok(())
