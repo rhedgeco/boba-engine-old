@@ -1,7 +1,7 @@
 use boba_core::{
     BobaResources, BobaResult, Pearl, PearlStage, RegisterPearlStages, StageRegistrar,
 };
-use milk_tea::{event_types::MilkTeaSize, MilkTeaEvent};
+use milk_tea::events::{MilkTeaEvent, MilkTeaSize};
 
 use super::TaroMilkTea;
 

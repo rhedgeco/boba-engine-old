@@ -1,7 +1,7 @@
 use boba::prelude::*;
 use milk_tea::{
+    events::MilkTeaEvent,
     winit::event::{ElementState, KeyboardInput, VirtualKeyCode},
-    MilkTeaEvent,
 };
 use std::{f32::consts::PI, fs::File};
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderInit};
