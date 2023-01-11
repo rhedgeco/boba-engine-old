@@ -2,8 +2,8 @@ use once_cell::sync::OnceCell;
 use taro_renderer::{
     shading::{
         buffers::{CameraMatrix, TransformMatrix, UniformBuffer},
-        data_types::{DepthView, MeshBuffer, Sampler, Texture2DView, Vertex},
         Bind, BindGroup, BindGroupBuilder, BindSingle, Taro, TaroCoreShader, TaroMeshShader,
+        {DepthView, MeshBuffer, Sampler, Texture2DView, Vertex},
     },
     wgpu, TaroHardware,
 };

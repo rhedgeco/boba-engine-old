@@ -5,8 +5,7 @@ use log::error;
 use crate::{
     shading::{
         buffers::{CameraMatrix, TransformMatrix},
-        data_types::Mesh,
-        Shader, Taro, TaroCoreShader, TaroMeshShader,
+        Mesh, Shader, Taro, TaroCoreShader, TaroMeshShader,
     },
     TaroHardware,
 };

@@ -1,7 +1,6 @@
 use super::{
     buffers::{CameraMatrix, TransformMatrix},
-    data_types::MeshBuffer,
-    Taro, TaroBuilder,
+    MeshBuffer, Taro, TaroBuilder,
 };
 use crate::TaroHardware;
 

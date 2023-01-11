@@ -1,5 +1,5 @@
 use crate::{
-    shading::{buffers::CameraMatrix, data_types::DepthView, Taro},
+    shading::{buffers::CameraMatrix, DepthView, Taro},
     TaroRenderPass,
 };
 

@@ -13,8 +13,8 @@ pub mod prelude {
 
     pub use taro_renderer::{
         pearls::TaroMeshRenderer,
-        shading::data_types::{Mesh, Sampler, Texture2D, Texture2DView},
         shading::Shader,
+        shading::{Mesh, Sampler, Texture2D, Texture2DView},
         TaroCamera, TaroCameraSettings, TaroCameras, TaroRenderPearls,
     };
 }
