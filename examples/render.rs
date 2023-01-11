@@ -65,8 +65,9 @@ fn main() {
     // create app
     let mut app = Bobarista::<TaroMilkTea>::default();
 
-    // create mesh
-    let mesh = Mesh::new(File::open("cube.obj").unwrap()).unwrap();
+    // create meshes
+    let cube = Mesh::new(File::open("./assets/cube.obj").unwrap()).unwrap();
+    let sphere = Mesh::new(File::open("./assets/sphere.obj").unwrap()).unwrap();
 
     // create texture for mesh
     let tex_view = Texture2DView::new(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
@@ -77,21 +78,21 @@ fn main() {
     // create a mesh to be rendered
     let renderer = TaroMeshRenderer::new_simple(
         BobaTransform::from_position(Vec3::ZERO),
-        mesh.clone(),
+        sphere.clone(),
         shader.clone(),
     );
 
     // create another mesh to be rendered
     let mut renderer2 = TaroMeshRenderer::new_simple(
         BobaTransform::from_position_scale(Vec3::X * 1.5, Vec3::ONE * 0.5),
-        mesh.clone(),
+        cube.clone(),
         shader.clone(),
     );
 
     // create another mesh to be rendered
     let mut renderer3 = TaroMeshRenderer::new_simple(
         BobaTransform::from_position_scale(-Vec3::X * 1.5, Vec3::ONE * 0.5),
-        mesh.clone(),
+        cube.clone(),
         shader.clone(),
     );
 
