@@ -157,8 +157,9 @@ where
     fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar);
 }
 
-pub trait PearlStage<Stage>: RegisterPearlStages
+pub trait PearlStage<Stage>
 where
+    Self: Sized + 'static,
     Stage: BobaStage,
 {
     fn update(pearl: &Pearl<Self>, data: &Stage::Data, resources: &mut BobaResources)
