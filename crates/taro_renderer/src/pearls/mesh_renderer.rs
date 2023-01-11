@@ -6,7 +6,7 @@ use crate::{
     shading::{
         buffers::{CameraMatrix, TransformMatrix},
         data_types::Mesh,
-        Taro, TaroCoreShader, TaroMeshShader, TaroShader,
+        Shader, Taro, TaroCoreShader, TaroMeshShader,
     },
     TaroHardware,
 };
@@ -18,7 +18,7 @@ where
     model_matrix: TransformMatrix,
 
     pub mesh: Taro<Mesh>,
-    pub shader: TaroShader<T>,
+    pub shader: Taro<Shader<T>>,
     pub transform: Pearl<BobaTransform>,
 }
 
@@ -26,7 +26,7 @@ impl<T> TaroMeshRenderer<T>
 where
     T: TaroMeshShader,
 {
-    pub fn new(transform: Pearl<BobaTransform>, mesh: Taro<Mesh>, shader: TaroShader<T>) -> Self {
+    pub fn new(transform: Pearl<BobaTransform>, mesh: Taro<Mesh>, shader: Taro<Shader<T>>) -> Self {
         Self {
             model_matrix: TransformMatrix::default(),
             mesh,
@@ -35,7 +35,7 @@ where
         }
     }
 
-    pub fn new_simple(transform: BobaTransform, mesh: Taro<Mesh>, shader: TaroShader<T>) -> Self {
+    pub fn new_simple(transform: BobaTransform, mesh: Taro<Mesh>, shader: Taro<Shader<T>>) -> Self {
         Self::new(Pearl::wrap(transform), mesh, shader)
     }
 
@@ -53,7 +53,7 @@ where
         };
 
         let uploaded_mesh = self.mesh.get_or_compile(hardware);
-        let shader = self.shader.get(hardware);
+        let shader = self.shader.get_or_compile(hardware);
         shader.set_camera_matrix(camera_matrix, hardware);
         shader.set_model_matrix(&self.model_matrix, hardware);
         shader.render(pass, uploaded_mesh, hardware);

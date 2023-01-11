@@ -1,11 +1,9 @@
-use std::sync::Arc;
-
 use super::{
     buffers::{CameraMatrix, TransformMatrix},
     data_types::MeshBuffer,
+    Taro, TaroBuilder,
 };
-use crate::{HardwareId, TaroHardware};
-use once_map::OnceMap;
+use crate::TaroHardware;
 
 /// The base trait for any shader type.
 ///
@@ -27,47 +25,20 @@ pub trait TaroMeshShader: TaroCoreShader {
     );
 }
 
-/// The main struct to hold and manage shaders for TaroRenderers
-pub struct TaroShader<T>
-where
-    T: TaroCoreShader,
-{
-    parameters: Arc<T::InitParameters>,
-    shader_cache: OnceMap<HardwareId, T>,
+pub struct Shader<T: TaroCoreShader> {
+    init: T::InitParameters,
 }
 
-impl<T> Clone for TaroShader<T>
-where
-    T: TaroCoreShader,
-{
-    fn clone(&self) -> Self {
-        Self {
-            parameters: self.parameters.clone(),
-            shader_cache: self.shader_cache.clone(),
-        }
+impl<T: TaroCoreShader> Shader<T> {
+    pub fn new(init: T::InitParameters) -> Taro<Self> {
+        Taro::new(Self { init })
     }
 }
 
-impl<T> TaroShader<T>
-where
-    T: TaroCoreShader,
-{
-    /// Creates a new TaroShader with `init` parameters
-    pub fn new(init: T::InitParameters) -> Self {
-        Self {
-            parameters: Arc::new(init),
-            shader_cache: Default::default(),
-        }
-    }
+impl<T: TaroCoreShader> TaroBuilder for Shader<T> {
+    type Compiled = T;
 
-    /// Gets the compiled shader associated with `hardware`
-    ///
-    /// If the shader has not been compiled yet, it will be now.
-    pub fn get(&self, hardware: &TaroHardware) -> &T {
-        self.shader_cache
-            .get_or_init(hardware.id().clone(), || {
-                T::build_instance(&self.parameters, hardware)
-            })
-            .into_data()
+    fn compile(&self, hardware: &TaroHardware) -> Self::Compiled {
+        T::build_instance(&self.init, hardware)
     }
 }

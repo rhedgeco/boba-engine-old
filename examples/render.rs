@@ -74,7 +74,7 @@ fn main() {
     let tex_view = Texture2DView::new(include_bytes!("boba-logo.png")).unwrap();
 
     // create shader for the mesh
-    let shader = TaroShader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, Sampler::new()));
+    let shader = Shader::<UnlitShader>::new(UnlitShaderInit::new(tex_view, Sampler::new()));
 
     // create a mesh to be rendered
     let renderer = TaroMeshRenderer::new_simple(
