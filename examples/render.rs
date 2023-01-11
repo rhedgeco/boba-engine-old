@@ -68,6 +68,7 @@ fn main() {
     // create meshes
     let cube = Mesh::new(File::open("./assets/cube.obj").unwrap()).unwrap();
     let sphere = Mesh::new(File::open("./assets/sphere.obj").unwrap()).unwrap();
+    let suzanne = Mesh::new(File::open("./assets/suzanne.obj").unwrap()).unwrap();
 
     // create texture for mesh
     let tex_view = Texture2DView::new(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
@@ -85,7 +86,7 @@ fn main() {
     // create another mesh to be rendered
     let mut renderer2 = TaroMeshRenderer::new_simple(
         BobaTransform::from_position_scale(Vec3::X * 1.5, Vec3::ONE * 0.5),
-        cube.clone(),
+        suzanne.clone(),
         shader.clone(),
     );
 
