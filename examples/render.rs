@@ -62,19 +62,6 @@ fn main() {
     // create app
     let mut app = Bobarista::<TaroMilkTea>::default();
 
-    // create camera with transform
-    let mut camera = TaroCamera::new_simple(
-        BobaTransform::from_position_look_at(Vec3::new(0., 1., 2.), Vec3::ZERO),
-        TaroCameraSettings {
-            fovy: 60.0,
-            znear: 0.1,
-            zfar: 100.0,
-        },
-    );
-
-    // add unlit render pass for testing
-    camera.passes.append(UnlitRenderPass);
-
     // create mesh
     let mesh = Mesh::new(File::open("cube.obj").unwrap()).unwrap();
 
@@ -119,17 +106,30 @@ fn main() {
     let rotator = Pearl::wrap(Rotator::new(renderer.transform.clone(), 3.));
     app.registry.add(&rotator);
 
-    // create TaroCameras resource and add it
-    let mut cameras = TaroCameras::default();
-    cameras.cameras.push(camera);
-    app.resources.add(cameras);
-
     // create TaroRenderPearls resource and add it
     let mut render_pearls = TaroRenderPearls::default();
     render_pearls.add(Pearl::wrap(renderer));
     render_pearls.add(Pearl::wrap(renderer2));
     render_pearls.add(Pearl::wrap(renderer3));
     app.resources.add(render_pearls);
+
+    // create camera with transform
+    let mut camera = TaroCamera::new_simple(
+        BobaTransform::from_position_look_at(Vec3::new(0., 1., 2.), Vec3::ZERO),
+        TaroCameraSettings {
+            fovy: 60.0,
+            znear: 0.1,
+            zfar: 100.0,
+        },
+    );
+
+    // add unlit render pass for testing
+    camera.passes.append(UnlitRenderPass);
+
+    // create TaroCameras resource and add it
+    let mut cameras = TaroCameras::default();
+    cameras.cameras.push(camera);
+    app.resources.add(cameras);
 
     // run the app
     app.run().unwrap();
