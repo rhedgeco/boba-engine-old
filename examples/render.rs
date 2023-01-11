@@ -7,27 +7,37 @@ use std::{f32::consts::PI, fs::File};
 use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderInit};
 
 pub struct Rotator {
-    pub rotate: bool,
+    current_rot: f32,
+    rotate_direction: f32,
+
     pub transform: Pearl<BobaTransform>,
-    pub current_rot: f32,
     pub speed: f32,
+}
+
+impl Rotator {
+    pub fn new(transform: Pearl<BobaTransform>, speed: f32) -> Self {
+        Self {
+            current_rot: 0.,
+            rotate_direction: 0.,
+            transform,
+            speed,
+        }
+    }
 }
 
 register_pearl_stages!(Rotator: BobaUpdate, MilkTeaEvent<KeyboardInput>);
 
 impl PearlStage<MilkTeaEvent<KeyboardInput>> for Rotator {
     fn update(&mut self, data: &KeyboardInput, _: &mut BobaResources) -> BobaResult {
-        let Some(key) = &data.virtual_keycode else {
-            return Ok(());
+        let rotate_direction = match &data.virtual_keycode {
+            Some(VirtualKeyCode::Right) => 1.,
+            Some(VirtualKeyCode::Left) => -1.,
+            _ => 0.,
         };
 
-        if key != &VirtualKeyCode::Space {
-            return Ok(());
-        }
-
         match data.state {
-            ElementState::Pressed => self.rotate = true,
-            ElementState::Released => self.rotate = false,
+            ElementState::Pressed => self.rotate_direction = rotate_direction,
+            ElementState::Released => self.rotate_direction = 0.,
         }
 
         Ok(())
@@ -36,13 +46,9 @@ impl PearlStage<MilkTeaEvent<KeyboardInput>> for Rotator {
 
 impl PearlStage<BobaUpdate> for Rotator {
     fn update(&mut self, delta: &f32, _resources: &mut BobaResources) -> BobaResult {
-        if !self.rotate {
-            return Ok(());
-        }
-
         let mut transform = self.transform.borrow_mut()?;
 
-        self.current_rot += self.speed * delta;
+        self.current_rot += self.speed * self.rotate_direction * delta;
         self.current_rot %= 2. * PI;
 
         transform.set_local_rotation(Quat::from_axis_angle(Vec3::Y, self.current_rot));
@@ -108,12 +114,7 @@ fn main() {
         .unwrap();
 
     // create a rotator object that links to the renderers transform
-    let rotator = Pearl::wrap(Rotator {
-        rotate: false,
-        transform: renderer.transform.clone(),
-        current_rot: 0.,
-        speed: 3.,
-    });
+    let rotator = Pearl::wrap(Rotator::new(renderer.transform.clone(), 3.));
     app.registry.add(&rotator);
 
     // create TaroCameras resource and add it
