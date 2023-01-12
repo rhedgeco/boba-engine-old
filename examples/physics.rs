@@ -33,13 +33,13 @@ fn main() {
     );
     let ball_transform = physics.create_transform(
         RigidBodyBuilder::dynamic()
-            .translation(Vec3::new(-0.25, 1.5, 0.).into())
+            .translation(Vec3::new(-0.18, 1.5, 0.).into())
             .build(),
         ColliderBuilder::ball(0.5).build(),
     );
     let cube_transform = physics.create_transform(
         RigidBodyBuilder::dynamic()
-            .translation(Vec3::new(0.25, 3., 0.).into())
+            .translation(Vec3::new(0.18, 3., -0.15).into())
             .build(),
         ColliderBuilder::cuboid(0.5, 0.5, 0.5).build(),
     );
