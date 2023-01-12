@@ -31,6 +31,10 @@ impl BobaTransform {
         Self::new(position, Quat::IDENTITY, Vec3::ONE)
     }
 
+    pub fn from_position_rotation(position: Vec3, rotation: Quat) -> Self {
+        Self::new(position, rotation, Vec3::ONE)
+    }
+
     pub fn from_position_scale(position: Vec3, scale: Vec3) -> Self {
         Self::new(position, Quat::IDENTITY, scale)
     }
