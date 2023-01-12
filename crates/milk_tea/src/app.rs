@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 use boba_core::{stages::BobaUpdate, BobaResources, BobaStage, PearlRegistry, StageCollection};
 
 use winit::{
+    dpi::PhysicalSize,
     error::OsError,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
@@ -69,6 +70,7 @@ where
         // Create main event loop and winit window
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
+            .with_inner_size(PhysicalSize::new(1280, 720))
             .with_title("Milk Tea Window")
             .build(&event_loop)?;
 
