@@ -9,7 +9,7 @@ use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderIni
 
 fn main() {
     // create app
-    let mut app = Bobarista::default();
+    let mut app = MilkTeaApp::default();
 
     // create physics handler and rigidbody transforms
     let mut physics = RapierPhysics::new();

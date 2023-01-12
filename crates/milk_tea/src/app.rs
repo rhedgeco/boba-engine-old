@@ -13,14 +13,14 @@ use crate::{
     MilkTeaRenderAdapter, MilkTeaWindow,
 };
 
-pub struct Bobarista {
+pub struct MilkTeaApp {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
     pub main_stages: StageCollection,
     pub resources: BobaResources,
 }
 
-impl Default for Bobarista {
+impl Default for MilkTeaApp {
     fn default() -> Self {
         // create application
         let mut new = Self {
@@ -38,7 +38,7 @@ impl Default for Bobarista {
     }
 }
 
-impl Bobarista {
+impl MilkTeaApp {
     pub fn run<T: MilkTeaRenderAdapter>(mut self) -> Result<(), OsError> {
         env_logger::init();
 

@@ -63,7 +63,7 @@ impl PearlStage<BobaUpdate> for Rotator {
 
 fn main() {
     // create app
-    let mut app = Bobarista::default();
+    let mut app = MilkTeaApp::default();
 
     // create textures
     let boba_texture =

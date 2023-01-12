@@ -1,5 +1,5 @@
 use boba::prelude::*;
 
 fn main() {
-    Bobarista::default().run::<TaroGraphicsAdapter>().unwrap();
+    MilkTeaApp::default().run::<TaroGraphicsAdapter>().unwrap();
 }

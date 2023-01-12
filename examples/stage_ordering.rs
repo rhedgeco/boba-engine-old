@@ -42,7 +42,7 @@ impl BobaStage for Stage4 {
 }
 
 fn main() {
-    let mut app = Bobarista::default();
+    let mut app = MilkTeaApp::default();
 
     app.startup_stages.insert(Stage3);
     app.startup_stages.prepend(Stage2);
