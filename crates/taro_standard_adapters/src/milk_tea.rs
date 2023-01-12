@@ -7,6 +7,7 @@ use milk_tea::{
 };
 use taro_renderer::{TaroCameras, TaroHardware, TaroRenderPearls};
 
+/// Stage that gets called before the `TaroGraphicsAdapter` renders all the cameras
 pub struct OnTaroMilkTeaRender;
 
 pub struct TaroGraphicsAdapter {
