@@ -42,7 +42,7 @@ impl BobaStage for Stage4 {
 }
 
 fn main() {
-    let mut app = Bobarista::<TaroMilkTea>::default();
+    let mut app = MilkTeaApp::default();
 
     app.startup_stages.insert(Stage3);
     app.startup_stages.prepend(Stage2);
@@ -50,5 +50,5 @@ fn main() {
     app.startup_stages.insert(Stage2);
     app.startup_stages.prepend(Stage1);
 
-    app.run().unwrap();
+    app.run::<TaroGraphicsAdapter>().unwrap();
 }

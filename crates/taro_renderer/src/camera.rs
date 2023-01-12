@@ -59,6 +59,7 @@ impl TaroCamera {
         &mut self,
         pearls: &TaroRenderPearls,
         view: &wgpu::TextureView,
+        size: (u32, u32),
         encoder: &mut wgpu::CommandEncoder,
         hardware: &TaroHardware,
     ) {
@@ -76,6 +77,11 @@ impl TaroCamera {
             }
         };
 
+        if self.size != size {
+            self.size = size;
+            self.depth_texture = DepthView::new(size);
+        }
+
         self.passes.render(
             pearls,
             &self.camera_matrix,
@@ -84,11 +90,6 @@ impl TaroCamera {
             encoder,
             hardware,
         );
-    }
-
-    pub(crate) fn resize(&mut self, size: (u32, u32)) {
-        self.size = size;
-        self.depth_texture = DepthView::new(size);
     }
 
     pub fn calculate_matrix(

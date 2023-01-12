@@ -63,7 +63,7 @@ impl PearlStage<BobaUpdate> for Rotator {
 
 fn main() {
     // create app
-    let mut app = Bobarista::<TaroMilkTea>::default();
+    let mut app = MilkTeaApp::default();
 
     // create textures
     let boba_texture =
@@ -142,5 +142,5 @@ fn main() {
     app.resources.add(cameras);
 
     // run the app
-    app.run().unwrap();
+    app.run::<TaroGraphicsAdapter>().unwrap();
 }

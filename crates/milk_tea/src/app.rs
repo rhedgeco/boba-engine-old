@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use boba_core::{stages::BobaUpdate, BobaResources, BobaStage, PearlRegistry, StageCollection};
 
 use winit::{
@@ -7,33 +5,22 @@ use winit::{
     error::OsError,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::{Window, WindowBuilder},
+    window::WindowBuilder,
 };
 
 use crate::{
     events::{MilkTeaEvent, MilkTeaSize},
-    MilkTeaPlugin,
+    MilkTeaRenderAdapter, MilkTeaWindow,
 };
-pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
-    fn build(window: Window) -> Self;
-}
 
-pub struct Bobarista<RenderAdapter>
-where
-    RenderAdapter: MilkTeaAdapter,
-{
+pub struct MilkTeaApp {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
     pub main_stages: StageCollection,
     pub resources: BobaResources,
-
-    _renderer: PhantomData<RenderAdapter>,
 }
 
-impl<Renderer> Default for Bobarista<Renderer>
-where
-    Renderer: MilkTeaAdapter,
-{
+impl Default for MilkTeaApp {
     fn default() -> Self {
         // create application
         let mut new = Self {
@@ -41,30 +28,18 @@ where
             startup_stages: Default::default(),
             main_stages: Default::default(),
             resources: Default::default(),
-            _renderer: Default::default(),
         };
 
         // add default stages
         new.main_stages.append(BobaUpdate::default());
-
-        // set up render plugin
-        Renderer::setup(
-            &mut new.registry,
-            &mut new.startup_stages,
-            &mut new.main_stages,
-            &mut new.resources,
-        );
 
         // return
         new
     }
 }
 
-impl<RenderAdapter> Bobarista<RenderAdapter>
-where
-    RenderAdapter: MilkTeaAdapter,
-{
-    pub fn run(mut self) -> Result<(), OsError> {
+impl MilkTeaApp {
+    pub fn run<T: MilkTeaRenderAdapter>(mut self) -> Result<(), OsError> {
         env_logger::init();
 
         // Create main event loop and winit window
@@ -74,8 +49,8 @@ where
             .with_title("Milk Tea Window")
             .build(&event_loop)?;
 
-        // add windows to resources
-        self.resources.add(RenderAdapter::build(window));
+        // wrap window in manager
+        let mut window = MilkTeaWindow::<T>::new(window);
 
         // run the startup stages
         self.startup_stages
@@ -115,6 +90,7 @@ where
                 Event::MainEventsCleared => {
                     self.main_stages
                         .run(&mut self.registry, &mut self.resources);
+                    window.render(&mut self.registry, &mut self.resources);
                 }
                 _ => (),
             }

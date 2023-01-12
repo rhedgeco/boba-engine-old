@@ -12,7 +12,7 @@ impl PearlStage<BobaUpdate> for FpsPrinter {
 }
 
 fn main() {
-    let mut app = Bobarista::<TaroMilkTea>::default();
+    let mut app = MilkTeaApp::default();
     app.registry.add(Pearl::wrap(FpsPrinter));
-    app.run().unwrap();
+    app.run::<TaroGraphicsAdapter>().unwrap();
 }
