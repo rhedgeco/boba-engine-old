@@ -9,7 +9,7 @@ use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderIni
 
 fn main() {
     // create app
-    let mut app = Bobarista::<TaroGraphicsAdapter>::default();
+    let mut app = Bobarista::default();
 
     // create physics handler and rigidbody transforms
     let mut physics = RapierPhysics::new();
@@ -91,5 +91,5 @@ fn main() {
     app.resources.add(cameras);
 
     // run the app
-    app.run().unwrap();
+    app.run::<TaroGraphicsAdapter>().unwrap();
 }

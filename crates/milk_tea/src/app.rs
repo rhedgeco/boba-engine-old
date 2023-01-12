@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use boba_core::{stages::BobaUpdate, BobaResources, BobaStage, PearlRegistry, StageCollection};
 
 use winit::{
@@ -15,22 +13,14 @@ use crate::{
     MilkTeaRenderAdapter, MilkTeaWindow,
 };
 
-pub struct Bobarista<RenderAdapter>
-where
-    RenderAdapter: MilkTeaRenderAdapter,
-{
+pub struct Bobarista {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
     pub main_stages: StageCollection,
     pub resources: BobaResources,
-
-    _renderer: PhantomData<RenderAdapter>,
 }
 
-impl<RenderAdapter> Default for Bobarista<RenderAdapter>
-where
-    RenderAdapter: MilkTeaRenderAdapter,
-{
+impl Default for Bobarista {
     fn default() -> Self {
         // create application
         let mut new = Self {
@@ -38,7 +28,6 @@ where
             startup_stages: Default::default(),
             main_stages: Default::default(),
             resources: Default::default(),
-            _renderer: Default::default(),
         };
 
         // add default stages
@@ -49,11 +38,8 @@ where
     }
 }
 
-impl<RenderAdapter> Bobarista<RenderAdapter>
-where
-    RenderAdapter: MilkTeaRenderAdapter,
-{
-    pub fn run(mut self) -> Result<(), OsError> {
+impl Bobarista {
+    pub fn run<T: MilkTeaRenderAdapter>(mut self) -> Result<(), OsError> {
         env_logger::init();
 
         // Create main event loop and winit window
@@ -64,7 +50,7 @@ where
             .build(&event_loop)?;
 
         // wrap window in manager
-        let mut window = MilkTeaWindow::<RenderAdapter>::new(window);
+        let mut window = MilkTeaWindow::<T>::new(window);
 
         // run the startup stages
         self.startup_stages
