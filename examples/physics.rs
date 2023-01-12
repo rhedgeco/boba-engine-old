@@ -11,22 +11,8 @@ fn main() {
     // create app
     let mut app = Bobarista::<TaroMilkTea>::default();
 
-    // create physics handler
+    // create physics handler and rigidbody transforms
     let mut physics = RapierPhysics::new();
-    app.main_stages.append(OnRapierUpdate::default());
-
-    // create textures
-    let boba_texture =
-        Texture2DView::new(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
-    let grid_texture = Texture2DView::new(include_bytes!("../assets/uv_grid.png")).unwrap();
-
-    // create shaders
-    let boba_shader =
-        Shader::<UnlitShader>::new(UnlitShaderInit::new(boba_texture, Sampler::new()));
-    let grid_shader =
-        Shader::<UnlitShader>::new(UnlitShaderInit::new(grid_texture, Sampler::new()));
-
-    // create rigidbody transforms
     let ground_transform = physics.create_transform(
         RigidBodyBuilder::fixed().build(),
         ColliderBuilder::cuboid(5., 0.01, 5.).build(),
@@ -44,10 +30,17 @@ fn main() {
         ColliderBuilder::cuboid(0.5, 0.5, 0.5).build(),
     );
 
-    // add physics to resources
-    app.resources.add(physics);
+    // create shaders and mesh renderers
+    let boba_shader = Shader::<UnlitShader>::new(UnlitShaderInit::new(
+        Texture2DView::new(include_bytes!("../readme_assets/boba-logo.png")).unwrap(),
+        Sampler::new(),
+    ));
 
-    // create mesh renderers
+    let grid_shader = Shader::<UnlitShader>::new(UnlitShaderInit::new(
+        Texture2DView::new(include_bytes!("../assets/uv_grid.png")).unwrap(),
+        Sampler::new(),
+    ));
+
     let plane_renderer = TaroMeshRenderer::new(
         ground_transform.clone(),
         Mesh::new(File::open("./assets/plane.obj").unwrap()).unwrap(),
@@ -66,12 +59,11 @@ fn main() {
         boba_shader.clone(),
     );
 
-    // create TaroRenderPearls resource and add it
+    // create TaroRenderPearls to hold mesh renderers
     let mut render_pearls = TaroRenderPearls::default();
     render_pearls.add(Pearl::wrap(plane_renderer));
     render_pearls.add(Pearl::wrap(sphere_renderer));
     render_pearls.add(Pearl::wrap(cube_renderer));
-    app.resources.add(render_pearls);
 
     // create camera with transform
     let mut camera = TaroCamera::new_simple(
@@ -86,9 +78,16 @@ fn main() {
     // add unlit render pass for testing
     camera.passes.append(UnlitRenderPass);
 
-    // create TaroCameras resource and add it
+    // create TaroCameras resource
     let mut cameras = TaroCameras::default();
     cameras.cameras.push(camera);
+
+    // add all required stages
+    app.main_stages.append(OnRapierUpdate::default());
+
+    // add all created resources
+    app.resources.add(physics);
+    app.resources.add(render_pearls);
     app.resources.add(cameras);
 
     // run the app
