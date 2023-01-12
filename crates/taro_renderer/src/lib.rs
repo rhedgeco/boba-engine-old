@@ -11,7 +11,6 @@ pub use render_pearls::*;
 pub mod passes;
 pub mod pearls;
 pub mod shading;
-pub mod stages;
 
 pub use image;
 pub use wgpu;

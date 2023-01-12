@@ -9,7 +9,7 @@ pub mod prelude {
     pub use boba_core::stages::*;
     pub use boba_core::*;
     pub use milk_tea::Bobarista;
-    pub use taro_standard_adapters::milk_tea::TaroMilkTea;
+    pub use taro_standard_adapters::milk_tea::TaroGraphicsAdapter;
 
     pub use taro_renderer::{
         pearls::TaroMeshRenderer,

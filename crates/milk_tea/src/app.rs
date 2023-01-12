@@ -7,20 +7,17 @@ use winit::{
     error::OsError,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::{Window, WindowBuilder},
+    window::WindowBuilder,
 };
 
 use crate::{
     events::{MilkTeaEvent, MilkTeaSize},
-    MilkTeaPlugin,
+    MilkTeaRenderAdapter, MilkTeaWindow,
 };
-pub trait MilkTeaAdapter: MilkTeaPlugin + 'static {
-    fn build(window: Window) -> Self;
-}
 
 pub struct Bobarista<RenderAdapter>
 where
-    RenderAdapter: MilkTeaAdapter,
+    RenderAdapter: MilkTeaRenderAdapter,
 {
     pub registry: PearlRegistry,
     pub startup_stages: StageCollection,
@@ -30,9 +27,9 @@ where
     _renderer: PhantomData<RenderAdapter>,
 }
 
-impl<Renderer> Default for Bobarista<Renderer>
+impl<RenderAdapter> Default for Bobarista<RenderAdapter>
 where
-    Renderer: MilkTeaAdapter,
+    RenderAdapter: MilkTeaRenderAdapter,
 {
     fn default() -> Self {
         // create application
@@ -47,14 +44,6 @@ where
         // add default stages
         new.main_stages.append(BobaUpdate::default());
 
-        // set up render plugin
-        Renderer::setup(
-            &mut new.registry,
-            &mut new.startup_stages,
-            &mut new.main_stages,
-            &mut new.resources,
-        );
-
         // return
         new
     }
@@ -62,7 +51,7 @@ where
 
 impl<RenderAdapter> Bobarista<RenderAdapter>
 where
-    RenderAdapter: MilkTeaAdapter,
+    RenderAdapter: MilkTeaRenderAdapter,
 {
     pub fn run(mut self) -> Result<(), OsError> {
         env_logger::init();
@@ -74,8 +63,8 @@ where
             .with_title("Milk Tea Window")
             .build(&event_loop)?;
 
-        // add windows to resources
-        self.resources.add(RenderAdapter::build(window));
+        // wrap window in manager
+        let mut window = MilkTeaWindow::<RenderAdapter>::new(window);
 
         // run the startup stages
         self.startup_stages
@@ -115,6 +104,7 @@ where
                 Event::MainEventsCleared => {
                     self.main_stages
                         .run(&mut self.registry, &mut self.resources);
+                    window.render(&mut self.registry, &mut self.resources);
                 }
                 _ => (),
             }

@@ -1,8 +1,8 @@
 mod app;
-mod plugin;
+mod window;
 
 pub use app::*;
-pub use plugin::*;
+pub use window::*;
 
 pub mod events;
 
