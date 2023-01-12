@@ -113,7 +113,7 @@ fn main() {
 
     // create a rotator object that links to the renderers transform
     let rotator = Pearl::wrap(Rotator::new(sphere_renderer.transform.clone(), 3.));
-    app.registry.add(&rotator);
+    app.registry.add(rotator);
 
     // create TaroRenderPearls resource and add it
     let mut render_pearls = TaroRenderPearls::default();

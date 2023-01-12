@@ -19,11 +19,11 @@ pub struct PearlRegistry {
 }
 
 impl PearlRegistry {
-    pub fn add<T>(&mut self, pearl: &Pearl<T>)
+    pub fn add<T>(&mut self, pearl: Pearl<T>)
     where
         T: RegisterPearlStages,
     {
-        T::register(&pearl, self);
+        T::register(pearl, self);
     }
 
     /// Updates all pearls associated with a specific stage

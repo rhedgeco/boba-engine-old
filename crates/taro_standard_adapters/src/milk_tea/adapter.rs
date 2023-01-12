@@ -77,6 +77,6 @@ impl MilkTeaPlugin for TaroMilkTea {
         _resources: &mut BobaResources,
     ) {
         main_stages.append(OnTaroRender::<TaroMilkTea>::default());
-        registry.add(&Pearl::wrap(TaroMilkTeaResizeListener));
+        registry.add(Pearl::wrap(TaroMilkTeaResizeListener));
     }
 }

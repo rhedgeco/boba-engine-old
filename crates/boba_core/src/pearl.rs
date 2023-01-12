@@ -154,7 +154,7 @@ pub trait RegisterPearlStages: 'static
 where
     Self: Sized,
 {
-    fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar);
+    fn register(pearl: Pearl<Self>, stages: &mut impl StageRegistrar);
 }
 
 pub trait PearlStage<Stage>
@@ -184,7 +184,7 @@ macro_rules! register_pearl_stages {
         };
 
         impl $crate::RegisterPearlStages for $type {
-            fn register(pearl: &$crate::Pearl<Self>, stages: &mut impl $crate::StageRegistrar) {
+            fn register(pearl: $crate::Pearl<Self>, stages: &mut impl $crate::StageRegistrar) {
                 $(
                     stages.add::<$type, $item>(pearl.clone());
                 )*

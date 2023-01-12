@@ -8,7 +8,7 @@ use super::TaroMilkTea;
 pub struct TaroMilkTeaResizeListener;
 
 impl RegisterPearlStages for TaroMilkTeaResizeListener {
-    fn register(pearl: &Pearl<Self>, stages: &mut impl StageRegistrar) {
+    fn register(pearl: Pearl<Self>, stages: &mut impl StageRegistrar) {
         stages.add(pearl.clone());
     }
 }
