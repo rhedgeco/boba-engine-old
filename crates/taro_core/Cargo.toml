@@ -1,0 +1,13 @@
+[package]
+name = "taro_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4"
+wgpu = "0.14"
+pollster = "0.2"
+indexmap = "1.9"
+bytemuck = "1.2"
+
+once_map = { git = "https://github.com/rhedgeco/once_map" }
