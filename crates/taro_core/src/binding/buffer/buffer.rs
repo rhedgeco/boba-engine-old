@@ -1,8 +1,12 @@
-use std::marker::PhantomData;
+use std::num::NonZeroU64;
 
+use once_map::OnceMap;
 use wgpu::util::DeviceExt;
 
-use crate::{Compiler, Taro, TaroHardware};
+use crate::{
+    binding::{Bind, BindingCompiler, CompiledSingleBinding},
+    Compiler, Taro, TaroHardware,
+};
 
 /// Base trait for an object to be built into a [`Buffer`]
 pub trait BufferBuilder<const SIZE: usize>: Default + 'static {
@@ -13,7 +17,8 @@ pub trait BufferBuilder<const SIZE: usize>: Default + 'static {
 pub struct Buffer<T: BufferBuilder<SIZE>, const SIZE: usize> {
     label: String,
     usage: wgpu::BufferUsages,
-    _type: PhantomData<T>,
+    bind_type: wgpu::BufferBindingType,
+    single_cache: OnceMap<wgpu::ShaderStages, CompiledSingleBinding<Taro<Buffer<T, SIZE>>>>,
 }
 
 impl<T: BufferBuilder<SIZE>, const SIZE: usize> Compiler for Buffer<T, SIZE> {
@@ -30,13 +35,32 @@ impl<T: BufferBuilder<SIZE>, const SIZE: usize> Compiler for Buffer<T, SIZE> {
     }
 }
 
+impl<T: BufferBuilder<SIZE>, const SIZE: usize> BindingCompiler for Taro<Buffer<T, SIZE>> {
+    fn build_bind_type(&self) -> wgpu::BindingType {
+        wgpu::BindingType::Buffer {
+            ty: self.bind_type,
+            has_dynamic_offset: false,
+            min_binding_size: NonZeroU64::new(SIZE as u64),
+        }
+    }
+
+    fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
+        self.get_or_compile(hardware).as_entire_binding()
+    }
+}
+
 impl<T: BufferBuilder<SIZE>, const SIZE: usize> Buffer<T, SIZE> {
     /// Create a new buffer wrapped in a [`Taro`] object
-    pub fn new(label: String, usage: wgpu::BufferUsages) -> Taro<Buffer<T, SIZE>> {
+    pub fn new(
+        label: String,
+        usage: wgpu::BufferUsages,
+        bind_type: wgpu::BufferBindingType,
+    ) -> Taro<Buffer<T, SIZE>> {
         let buffer = Buffer {
             label,
             usage,
-            _type: PhantomData,
+            bind_type,
+            single_cache: Default::default(),
         };
 
         Taro::new(buffer)
@@ -58,5 +82,18 @@ impl<T: BufferBuilder<SIZE>, const SIZE: usize> Taro<Buffer<T, SIZE>> {
         let buffer = self.get_or_compile(hardware);
         hardware.queue().write_buffer(buffer, 0, data.build_bytes());
         buffer
+    }
+
+    /// Gets or compiles a [`CompiledSingleBinding`] associated with this buffer
+    pub fn get_or_compile_single_binding(
+        &self,
+        visibility: wgpu::ShaderStages,
+        hardware: &TaroHardware,
+    ) -> &CompiledSingleBinding<Taro<Buffer<T, SIZE>>> {
+        self.single_cache
+            .get_or_init(visibility, || {
+                Bind::direct_manual_compile(self.clone(), visibility, hardware)
+            })
+            .into_data()
     }
 }

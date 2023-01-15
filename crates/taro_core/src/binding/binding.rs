@@ -26,7 +26,7 @@ pub struct CompiledSingleBinding<T> {
 impl<T> CompiledSingleBinding<T> {
     /// Converts a typed compiled binding into its internal generic form
     ///
-    /// This may be used in case you dont wany typing information about a bind group
+    /// This may be used in case you dont want typing information about a bind group
     pub fn into_generic(self) -> GenericCompiledSingleBinding {
         self.generic
     }
@@ -45,6 +45,26 @@ impl<T: BindingCompiler> Bind<T> {
             bind_data,
             visibility,
         })
+    }
+
+    /// Skips the creation of a bind object, and directly compiles the data.
+    ///
+    /// This is useful for compiling without the overhead of it being wrapped in a [`Taro`] struct.
+    pub fn direct_manual_compile(
+        bind_data: T,
+        visibility: wgpu::ShaderStages,
+        hardware: &TaroHardware,
+    ) -> CompiledSingleBinding<T> {
+        Bind {
+            bind_data,
+            visibility,
+        }
+        .manual_compile(hardware)
+    }
+
+    /// Gets the underlying bind data for this binding
+    pub fn bind_data(&self) -> &T {
+        &self.bind_data
     }
 }
 

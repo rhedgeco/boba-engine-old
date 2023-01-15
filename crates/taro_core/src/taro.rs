@@ -16,6 +16,15 @@ pub struct Taro<T: Compiler> {
     cache: OnceMap<HardwareId, T::Compiled>,
 }
 
+impl<T: Compiler> Clone for Taro<T> {
+    fn clone(&self) -> Self {
+        Self {
+            data: self.data.clone(),
+            cache: self.cache.clone(),
+        }
+    }
+}
+
 impl<T: Compiler> Taro<T> {
     pub fn new(data: T) -> Self {
         Self {
