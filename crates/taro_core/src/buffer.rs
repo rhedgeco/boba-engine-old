@@ -10,6 +10,7 @@ use crate::{
 
 /// Base trait for an object to be built into a [`Buffer`]
 pub trait BufferBuilder<const SIZE: usize>: Default + 'static {
+    fn bind_type() -> wgpu::BufferBindingType;
     fn build_bytes(&self) -> &[u8; SIZE];
 }
 
@@ -17,7 +18,6 @@ pub trait BufferBuilder<const SIZE: usize>: Default + 'static {
 pub struct Buffer<T: BufferBuilder<SIZE>, const SIZE: usize> {
     label: String,
     usage: wgpu::BufferUsages,
-    bind_type: wgpu::BufferBindingType,
     single_cache: OnceMap<wgpu::ShaderStages, CompiledSingleBinding<Taro<Buffer<T, SIZE>>>>,
 }
 
@@ -38,7 +38,7 @@ impl<T: BufferBuilder<SIZE>, const SIZE: usize> Compiler for Buffer<T, SIZE> {
 impl<T: BufferBuilder<SIZE>, const SIZE: usize> BindingCompiler for Taro<Buffer<T, SIZE>> {
     fn build_bind_type(&self) -> wgpu::BindingType {
         wgpu::BindingType::Buffer {
-            ty: self.bind_type,
+            ty: T::bind_type(),
             has_dynamic_offset: false,
             min_binding_size: NonZeroU64::new(SIZE as u64),
         }
@@ -51,15 +51,10 @@ impl<T: BufferBuilder<SIZE>, const SIZE: usize> BindingCompiler for Taro<Buffer<
 
 impl<T: BufferBuilder<SIZE>, const SIZE: usize> Buffer<T, SIZE> {
     /// Create a new buffer wrapped in a [`Taro`] object
-    pub fn new(
-        label: String,
-        usage: wgpu::BufferUsages,
-        bind_type: wgpu::BufferBindingType,
-    ) -> Taro<Buffer<T, SIZE>> {
+    pub fn new(label: String, usage: wgpu::BufferUsages) -> Taro<Buffer<T, SIZE>> {
         let buffer = Buffer {
             label,
             usage,
-            bind_type,
             single_cache: Default::default(),
         };
 
