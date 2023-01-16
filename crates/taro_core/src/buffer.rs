@@ -9,19 +9,19 @@ use crate::{
 };
 
 /// Base trait for an object to be built into a [`Buffer`]
-pub trait BufferBuilder<const SIZE: usize>: Default + 'static {
-    fn bind_type() -> wgpu::BufferBindingType;
+pub trait BufferCompiler<const SIZE: usize>: Default + 'static {
+    const BUFFER_BIND_TYPE: wgpu::BufferBindingType;
     fn build_bytes(&self) -> &[u8; SIZE];
 }
 
 /// A type to represent buffer data uploaded to the GPU
-pub struct Buffer<T: BufferBuilder<SIZE>, const SIZE: usize> {
+pub struct Buffer<T: BufferCompiler<SIZE>, const SIZE: usize> {
     label: String,
     usage: wgpu::BufferUsages,
     single_cache: OnceMap<wgpu::ShaderStages, CompiledSingleBinding<Taro<Buffer<T, SIZE>>>>,
 }
 
-impl<T: BufferBuilder<SIZE>, const SIZE: usize> Compiler for Buffer<T, SIZE> {
+impl<T: BufferCompiler<SIZE>, const SIZE: usize> Compiler for Buffer<T, SIZE> {
     type Compiled = wgpu::Buffer;
 
     fn manual_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
@@ -35,21 +35,19 @@ impl<T: BufferBuilder<SIZE>, const SIZE: usize> Compiler for Buffer<T, SIZE> {
     }
 }
 
-impl<T: BufferBuilder<SIZE>, const SIZE: usize> BindingCompiler for Taro<Buffer<T, SIZE>> {
-    fn build_bind_type(&self) -> wgpu::BindingType {
-        wgpu::BindingType::Buffer {
-            ty: T::bind_type(),
-            has_dynamic_offset: false,
-            min_binding_size: NonZeroU64::new(SIZE as u64),
-        }
-    }
+impl<T: BufferCompiler<SIZE>, const SIZE: usize> BindingCompiler for Taro<Buffer<T, SIZE>> {
+    const BIND_TYPE: wgpu::BindingType = wgpu::BindingType::Buffer {
+        ty: T::BUFFER_BIND_TYPE,
+        has_dynamic_offset: false,
+        min_binding_size: NonZeroU64::new(SIZE as u64),
+    };
 
-    fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
+    fn manual_compile_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
         self.get_or_compile(hardware).as_entire_binding()
     }
 }
 
-impl<T: BufferBuilder<SIZE>, const SIZE: usize> Buffer<T, SIZE> {
+impl<T: BufferCompiler<SIZE>, const SIZE: usize> Buffer<T, SIZE> {
     /// Create a new buffer wrapped in a [`Taro`] object
     pub fn new(label: String, usage: wgpu::BufferUsages) -> Taro<Buffer<T, SIZE>> {
         let buffer = Buffer {
@@ -67,7 +65,7 @@ impl<T: BufferBuilder<SIZE>, const SIZE: usize> Buffer<T, SIZE> {
     }
 }
 
-impl<T: BufferBuilder<SIZE>, const SIZE: usize> Taro<Buffer<T, SIZE>> {
+impl<T: BufferCompiler<SIZE>, const SIZE: usize> Taro<Buffer<T, SIZE>> {
     /// Writes `data` to the buffer associated with the specified `hardware`
     ///
     /// Data in a buffer may be different across hardware destinations.

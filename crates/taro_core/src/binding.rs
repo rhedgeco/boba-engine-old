@@ -6,8 +6,8 @@ use crate::{Compiler, Taro, TaroHardware};
 
 /// Required trait to be built into a [`Bind`] object
 pub trait BindingCompiler: 'static {
-    fn build_bind_type(&self) -> wgpu::BindingType;
-    fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource;
+    const BIND_TYPE: wgpu::BindingType;
+    fn manual_compile_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource;
 }
 
 /// The generic untyped form of a [`CompiledSingleBinding`]
@@ -75,7 +75,7 @@ impl<T: BindingCompiler> Compiler for Bind<T> {
         let entry = wgpu::BindGroupLayoutEntry {
             binding: 0,
             visibility: self.visibility,
-            ty: self.bind_data.build_bind_type(),
+            ty: T::BIND_TYPE,
             count: None,
         };
 
@@ -93,7 +93,7 @@ impl<T: BindingCompiler> Compiler for Bind<T> {
                 layout: &layout,
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: self.bind_data.build_bind_resource(hardware),
+                    resource: self.bind_data.manual_compile_resource(hardware),
                 }],
             });
 
@@ -110,8 +110,8 @@ impl<T: BindingCompiler> Compiler for Bind<T> {
 
 trait AnyBindingCompiler {
     fn visibility(&self) -> wgpu::ShaderStages;
-    fn build_bind_type(&self) -> wgpu::BindingType;
-    fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource;
+    fn get_bind_type(&self) -> wgpu::BindingType;
+    fn manual_compile_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource;
 }
 
 impl<T: BindingCompiler> AnyBindingCompiler for Taro<Bind<T>> {
@@ -119,12 +119,12 @@ impl<T: BindingCompiler> AnyBindingCompiler for Taro<Bind<T>> {
         self.visibility
     }
 
-    fn build_bind_type(&self) -> wgpu::BindingType {
-        self.bind_data.build_bind_type()
+    fn get_bind_type(&self) -> wgpu::BindingType {
+        T::BIND_TYPE
     }
 
-    fn build_bind_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
-        self.bind_data.build_bind_resource(hardware)
+    fn manual_compile_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
+        self.bind_data.manual_compile_resource(hardware)
     }
 }
 
@@ -153,7 +153,7 @@ impl Compiler for BindGroup {
             .map(|(index, b)| wgpu::BindGroupLayoutEntry {
                 binding: *index,
                 visibility: b.visibility(),
-                ty: b.build_bind_type(),
+                ty: b.get_bind_type(),
                 count: None,
             })
             .collect();
@@ -163,7 +163,7 @@ impl Compiler for BindGroup {
             .iter()
             .map(|(index, b)| wgpu::BindGroupEntry {
                 binding: *index,
-                resource: b.build_bind_resource(hardware),
+                resource: b.manual_compile_resource(hardware),
             })
             .collect();
 
