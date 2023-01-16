@@ -26,6 +26,7 @@ impl<T: Compiler> Clone for Taro<T> {
 }
 
 impl<T: Compiler> Taro<T> {
+    /// Creates a new taro object containing `data`
     pub fn new(data: T) -> Self {
         Self {
             data: Arc::new(data),
