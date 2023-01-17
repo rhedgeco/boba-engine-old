@@ -45,3 +45,15 @@ impl<T: BytesBuilder, const READONLY: bool> BufferCompiler for Storage<T, READON
         read_only: READONLY,
     };
 }
+
+impl<T: BytesBuilder> From<T> for Uniform<T> {
+    fn from(data: T) -> Self {
+        Uniform { data }
+    }
+}
+
+impl<T: BytesBuilder, const READONLY: bool> From<T> for Storage<T, READONLY> {
+    fn from(data: T) -> Self {
+        Storage { data }
+    }
+}
