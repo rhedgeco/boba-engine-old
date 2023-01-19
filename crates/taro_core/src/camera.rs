@@ -73,7 +73,8 @@ impl TaroCamera {
         pearls: &TaroRenderPearls,
         hardware: &TaroHardware,
     ) {
-        self.aspect_ratio = texture.size.0 as f32 / texture.size.1 as f32;
+        let size = texture.size();
+        self.aspect_ratio = size.0 as f32 / size.1 as f32;
         match self.transform.borrow() {
             Ok(t) => {
                 self.camera_matrix.get_bind_data().write_to_hardware(
