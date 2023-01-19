@@ -10,7 +10,6 @@ pollster = "0.2"
 indexmap = "1.9"
 bytemuck = "1.2"
 hashbrown = "0.13"
-const_format = "0.2"
 
 boba_core = { path = "../boba_core" }
 boba_3d = { path = "../boba_3d" }
