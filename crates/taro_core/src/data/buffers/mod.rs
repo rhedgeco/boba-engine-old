@@ -1,5 +1,7 @@
+mod camera;
 mod color;
-mod matrix;
+mod transform;
 
+pub use camera::*;
 pub use color::*;
-pub use matrix::*;
+pub use transform::*;

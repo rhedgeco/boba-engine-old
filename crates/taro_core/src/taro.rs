@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use once_map::OnceMap;
 
@@ -25,6 +25,14 @@ impl<T: Compiler> Clone for Taro<T> {
     }
 }
 
+impl<T: Compiler> Deref for Taro<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        &self.data
+    }
+}
+
 impl<T: Compiler> Taro<T> {
     /// Creates a new taro object containing `data`
     pub fn new(data: T) -> Self {
@@ -32,11 +40,6 @@ impl<T: Compiler> Taro<T> {
             data: Arc::new(data),
             cache: Default::default(),
         }
-    }
-
-    /// Gets the local data that is stored
-    pub fn local_data(&self) -> &T {
-        &self.data
     }
 
     /// Gets or compiles a new instance of `T` associated with a given `hardware`

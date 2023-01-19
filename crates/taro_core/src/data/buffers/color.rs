@@ -14,7 +14,6 @@ impl Default for Color {
 
 impl BytesBuilder for Color {
     const LABEL: &'static str = "Color";
-
     fn build_bytes(&self) -> &[u8] {
         bytemuck::cast_slice(&self.values)
     }

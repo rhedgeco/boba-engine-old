@@ -58,6 +58,11 @@ where
     pub fn new_with_visibility(data: Taro<T>, visibility: wgpu::ShaderStages) -> Taro<Self> {
         Taro::new(Self { data, visibility })
     }
+
+    /// Gets the [`Taro`] object this is bound to
+    pub fn get_bind_data(&self) -> &Taro<T> {
+        &self.data
+    }
 }
 
 impl<T: Compiler> Compiler for Bind<T>
