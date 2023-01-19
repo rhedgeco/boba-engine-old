@@ -2,14 +2,36 @@ use std::marker::PhantomData;
 
 use wgpu::util::DeviceExt;
 
-use crate::{BindingCompiler, Compiler, Taro};
+use crate::{BindingCompiler, Compiler, Taro, TaroHardware};
 
-struct InnerBuffer<T: BytesBuilder> {
+pub trait BytesBuilder: Default + 'static {
+    const LABEL: &'static str;
+    fn build_bytes(&self) -> &[u8];
+}
+
+pub struct UniformBuffer<T: BytesBuilder> {
     usage: wgpu::BufferUsages,
     _type: PhantomData<T>,
 }
 
-impl<T: BytesBuilder> Compiler for InnerBuffer<T> {
+impl<T: BytesBuilder> UniformBuffer<T> {
+    pub fn new(usage: wgpu::BufferUsages) -> Taro<Self> {
+        Taro::new(Self {
+            usage,
+            _type: PhantomData,
+        })
+    }
+}
+
+impl<T: BytesBuilder> Taro<UniformBuffer<T>> {
+    pub fn write_to_hardware(&self, data: T, hardware: &TaroHardware) {
+        hardware
+            .queue()
+            .write_buffer(self.get_or_compile(hardware), 0, data.build_bytes())
+    }
+}
+
+impl<T: BytesBuilder> Compiler for UniformBuffer<T> {
     type Compiled = wgpu::Buffer;
 
     fn new_taro_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
@@ -21,34 +43,6 @@ impl<T: BytesBuilder> Compiler for InnerBuffer<T> {
                 contents: T::default().build_bytes(),
                 usage: self.usage,
             })
-    }
-}
-
-pub trait BytesBuilder: Default + 'static {
-    const LABEL: &'static str;
-    fn build_bytes(&self) -> &[u8];
-}
-
-pub struct UniformBuffer<T: BytesBuilder> {
-    inner: InnerBuffer<T>,
-}
-
-impl<T: BytesBuilder> UniformBuffer<T> {
-    pub fn new(usage: wgpu::BufferUsages) -> Taro<Self> {
-        Taro::new(Self {
-            inner: InnerBuffer {
-                usage,
-                _type: PhantomData,
-            },
-        })
-    }
-}
-
-impl<T: BytesBuilder> Compiler for UniformBuffer<T> {
-    type Compiled = wgpu::Buffer;
-
-    fn new_taro_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
-        self.inner.new_taro_compile(hardware)
     }
 }
 
@@ -67,17 +61,24 @@ impl<T: BytesBuilder> BindingCompiler for Taro<UniformBuffer<T>> {
 }
 
 pub struct StorageBuffer<T: BytesBuilder, const READONLY: bool> {
-    inner: InnerBuffer<T>,
+    usage: wgpu::BufferUsages,
+    _type: PhantomData<T>,
 }
 
 impl<T: BytesBuilder, const READONLY: bool> StorageBuffer<T, READONLY> {
     pub fn new(usage: wgpu::BufferUsages) -> Taro<Self> {
         Taro::new(Self {
-            inner: InnerBuffer {
-                usage,
-                _type: PhantomData,
-            },
+            usage,
+            _type: PhantomData,
         })
+    }
+}
+
+impl<T: BytesBuilder, const READONLY: bool> Taro<StorageBuffer<T, READONLY>> {
+    pub fn write_to_hardware(&self, data: T, hardware: &TaroHardware) {
+        hardware
+            .queue()
+            .write_buffer(self.get_or_compile(hardware), 0, data.build_bytes())
     }
 }
 
@@ -85,7 +86,14 @@ impl<T: BytesBuilder, const READONLY: bool> Compiler for StorageBuffer<T, READON
     type Compiled = wgpu::Buffer;
 
     fn new_taro_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
-        self.inner.new_taro_compile(hardware)
+        let label = T::LABEL;
+        hardware
+            .device()
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("{label} Buffer")),
+                contents: T::default().build_bytes(),
+                usage: self.usage,
+            })
     }
 }
 
