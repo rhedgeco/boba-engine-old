@@ -4,7 +4,8 @@ use log::error;
 
 use crate::{
     data::{buffers::CameraMatrix, Buffer, Uniform},
-    Bind, RenderPipeline, RenderTexture, Taro, TaroHardware, TaroRenderPearls,
+    rendering::{RenderPipeline, RenderTexture, TaroRenderPearls},
+    Bind, Taro, TaroHardware,
 };
 
 /// Settings for [`TaroCamera`]
