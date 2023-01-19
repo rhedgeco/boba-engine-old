@@ -1,220 +1,209 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, num::NonZeroU32};
 
-use indexmap::IndexMap;
+use crate::{Compiler, Taro};
 
-use crate::{Compiler, Taro, TaroHardware};
-
-/// Required trait to be built into a [`Bind`] object
-pub trait BindingCompiler: 'static {
-    const BIND_TYPE: wgpu::BindingType;
-    fn manual_compile_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource;
-}
-
-/// The generic untyped form of a [`CompiledSingleBinding`]
-pub struct GenericCompiledSingleBinding {
-    pub entry: wgpu::BindGroupLayoutEntry,
+/// The generic untyped binding
+pub struct CompiledBindGroup {
     pub layout: wgpu::BindGroupLayout,
     pub bind_group: wgpu::BindGroup,
 }
 
 /// Binding data that has been uploaded to the GPU
-pub struct CompiledSingleBinding<T> {
-    generic: GenericCompiledSingleBinding,
+pub struct CompiledBind<T> {
+    generic: CompiledBindGroup,
     _type: PhantomData<T>,
 }
 
-impl<T> CompiledSingleBinding<T> {
+impl<T> CompiledBind<T> {
     /// Converts a typed compiled binding into its internal generic form
     ///
     /// This may be used in case you dont want typing information about a bind group
-    pub fn into_generic(self) -> GenericCompiledSingleBinding {
+    pub fn into_generic(self) -> CompiledBindGroup {
         self.generic
     }
 }
 
-/// Manages data that can be compiled into a bind group
-pub struct Bind<T: BindingCompiler> {
-    bind_data: T,
+/// Represents all possible [`wgpu::ShaderStages`] combined
+pub const ALL_SHADER_STAGES: wgpu::ShaderStages = wgpu::ShaderStages::from_bits_truncate(
+    wgpu::ShaderStages::VERTEX_FRAGMENT.bits() | wgpu::ShaderStages::COMPUTE.bits(),
+);
+
+/// This must be implemented to be built into a [`Bind`] object
+pub trait BindingCompiler: 'static {
+    const LABEL: &'static str;
+    const COUNT: Option<NonZeroU32>;
+    const BIND_TYPE: wgpu::BindingType;
+    fn compile_new_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource;
+}
+
+/// A struct that represents a binding to some kind of GPU data
+pub struct Bind<T: Compiler>
+where
+    Taro<T>: BindingCompiler,
+{
+    data: Taro<T>,
     visibility: wgpu::ShaderStages,
 }
 
-impl<T: BindingCompiler> Bind<T> {
-    /// Creates a new [`Bind`] object wrapped in [`Taro`]
-    pub fn new(bind_data: T, visibility: wgpu::ShaderStages) -> Taro<Bind<T>> {
-        Taro::new(Bind {
-            bind_data,
-            visibility,
-        })
+impl<T: Compiler> Bind<T>
+where
+    Taro<T>: BindingCompiler,
+{
+    /// Creates a new binding to `data`
+    pub fn new(data: Taro<T>) -> Taro<Self> {
+        Self::new_with_visibility(data, ALL_SHADER_STAGES)
     }
 
-    /// Skips the creation of a bind object, and directly compiles the data.
-    ///
-    /// This is useful for compiling without the overhead of it being wrapped in a [`Taro`] struct.
-    pub fn direct_manual_compile(
-        bind_data: T,
-        visibility: wgpu::ShaderStages,
-        hardware: &TaroHardware,
-    ) -> CompiledSingleBinding<T> {
-        Bind {
-            bind_data,
-            visibility,
-        }
-        .manual_compile(hardware)
-    }
-
-    /// Gets the underlying bind data for this binding
-    pub fn bind_data(&self) -> &T {
-        &self.bind_data
+    /// Creates a new binding to `data` with more restricted `visibility`
+    pub fn new_with_visibility(data: Taro<T>, visibility: wgpu::ShaderStages) -> Taro<Self> {
+        Taro::new(Self { data, visibility })
     }
 }
 
-impl<T: BindingCompiler> Compiler for Bind<T> {
-    type Compiled = CompiledSingleBinding<T>;
+impl<T: Compiler> Compiler for Bind<T>
+where
+    Taro<T>: BindingCompiler,
+{
+    type Compiled = CompiledBind<T>;
 
-    fn manual_compile(&self, hardware: &TaroHardware) -> Self::Compiled {
-        let entry = wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: self.visibility,
-            ty: T::BIND_TYPE,
-            count: None,
-        };
+    fn new_taro_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
+        let label = <Taro<T> as BindingCompiler>::LABEL;
 
         let layout = hardware
             .device()
             .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some(&format!("Taro Bind {}", std::any::type_name::<T>())),
-                entries: &[entry],
+                label: Some(&format!("{label} Bind Layout")),
+                entries: &[wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: self.visibility,
+                    ty: <Taro<T> as BindingCompiler>::BIND_TYPE,
+                    count: <Taro<T> as BindingCompiler>::COUNT,
+                }],
             });
 
         let bind_group = hardware
             .device()
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("TaroTextureViewBinding Bind Group"),
                 layout: &layout,
+                label: Some(&format!("{label} Bind")),
                 entries: &[wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: self.bind_data.manual_compile_resource(hardware),
+                    resource: self.data.compile_new_resource(hardware),
                 }],
             });
 
-        CompiledSingleBinding {
-            generic: GenericCompiledSingleBinding {
-                entry,
-                layout,
-                bind_group,
-            },
+        CompiledBind {
             _type: PhantomData,
+            generic: CompiledBindGroup { layout, bind_group },
         }
     }
 }
 
-trait AnyBindingCompiler {
+trait AnyBind {
+    fn count(&self) -> Option<NonZeroU32>;
+    fn bind_type(&self) -> wgpu::BindingType;
     fn visibility(&self) -> wgpu::ShaderStages;
-    fn get_bind_type(&self) -> wgpu::BindingType;
-    fn manual_compile_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource;
+    fn compile_new_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource;
 }
 
-impl<T: BindingCompiler> AnyBindingCompiler for Taro<Bind<T>> {
+impl<T: Compiler> AnyBind for Bind<T>
+where
+    Taro<T>: BindingCompiler,
+{
+    fn count(&self) -> Option<NonZeroU32> {
+        <Taro<T> as BindingCompiler>::COUNT
+    }
+
+    fn bind_type(&self) -> wgpu::BindingType {
+        <Taro<T> as BindingCompiler>::BIND_TYPE
+    }
+
     fn visibility(&self) -> wgpu::ShaderStages {
         self.visibility
     }
 
-    fn get_bind_type(&self) -> wgpu::BindingType {
-        T::BIND_TYPE
-    }
-
-    fn manual_compile_resource(&self, hardware: &TaroHardware) -> wgpu::BindingResource {
-        self.bind_data.manual_compile_resource(hardware)
+    fn compile_new_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource {
+        self.data.compile_new_resource(hardware)
     }
 }
 
-/// A group of [`Bind`] objects compiled into a single bind group
-pub struct CompiledBindGroup {
-    pub entries: Vec<wgpu::BindGroupLayoutEntry>,
-    pub layout: wgpu::BindGroupLayout,
-    pub bind_group: wgpu::BindGroup,
-}
-
-/// A collection of bindings compiled into a single bind group
-///
-/// It comes with no typing information by default,
-/// as it could hold any arbitrary number of bindings within it.
+/// A struct that represents a collection of [`Bind`] objects
 pub struct BindGroup {
-    bindings: IndexMap<u32, Box<dyn AnyBindingCompiler>>,
+    bindings: Vec<Box<dyn AnyBind>>,
 }
 
 impl Compiler for BindGroup {
     type Compiled = CompiledBindGroup;
 
-    fn manual_compile(&self, hardware: &TaroHardware) -> Self::Compiled {
-        let entries: Vec<_> = self
+    fn new_taro_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
+        let layout_entries = self
             .bindings
             .iter()
-            .map(|(index, b)| wgpu::BindGroupLayoutEntry {
-                binding: *index,
-                visibility: b.visibility(),
-                ty: b.get_bind_type(),
-                count: None,
+            .map(|f| wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: f.visibility(),
+                ty: f.bind_type(),
+                count: f.count(),
             })
-            .collect();
+            .collect::<Vec<_>>();
 
-        let bind_group_entries: Vec<_> = self
+        let bind_entries = self
             .bindings
             .iter()
-            .map(|(index, b)| wgpu::BindGroupEntry {
-                binding: *index,
-                resource: b.manual_compile_resource(hardware),
+            .map(|f| wgpu::BindGroupEntry {
+                binding: 0,
+                resource: f.compile_new_resource(hardware),
             })
-            .collect();
+            .collect::<Vec<_>>();
 
         let layout = hardware
             .device()
             .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                label: Some("Taro BindGroup Layout"),
-                entries: &entries,
+                label: Some("BindGroup Layout"),
+                entries: &layout_entries,
             });
 
         let bind_group = hardware
             .device()
             .create_bind_group(&wgpu::BindGroupDescriptor {
-                label: Some("Taro BindGroup"),
                 layout: &layout,
-                entries: &bind_group_entries,
+                label: Some("BindGroup"),
+                entries: &bind_entries,
             });
 
-        CompiledBindGroup {
-            entries,
-            layout,
-            bind_group,
-        }
+        CompiledBindGroup { layout, bind_group }
     }
 }
 
-/// A builder used to create new [`BindGroup`] objects
-#[derive(Default)]
+/// A builder to create a new [`BindGroup`] object
 pub struct BindGroupBuilder {
-    bindings: IndexMap<u32, Box<dyn AnyBindingCompiler>>,
+    bindings: Vec<Box<dyn AnyBind>>,
 }
 
 impl BindGroupBuilder {
-    /// Creates a new builder
-    pub fn new() -> Self {
-        Default::default()
+    /// Creates a new builder and adds `bind` to it
+    pub fn new<T: Compiler>(bind: Bind<T>) -> Self
+    where
+        Taro<T>: BindingCompiler,
+    {
+        let mut bindings: Vec<Box<dyn AnyBind>> = Vec::new();
+        bindings.push(Box::new(bind));
+        Self { bindings }
     }
 
-    /// Adds a binding to be tracked by the bind group
-    pub fn insert<T>(mut self, binding_index: u32, binding: Taro<Bind<T>>) -> Self
+    /// Adds another binding to the group
+    pub fn add<T: Compiler>(mut self, bind: Bind<T>) -> Self
     where
-        T: BindingCompiler,
+        Taro<T>: BindingCompiler,
     {
-        self.bindings.insert(binding_index, Box::new(binding));
+        self.bindings.push(Box::new(bind));
         self
     }
 
-    /// Consumes the builder and creates a new [`BindGroup`]
-    pub fn build(self) -> Taro<BindGroup> {
-        Taro::new(BindGroup {
+    /// Consumes the builder and produces a [`BindGroup`]
+    pub fn build(self) -> BindGroup {
+        BindGroup {
             bindings: self.bindings,
-        })
+        }
     }
 }

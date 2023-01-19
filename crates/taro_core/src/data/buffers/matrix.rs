@@ -1,6 +1,6 @@
 use boba_3d::glam::{Mat4, Vec3};
 
-use crate::BytesBuilder;
+use crate::data::BytesBuilder;
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -31,12 +31,16 @@ impl Default for CameraMatrix {
 }
 
 impl BytesBuilder for TransformMatrix {
+    const LABEL: &'static str = "TransformMatrix";
+
     fn build_bytes(&self) -> &[u8] {
         bytemuck::cast_slice(&self.matrix_data)
     }
 }
 
 impl BytesBuilder for CameraMatrix {
+    const LABEL: &'static str = "CameraMatrix";
+
     fn build_bytes(&self) -> &[u8] {
         bytemuck::cast_slice(&self.matrix_data)
     }
