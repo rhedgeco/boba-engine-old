@@ -2,32 +2,40 @@ use wgpu::util::DeviceExt;
 
 use crate::{BindingCompiler, Compiler, Taro, TaroHardware};
 
+/// Required for data to be uploaded to the GPU
 pub trait BytesBuilder: Default + 'static {
     const LABEL: &'static str;
     fn build_bytes(&self) -> &[u8];
 }
 
+/// Required for structs to be built into a [`Buffer`] object
 pub trait BufferBuilder: BytesBuilder {
     const BUFFER_TYPE: wgpu::BufferBindingType;
     const FORCE_USAGES: wgpu::BufferUsages;
 }
 
+/// Struct for managing buffers to be uploaded to the GPU
 pub struct Buffer<T: BufferBuilder> {
     default: T,
     usage: wgpu::BufferUsages,
 }
 
 impl<T: BufferBuilder> Buffer<T> {
+    /// Creates a new buffer
     pub fn new(usage: wgpu::BufferUsages) -> Taro<Self> {
         Self::new_with_default(usage, T::default())
     }
 
+    /// Creates a new buffer with a default value
+    ///
+    /// Every time new hardware compiles the buffer, the `default` value will be used.
     pub fn new_with_default(usage: wgpu::BufferUsages, default: T) -> Taro<Self> {
         Taro::new(Self { usage, default })
     }
 }
 
 impl<T: BufferBuilder> Taro<Buffer<T>> {
+    /// Writes data to the compiled buffer associated with `hardware`
     pub fn write_to_hardware(&self, data: T, hardware: &TaroHardware) {
         hardware
             .queue()
@@ -64,6 +72,7 @@ impl<T: BufferBuilder> BindingCompiler for Taro<Buffer<T>> {
     }
 }
 
+/// Represents uniform buffer data
 pub struct Uniform<T: BytesBuilder> {
     data: T,
 }
@@ -92,6 +101,7 @@ impl<T: BytesBuilder> BufferBuilder for Uniform<T> {
     const FORCE_USAGES: wgpu::BufferUsages = wgpu::BufferUsages::UNIFORM;
 }
 
+/// Represents storage buffer data
 pub struct Storage<T: BytesBuilder, const READONLY: bool> {
     data: T,
 }
