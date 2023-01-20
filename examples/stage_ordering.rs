@@ -1,4 +1,5 @@
 use boba::prelude::*;
+use taro_milk_tea::TaroGraphicsAdapter;
 
 struct Stage1;
 struct Stage2;

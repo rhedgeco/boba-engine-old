@@ -1,0 +1,12 @@
+[package]
+name = "taro_deferred_pipeline"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4"
+
+boba_core = { path = "../boba_core" }
+boba_3d = { path = "../boba_3d" }
+taro_core = { path = "../taro_core" }
+once_map = { git = "https://github.com/rhedgeco/once_map" }

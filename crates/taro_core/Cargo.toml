@@ -1,0 +1,18 @@
+[package]
+name = "taro_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+log = "0.4"
+tobj = "3.2"
+wgpu = "0.14"
+pollster = "0.2"
+indexmap = "1.9"
+hashbrown = "0.13"
+bytemuck = { version = "1.4", features = ["derive"] }
+image = { version = "0.24", default-features = false, features = ["png", "jpeg"] }
+
+boba_core = { path = "../boba_core" }
+boba_3d = { path = "../boba_3d" }
+once_map = { git = "https://github.com/rhedgeco/once_map" }
