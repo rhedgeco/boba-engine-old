@@ -21,6 +21,16 @@ impl<T> CompiledBind<T> {
     pub fn into_generic(self) -> CompiledBindGroup {
         self.generic
     }
+
+    /// gets the underlying layout for the binding
+    pub fn layout(&self) -> &wgpu::BindGroupLayout {
+        &self.generic.layout
+    }
+
+    /// gets the underlying bind group
+    pub fn bind_group(&self) -> &wgpu::BindGroup {
+        &self.generic.bind_group
+    }
 }
 
 /// Represents all possible [`wgpu::ShaderStages`] combined
@@ -111,7 +121,7 @@ trait AnyBind {
     fn compile_new_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource;
 }
 
-impl<T: Compiler> AnyBind for Bind<T>
+impl<T: Compiler> AnyBind for Taro<Bind<T>>
 where
     Taro<T>: BindingCompiler,
 {
@@ -144,20 +154,22 @@ impl Compiler for BindGroup {
         let layout_entries = self
             .bindings
             .iter()
-            .map(|f| wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: f.visibility(),
-                ty: f.bind_type(),
-                count: f.count(),
+            .enumerate()
+            .map(|(index, b)| wgpu::BindGroupLayoutEntry {
+                binding: index as u32,
+                visibility: b.visibility(),
+                ty: b.bind_type(),
+                count: b.count(),
             })
             .collect::<Vec<_>>();
 
         let bind_entries = self
             .bindings
             .iter()
-            .map(|f| wgpu::BindGroupEntry {
-                binding: 0,
-                resource: f.compile_new_resource(hardware),
+            .enumerate()
+            .map(|(index, b)| wgpu::BindGroupEntry {
+                binding: index as u32,
+                resource: b.compile_new_resource(hardware),
             })
             .collect::<Vec<_>>();
 
@@ -187,7 +199,7 @@ pub struct BindGroupBuilder {
 
 impl BindGroupBuilder {
     /// Creates a new builder and adds `bind` to it
-    pub fn new<T: Compiler>(bind: Bind<T>) -> Self
+    pub fn new<T: Compiler>(bind: Taro<Bind<T>>) -> Self
     where
         Taro<T>: BindingCompiler,
     {
@@ -197,7 +209,7 @@ impl BindGroupBuilder {
     }
 
     /// Adds another binding to the group
-    pub fn add<T: Compiler>(mut self, bind: Bind<T>) -> Self
+    pub fn add<T: Compiler>(mut self, bind: Taro<Bind<T>>) -> Self
     where
         Taro<T>: BindingCompiler,
     {
@@ -206,9 +218,9 @@ impl BindGroupBuilder {
     }
 
     /// Consumes the builder and produces a [`BindGroup`]
-    pub fn build(self) -> BindGroup {
-        BindGroup {
+    pub fn build(self) -> Taro<BindGroup> {
+        Taro::new(BindGroup {
             bindings: self.bindings,
-        }
+        })
     }
 }

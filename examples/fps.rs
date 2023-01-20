@@ -1,4 +1,5 @@
 use boba::prelude::*;
+use taro_milk_tea::TaroGraphicsAdapter;
 
 pub struct FpsPrinter;
 

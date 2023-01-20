@@ -10,3 +10,5 @@ pub use taro::*;
 
 pub mod data;
 pub mod rendering;
+
+pub use wgpu;

@@ -9,8 +9,8 @@ tobj = "3.2"
 wgpu = "0.14"
 pollster = "0.2"
 indexmap = "1.9"
-bytemuck = "1.2"
 hashbrown = "0.13"
+bytemuck = { version = "1.4", features = ["derive"] }
 image = { version = "0.24", default-features = false, features = ["png", "jpeg"] }
 
 boba_core = { path = "../boba_core" }

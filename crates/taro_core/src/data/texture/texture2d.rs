@@ -19,13 +19,13 @@ pub struct Texture2D<T: TextureBuilder> {
 }
 
 impl<T: TextureBuilder> Texture2D<T> {
-    pub fn from_bytes(buffer: &[u8], usage: wgpu::TextureUsages) -> ImageResult<Taro<Self>> {
+    pub fn from_bytes(buffer: &[u8]) -> ImageResult<Taro<Self>> {
         let image = image::load_from_memory(buffer)?;
         Ok(Taro::new(Self {
             size: (image.width(), image.height()),
             bytes: T::build_bytes(image),
             _type: PhantomData,
-            usage,
+            usage: wgpu::TextureUsages::empty(),
         }))
     }
 }
@@ -35,6 +35,9 @@ impl<T: TextureBuilder> Compiler for Texture2D<T> {
 
     fn new_taro_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
         let label = format!("{} Texture", T::LABEL);
+
+        let usage =
+            self.usage | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING;
 
         let size = wgpu::Extent3d {
             width: self.size.0,
@@ -49,7 +52,7 @@ impl<T: TextureBuilder> Compiler for Texture2D<T> {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: T::FORMAT,
-            usage: self.usage,
+            usage,
         };
 
         hardware
@@ -92,7 +95,7 @@ impl<T: TextureBuilder> Compiler for Texture2DView<T> {
 }
 
 impl<T: TextureBuilder> BindingCompiler for Taro<Texture2DView<T>> {
-    const LABEL: &'static str = "Texture2D View Binding";
+    const LABEL: &'static str = "Texture2D View";
     const COUNT: Option<std::num::NonZeroU32> = None;
     const BIND_TYPE: wgpu::BindingType = wgpu::BindingType::Texture {
         sample_type: wgpu::TextureSampleType::Float { filterable: true },

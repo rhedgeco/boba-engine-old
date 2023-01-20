@@ -5,7 +5,16 @@ use boba_rapier3d::{
     RapierPhysics,
 };
 use std::fs::File;
-use taro_standard_shaders::{passes::UnlitRenderPass, UnlitShader, UnlitShaderInit};
+use taro_core::{
+    data::{
+        texture::{Texture2D, Texture2DView},
+        Mesh,
+    },
+    rendering::TaroRenderPearls,
+    TaroCamera,
+};
+use taro_deferred_pipeline::{shaders::UnlitShader, DeferredPipeline, DeferredRenderer};
+use taro_milk_tea::TaroGraphicsAdapter;
 
 fn main() {
     // create app
@@ -30,30 +39,26 @@ fn main() {
         ColliderBuilder::cuboid(0.5, 0.5, 0.5).build(),
     );
 
-    // create shaders and mesh renderers
-    let boba_shader = Shader::<UnlitShader>::new(UnlitShaderInit::new(
-        Texture2DView::new(include_bytes!("../readme_assets/boba-logo.png")).unwrap(),
-        Sampler::new(),
-    ));
+    let boba_texture =
+        Texture2D::from_bytes(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
+    let grid_texture = Texture2D::from_bytes(include_bytes!("../assets/uv_grid.png")).unwrap();
 
-    let grid_shader = Shader::<UnlitShader>::new(UnlitShaderInit::new(
-        Texture2DView::new(include_bytes!("../assets/uv_grid.png")).unwrap(),
-        Sampler::new(),
-    ));
+    let boba_shader = UnlitShader::new(Texture2DView::from_texture(boba_texture));
+    let grid_shader = UnlitShader::new(Texture2DView::from_texture(grid_texture));
 
-    let plane_renderer = TaroMeshRenderer::new(
+    let plane_renderer = DeferredRenderer::new(
         ground_transform.clone(),
         Mesh::new(File::open("./assets/plane.obj").unwrap()).unwrap(),
         grid_shader.clone(),
     );
 
-    let sphere_renderer = TaroMeshRenderer::new(
+    let sphere_renderer = DeferredRenderer::new(
         ball_transform.clone(),
         Mesh::new(File::open("./assets/sphere.obj").unwrap()).unwrap(),
         boba_shader.clone(),
     );
 
-    let cube_renderer = TaroMeshRenderer::new(
+    let cube_renderer = DeferredRenderer::new(
         cube_transform.clone(),
         Mesh::new(File::open("./assets/cube.obj").unwrap()).unwrap(),
         boba_shader.clone(),
@@ -66,21 +71,10 @@ fn main() {
     render_pearls.add(Pearl::wrap(cube_renderer));
 
     // create camera with transform
-    let mut camera = TaroCamera::new_simple(
+    let camera = TaroCamera::new_simple(
         BobaTransform::from_position_look_at(Vec3::new(0., 2., 3.), Vec3::Y * 0.5),
-        TaroCameraSettings {
-            fovy: 60.0,
-            znear: 0.1,
-            zfar: 100.0,
-        },
+        DeferredPipeline,
     );
-
-    // add unlit render pass for testing
-    camera.passes.append(UnlitRenderPass);
-
-    // create TaroCameras resource
-    let mut cameras = TaroCameras::default();
-    cameras.cameras.push(camera);
 
     // add all required stages
     app.main_stages.append(OnRapierUpdate::default());
@@ -88,7 +82,7 @@ fn main() {
     // add all created resources
     app.resources.add(physics);
     app.resources.add(render_pearls);
-    app.resources.add(cameras);
+    app.resources.add(camera);
 
     // run the app
     app.run::<TaroGraphicsAdapter>().unwrap();

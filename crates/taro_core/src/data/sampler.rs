@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, num::NonZeroU8};
+use std::num::NonZeroU8;
 
 use crate::{BindingCompiler, Compiler, Taro};
 
@@ -50,27 +50,23 @@ pub trait SamplerBuilder: 'static {
     const BIND_TYPE: wgpu::SamplerBindingType;
 }
 
-pub struct Sampler<T: SamplerBuilder> {
+pub struct Sampler {
     settings: SamplerSettings,
-    _type: PhantomData<T>,
 }
 
-impl<T: SamplerBuilder> Default for Taro<Sampler<T>> {
+impl Default for Taro<Sampler> {
     fn default() -> Self {
         Sampler::new()
     }
 }
 
-impl<T: SamplerBuilder> Sampler<T> {
+impl Sampler {
     pub fn new() -> Taro<Self> {
         Self::from_settings(Default::default())
     }
 
     pub fn from_settings(settings: SamplerSettings) -> Taro<Self> {
-        Taro::new(Self {
-            settings,
-            _type: PhantomData,
-        })
+        Taro::new(Self { settings })
     }
 
     pub fn settings(&self) -> &SamplerSettings {
@@ -78,7 +74,7 @@ impl<T: SamplerBuilder> Sampler<T> {
     }
 }
 
-impl<T: SamplerBuilder> Compiler for Sampler<T> {
+impl Compiler for Sampler {
     type Compiled = wgpu::Sampler;
 
     fn new_taro_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
@@ -101,10 +97,11 @@ impl<T: SamplerBuilder> Compiler for Sampler<T> {
     }
 }
 
-impl<T: SamplerBuilder> BindingCompiler for Taro<Sampler<T>> {
+impl BindingCompiler for Taro<Sampler> {
     const LABEL: &'static str = "Taro Sampler Binding";
     const COUNT: Option<std::num::NonZeroU32> = None;
-    const BIND_TYPE: wgpu::BindingType = wgpu::BindingType::Sampler(T::BIND_TYPE);
+    const BIND_TYPE: wgpu::BindingType =
+        wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering);
 
     fn compile_new_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource {
         wgpu::BindingResource::Sampler(self.get_or_compile(hardware))

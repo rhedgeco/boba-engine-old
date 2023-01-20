@@ -48,12 +48,15 @@ impl<T: BufferBuilder> Compiler for Buffer<T> {
 
     fn new_taro_compile(&self, hardware: &crate::TaroHardware) -> Self::Compiled {
         let label = T::LABEL;
+        let usage =
+            wgpu::BufferUsages::COPY_DST.bits() | T::FORCE_USAGES.bits() | self.usage.bits();
+        let usage = wgpu::BufferUsages::from_bits_truncate(usage);
         hardware
             .device()
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(&format!("{label} Buffer")),
                 contents: self.default.build_bytes(),
-                usage: self.usage,
+                usage,
             })
     }
 }

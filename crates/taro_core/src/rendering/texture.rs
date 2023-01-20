@@ -24,4 +24,8 @@ impl RenderTexture {
     pub fn view(&self) -> &wgpu::TextureView {
         &self.view
     }
+
+    pub fn present(self) {
+        self.texture.present()
+    }
 }

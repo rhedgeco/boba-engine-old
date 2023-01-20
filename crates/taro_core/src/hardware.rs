@@ -45,16 +45,16 @@ impl TaroHardware {
 
 /// A builder to create new [`TaroHardware`] structs
 pub struct HardwareBuilder<'a> {
-    backends: wgpu::Backends,
+    instance: wgpu::Instance,
     adapter_options: wgpu::RequestAdapterOptions<'a>,
     device_descriptor: wgpu::DeviceDescriptor<'a>,
 }
 
 impl<'a> HardwareBuilder<'a> {
     /// Creates a new builder
-    pub fn new() -> Self {
+    pub fn new(instance: wgpu::Instance) -> Self {
         Self {
-            backends: wgpu::Backends::all(),
+            instance,
             adapter_options: wgpu::RequestAdapterOptions {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: None,
@@ -72,12 +72,6 @@ impl<'a> HardwareBuilder<'a> {
         }
     }
 
-    /// Sets the backends to be used by the builder
-    pub fn backends(mut self, backends: wgpu::Backends) -> Self {
-        self.backends = backends;
-        self
-    }
-
     /// Sets a surface that needs to be compatible with the hardware
     pub fn compatible_surface(mut self, surface: &'a wgpu::Surface) -> Self {
         self.adapter_options.compatible_surface = Some(surface);
@@ -87,9 +81,8 @@ impl<'a> HardwareBuilder<'a> {
     /// Consumes the builder and creates a new `TaroHardware`
     pub fn build(self) -> TaroHardware {
         let id = HardwareId::new();
-        let instance = wgpu::Instance::new(self.backends);
 
-        let adapter = pollster::block_on(instance.request_adapter(&self.adapter_options))
+        let adapter = pollster::block_on(self.instance.request_adapter(&self.adapter_options))
             .expect("No valid graphics adapter found.");
 
         let (device, queue) =
