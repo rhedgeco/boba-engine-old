@@ -1,6 +1,11 @@
 use wgpu::util::DeviceExt;
 
-use crate::{BindingCompiler, Compiler, Taro, TaroHardware};
+use crate::{Bind, BindingCompiler, Compiler, Taro, TaroHardware};
+
+pub type UniformBuffer<T> = Buffer<Uniform<T>>;
+pub type StorageBuffer<T> = Buffer<Uniform<T>>;
+pub type UniformBinding<T> = Bind<Buffer<Uniform<T>>>;
+pub type StorageBinding<T> = Bind<Buffer<Uniform<T>>>;
 
 /// Required for data to be uploaded to the GPU
 pub trait BytesBuilder: Default + 'static {

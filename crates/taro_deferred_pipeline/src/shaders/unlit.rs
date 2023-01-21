@@ -5,7 +5,7 @@ use taro_core::{
     data::{
         buffers::{CameraMatrix, TransformMatrix},
         texture::{Simple, Texture2DView},
-        Buffer, Mesh, Sampler, Uniform, Vertex,
+        Mesh, Sampler, UniformBinding, Vertex,
     },
     wgpu::{self, RenderPass},
     Bind, BindGroup, BindGroupBuilder, HardwareId, Taro, TaroHardware,
@@ -32,8 +32,8 @@ impl DeferredShader for UnlitShader {
     fn render_gbuffer_albedo<'pass>(
         &'pass self,
         mesh: &'pass Taro<Mesh>,
-        camera_matrix: &'pass Taro<Bind<Buffer<Uniform<CameraMatrix>>>>,
-        model_matrix: &'pass Taro<Bind<Buffer<Uniform<TransformMatrix>>>>,
+        camera_matrix: &'pass Taro<UniformBinding<CameraMatrix>>,
+        model_matrix: &'pass Taro<UniformBinding<TransformMatrix>>,
         pass: &mut RenderPass<'pass>,
         hardware: &TaroHardware,
     ) {
