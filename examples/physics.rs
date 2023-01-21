@@ -10,10 +10,11 @@ use taro_core::{
         texture::{Texture2D, Texture2DView},
         Mesh,
     },
-    rendering::TaroRenderPearls,
+    rendering::{shaders::UnlitShader, TaroMeshRenderer, TaroRenderPearls},
+    wgpu::Color,
     TaroCamera,
 };
-use taro_deferred_pipeline::{shaders::UnlitShader, DeferredPipeline, DeferredRenderer};
+use taro_deferred_pipeline::DeferredPipeline;
 use taro_milk_tea::TaroGraphicsAdapter;
 
 fn main() {
@@ -43,22 +44,28 @@ fn main() {
         Texture2D::from_bytes(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
     let grid_texture = Texture2D::from_bytes(include_bytes!("../assets/uv_grid.png")).unwrap();
 
-    let boba_shader = UnlitShader::new(Texture2DView::from_texture(boba_texture));
-    let grid_shader = UnlitShader::new(Texture2DView::from_texture(grid_texture));
+    let boba_shader = UnlitShader::new(
+        Color::WHITE.into(),
+        Texture2DView::from_texture(boba_texture),
+    );
+    let grid_shader = UnlitShader::new(
+        Color::WHITE.into(),
+        Texture2DView::from_texture(grid_texture),
+    );
 
-    let plane_renderer = DeferredRenderer::new(
+    let plane_renderer = TaroMeshRenderer::new(
         ground_transform.clone(),
         Mesh::new(File::open("./assets/plane.obj").unwrap()).unwrap(),
         grid_shader.clone(),
     );
 
-    let sphere_renderer = DeferredRenderer::new(
+    let sphere_renderer = TaroMeshRenderer::new(
         ball_transform.clone(),
         Mesh::new(File::open("./assets/sphere.obj").unwrap()).unwrap(),
         boba_shader.clone(),
     );
 
-    let cube_renderer = DeferredRenderer::new(
+    let cube_renderer = TaroMeshRenderer::new(
         cube_transform.clone(),
         Mesh::new(File::open("./assets/cube.obj").unwrap()).unwrap(),
         boba_shader.clone(),

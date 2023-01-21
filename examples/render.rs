@@ -9,10 +9,11 @@ use taro_core::{
         texture::{Texture2D, Texture2DView},
         Mesh,
     },
-    rendering::TaroRenderPearls,
+    rendering::{shaders::UnlitShader, TaroMeshRenderer, TaroRenderPearls},
+    wgpu::Color,
     TaroCamera,
 };
-use taro_deferred_pipeline::{shaders::UnlitShader, DeferredPipeline, DeferredRenderer};
+use taro_deferred_pipeline::DeferredPipeline;
 use taro_milk_tea::TaroGraphicsAdapter;
 
 pub struct Rotator {
@@ -78,22 +79,28 @@ fn main() {
         Texture2D::from_bytes(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
     let grid_texture = Texture2D::from_bytes(include_bytes!("../assets/uv_grid.png")).unwrap();
 
-    let boba_shader = UnlitShader::new(Texture2DView::from_texture(boba_texture));
-    let grid_shader = UnlitShader::new(Texture2DView::from_texture(grid_texture));
+    let boba_shader = UnlitShader::new(
+        Color::WHITE.into(),
+        Texture2DView::from_texture(boba_texture),
+    );
+    let grid_shader = UnlitShader::new(
+        Color::WHITE.into(),
+        Texture2DView::from_texture(grid_texture),
+    );
 
-    let plane_renderer = DeferredRenderer::new(
+    let plane_renderer = TaroMeshRenderer::new(
         Pearl::wrap(BobaTransform::from_position(Vec3::ZERO)),
         Mesh::new(File::open("./assets/plane.obj").unwrap()).unwrap(),
         grid_shader.clone(),
     );
 
-    let sphere_renderer = DeferredRenderer::new(
+    let sphere_renderer = TaroMeshRenderer::new(
         Pearl::wrap(BobaTransform::from_position(Vec3::Y * 0.5)),
         Mesh::new(File::open("./assets/sphere.obj").unwrap()).unwrap(),
         boba_shader.clone(),
     );
 
-    let mut suzanne_renderer = DeferredRenderer::new(
+    let mut suzanne_renderer = TaroMeshRenderer::new(
         Pearl::wrap(BobaTransform::from_position_scale(
             Vec3::X * 1.5,
             Vec3::ONE * 0.5,
@@ -102,7 +109,7 @@ fn main() {
         boba_shader.clone(),
     );
 
-    let mut cube_renderer = DeferredRenderer::new(
+    let mut cube_renderer = TaroMeshRenderer::new(
         Pearl::wrap(BobaTransform::from_position_scale(
             -Vec3::X * 1.5,
             Vec3::ONE * 0.5,

@@ -1,10 +1,12 @@
 use taro_core::{
     data::{buffers::CameraMatrix, Buffer, Uniform},
-    rendering::{RenderPipeline, RenderTexture, TaroRenderPearls},
+    rendering::{
+        shaders::UnlitShader, RenderPipeline, RenderTexture, TaroMeshRenderer, TaroRenderPearls,
+    },
     wgpu, Bind, Taro, TaroHardware,
 };
 
-use crate::DeferredRenderer;
+use crate::shaders::DeferredShader;
 
 pub struct DeferredPipeline;
 
@@ -73,7 +75,7 @@ impl RenderPipeline for DeferredPipeline {
 
         // --- ALBEDO PASS ---
         {
-            let renderers = pearls.collect::<DeferredRenderer>();
+            let unlit_renderers = pearls.collect::<TaroMeshRenderer<UnlitShader>>();
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Unlit Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -87,9 +89,9 @@ impl RenderPipeline for DeferredPipeline {
                 depth_stencil_attachment,
             });
 
-            for renderer in renderers.iter() {
+            for renderer in unlit_renderers.iter() {
                 let model_matrix = renderer.get_updated_model_matrix(hardware);
-                renderer.render_gbuffer_albedo(
+                renderer.shader.render_gbuffer_albedo(
                     &renderer.mesh,
                     camera_matrix,
                     model_matrix,

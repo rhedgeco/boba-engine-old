@@ -1,32 +1,15 @@
-use std::sync::Arc;
-
 use once_map::OnceMap;
 use taro_core::{
     data::{
         buffers::{CameraMatrix, TransformMatrix},
-        texture::{Simple, Texture2DView},
-        Mesh, Sampler, UniformBinding, Vertex,
+        Mesh, UniformBinding, Vertex,
     },
+    rendering::shaders::UnlitShader,
     wgpu::{self, RenderPass},
-    Bind, BindGroup, BindGroupBuilder, HardwareId, Taro, TaroHardware,
+    HardwareId, Taro, TaroHardware,
 };
 
 use super::DeferredShader;
-
-pub struct UnlitShader {
-    texture: Taro<BindGroup>,
-}
-
-impl UnlitShader {
-    pub fn new(texture: Taro<Texture2DView<Simple>>) -> Arc<Self> {
-        let sampler = Bind::new(Sampler::new());
-        let texture = BindGroupBuilder::new(0, Bind::new(texture))
-            .insert(1, sampler)
-            .build();
-
-        Arc::new(Self { texture })
-    }
-}
 
 impl DeferredShader for UnlitShader {
     fn render_gbuffer_albedo<'pass>(
@@ -38,7 +21,7 @@ impl DeferredShader for UnlitShader {
         hardware: &TaroHardware,
     ) {
         let mesh_buffer = mesh.get_or_compile(hardware);
-        let texture_binding = self.texture.get_or_compile(hardware);
+        let unlit_binding = self.bindings().get_or_compile(hardware);
         let camera_binding = camera_matrix.get_or_compile(hardware);
         let model_binding = model_matrix.get_or_compile(hardware);
 
@@ -53,7 +36,7 @@ impl DeferredShader for UnlitShader {
                             bind_group_layouts: &[
                                 camera_binding.layout(),
                                 model_binding.layout(),
-                                texture_binding.layout(),
+                                unlit_binding.layout(),
                             ],
                             push_constant_ranges: &[],
                         });
@@ -82,7 +65,7 @@ impl DeferredShader for UnlitShader {
                             module,
                             entry_point: "fs_main",
                             targets: &[Some(wgpu::ColorTargetState {
-                                format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                                format: *hardware.format(),
                                 blend: Some(wgpu::BlendState::REPLACE),
                                 write_mask: wgpu::ColorWrites::ALL,
                             })],
@@ -116,7 +99,7 @@ impl DeferredShader for UnlitShader {
         pass.set_pipeline(pipeline);
         pass.set_bind_group(0, camera_binding.bind_group(), &[]);
         pass.set_bind_group(1, model_binding.bind_group(), &[]);
-        pass.set_bind_group(2, texture_binding.bind_group(), &[]);
+        pass.set_bind_group(2, unlit_binding.bind_group(), &[]);
         pass.set_vertex_buffer(0, mesh_buffer.vertex_buffer().raw_buffer().slice(..));
         pass.set_index_buffer(
             mesh_buffer.index_buffer().raw_buffer().slice(..),
