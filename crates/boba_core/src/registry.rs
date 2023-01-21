@@ -101,10 +101,7 @@ where
 
     pub fn update(&mut self, data: &Stage::Data, resources: &mut BobaResources) {
         self.pearls
-            .retain(|runner| match runner.dynamic_update(data, resources) {
-                PearlStatus::Dead => false,
-                _ => true,
-            });
+            .retain(|runner| !matches!(runner.dynamic_update(data, resources), PearlStatus::Dead));
     }
 }
 
@@ -153,7 +150,7 @@ where
             );
         };
 
-        return PearlStatus::Alive;
+        PearlStatus::Alive
     }
 }
 

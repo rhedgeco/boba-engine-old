@@ -1,11 +1,25 @@
 use std::{marker::PhantomData, num::NonZeroU32};
 
+use indexmap::{indexmap, IndexMap};
+
 use crate::{Compiler, Taro};
 
 /// The generic untyped binding
 pub struct CompiledBindGroup {
-    pub layout: wgpu::BindGroupLayout,
-    pub bind_group: wgpu::BindGroup,
+    layout: wgpu::BindGroupLayout,
+    bind_group: wgpu::BindGroup,
+}
+
+impl CompiledBindGroup {
+    /// gets the underlying layout for the binding
+    pub fn layout(&self) -> &wgpu::BindGroupLayout {
+        &self.layout
+    }
+
+    /// gets the underlying bind group
+    pub fn bind_group(&self) -> &wgpu::BindGroup {
+        &self.bind_group
+    }
 }
 
 /// Binding data that has been uploaded to the GPU
@@ -144,7 +158,7 @@ where
 
 /// A struct that represents a collection of [`Bind`] objects
 pub struct BindGroup {
-    bindings: Vec<Box<dyn AnyBind>>,
+    bindings: IndexMap<u32, Box<dyn AnyBind>>,
 }
 
 impl Compiler for BindGroup {
@@ -154,9 +168,8 @@ impl Compiler for BindGroup {
         let layout_entries = self
             .bindings
             .iter()
-            .enumerate()
             .map(|(index, b)| wgpu::BindGroupLayoutEntry {
-                binding: index as u32,
+                binding: *index,
                 visibility: b.visibility(),
                 ty: b.bind_type(),
                 count: b.count(),
@@ -166,9 +179,8 @@ impl Compiler for BindGroup {
         let bind_entries = self
             .bindings
             .iter()
-            .enumerate()
             .map(|(index, b)| wgpu::BindGroupEntry {
-                binding: index as u32,
+                binding: *index,
                 resource: b.compile_new_resource(hardware),
             })
             .collect::<Vec<_>>();
@@ -194,26 +206,27 @@ impl Compiler for BindGroup {
 
 /// A builder to create a new [`BindGroup`] object
 pub struct BindGroupBuilder {
-    bindings: Vec<Box<dyn AnyBind>>,
+    bindings: IndexMap<u32, Box<dyn AnyBind>>,
 }
 
 impl BindGroupBuilder {
     /// Creates a new builder and adds `bind` to it
-    pub fn new<T: Compiler>(bind: Taro<Bind<T>>) -> Self
+    pub fn new<T: Compiler>(index: u32, bind: Taro<Bind<T>>) -> Self
     where
         Taro<T>: BindingCompiler,
     {
-        let mut bindings: Vec<Box<dyn AnyBind>> = Vec::new();
-        bindings.push(Box::new(bind));
-        Self { bindings }
+        let anybind: Box<dyn AnyBind> = Box::new(bind);
+        Self {
+            bindings: indexmap! {index => anybind},
+        }
     }
 
-    /// Adds another binding to the group
-    pub fn add<T: Compiler>(mut self, bind: Taro<Bind<T>>) -> Self
+    /// Inserts another binding to the group
+    pub fn insert<T: Compiler>(mut self, index: u32, bind: Taro<Bind<T>>) -> Self
     where
         Taro<T>: BindingCompiler,
     {
-        self.bindings.push(Box::new(bind));
+        self.bindings.insert(index, Box::new(bind));
         self
     }
 

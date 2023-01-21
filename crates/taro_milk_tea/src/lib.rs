@@ -34,7 +34,7 @@ impl MilkTeaRenderAdapter for TaroGraphicsAdapter {
             present_mode: wgpu::PresentMode::AutoNoVsync,
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
         };
-        surface.configure(&hardware.device(), &config);
+        surface.configure(hardware.device(), &config);
 
         Self {
             surface,
@@ -66,7 +66,7 @@ impl MilkTeaRenderAdapter for TaroGraphicsAdapter {
         let render_texture = RenderTexture::new(size, self.surface.get_current_texture()?);
 
         let mut render_camera = |pearls: &TaroRenderPearls| {
-            camera.render(&render_texture, &pearls, &self.hardware);
+            camera.render(&render_texture, pearls, &self.hardware);
         };
 
         // get pearls to render and use closure to render them
@@ -81,6 +81,7 @@ impl MilkTeaRenderAdapter for TaroGraphicsAdapter {
             Err(e) => return Err(e.into()),
         };
 
-        Ok(render_texture.present())
+        render_texture.present();
+        Ok(())
     }
 }

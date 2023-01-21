@@ -33,14 +33,11 @@ impl TaroRenderPearls {
 
     pub fn remove<T: 'static>(&mut self, pearl: &Pearl<T>) {
         let typeid = TypeId::of::<T>();
-        match self.pearls.get_mut(&typeid) {
-            Some(any_set) => {
-                any_set
-                    .downcast_mut::<IndexSet<Pearl<T>>>()
-                    .unwrap()
-                    .remove(pearl);
-            }
-            None => (),
+        if let Some(any_set) = self.pearls.get_mut(&typeid) {
+            any_set
+                .downcast_mut::<IndexSet<Pearl<T>>>()
+                .unwrap()
+                .remove(pearl);
         }
     }
 

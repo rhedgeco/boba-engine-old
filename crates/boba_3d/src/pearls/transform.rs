@@ -193,7 +193,7 @@ impl SetTransformParent for Pearl<BobaTransform> {
             Err(e) => return Err(SetParentError::PearlError(e)),
         };
 
-        validate_parent_recursive(self.id(), &*parent_data)?;
+        validate_parent_recursive(self.id(), &parent_data)?;
 
         let Some(self_parent) = &self_data.parent else {
             parent_data.children.insert(self.clone());
@@ -230,5 +230,5 @@ fn validate_parent_recursive(id: &PearlId, target: &BobaTransform) -> Result<(),
         Err(e) => return Err(SetParentError::PearlError(e)),
     };
 
-    return validate_parent_recursive(id, &*parent_data);
+    validate_parent_recursive(id, &parent_data)
 }

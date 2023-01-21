@@ -81,7 +81,7 @@ impl MilkTeaApp {
                         input,
                         is_synthetic: _,
                     } => {
-                        MilkTeaEvent::new(input.clone())
+                        MilkTeaEvent::new(*input)
                             .run(&mut self.registry, &mut self.resources)
                             .unwrap();
                     }

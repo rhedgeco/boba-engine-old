@@ -45,9 +45,7 @@ impl<T: Compiler> Taro<T> {
     /// Gets or compiles a new instance of `T` associated with a given `hardware`
     pub fn get_or_compile(&self, hardware: &TaroHardware) -> &T::Compiled {
         self.cache
-            .get_or_init(hardware.id().clone(), || {
-                self.data.new_taro_compile(hardware)
-            })
+            .get_or_init(*hardware.id(), || self.data.new_taro_compile(hardware))
             .into_data()
     }
 }

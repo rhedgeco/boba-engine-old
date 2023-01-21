@@ -86,7 +86,7 @@ impl<T> Pearl<T> {
 impl<T> Clone for Pearl<T> {
     fn clone(&self) -> Self {
         Self {
-            id: self.id.clone(),
+            id: self.id,
             data: self.data.clone(),
         }
     }

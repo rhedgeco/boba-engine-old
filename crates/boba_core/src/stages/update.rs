@@ -2,14 +2,9 @@ use std::time::Instant;
 
 use crate::{BobaResources, BobaResult, BobaStage, PearlRegistry};
 
+#[derive(Default)]
 pub struct BobaUpdate {
     instant: Option<Instant>,
-}
-
-impl Default for BobaUpdate {
-    fn default() -> Self {
-        Self { instant: None }
-    }
 }
 
 impl BobaStage for BobaUpdate {

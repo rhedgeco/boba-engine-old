@@ -38,6 +38,10 @@ impl<T> MeshData<T> {
         self.length.load(Ordering::Relaxed)
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn raw_buffer(&self) -> &wgpu::Buffer {
         &self.raw_buffer
     }
@@ -52,7 +56,7 @@ impl MeshData<Vertex> {
                 .device()
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Vertex Buffer"),
-                    contents: bytemuck::cast_slice(&vertices),
+                    contents: bytemuck::cast_slice(vertices),
                     usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 }),
         }
@@ -75,7 +79,7 @@ impl MeshData<u16> {
                 .device()
                 .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Vertex Buffer"),
-                    contents: bytemuck::cast_slice(&indices),
+                    contents: bytemuck::cast_slice(indices),
                     usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
                 }),
         }
@@ -134,12 +138,12 @@ impl Mesh {
 
                 let vertex = Vertex {
                     position: [
-                        mesh.positions[pos_offset + 0],
+                        mesh.positions[pos_offset],
                         mesh.positions[pos_offset + 1],
                         mesh.positions[pos_offset + 2],
                     ],
                     uv: [
-                        mesh.texcoords[texcoord_offset + 0],
+                        mesh.texcoords[texcoord_offset],
                         1. - mesh.texcoords[texcoord_offset + 1],
                     ],
                     normal: [0., 0., 0.],

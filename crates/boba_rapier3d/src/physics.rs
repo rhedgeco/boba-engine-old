@@ -85,8 +85,8 @@ impl RapierPhysics {
             &mut self.impulse_joint_set,
             &mut self.multibody_joint_set,
             &mut self.ccd_solver,
-            &mut self.physics_hooks,
-            &mut self.event_handler,
+            &self.physics_hooks,
+            &self.event_handler,
         );
 
         for connection in &mut self.connections {
@@ -106,7 +106,7 @@ impl RapierPhysics {
 
         let handle = self.rigid_body_set.insert(rigidbody);
         self.collider_set
-            .insert_with_parent(collider.clone(), handle, &mut self.rigid_body_set);
+            .insert_with_parent(collider, handle, &mut self.rigid_body_set);
 
         let connection = RigidBodyConnection {
             handle,
