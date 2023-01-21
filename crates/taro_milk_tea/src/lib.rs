@@ -28,7 +28,7 @@ impl MilkTeaRenderAdapter for TaroGraphicsAdapter {
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            format: *hardware.format(),
             width: size.width,
             height: size.height,
             present_mode: wgpu::PresentMode::AutoNoVsync,

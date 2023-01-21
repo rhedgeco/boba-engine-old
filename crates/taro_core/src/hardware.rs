@@ -24,6 +24,7 @@ pub struct TaroHardware {
     id: HardwareId,
     device: wgpu::Device,
     queue: wgpu::Queue,
+    format: wgpu::TextureFormat,
 }
 
 impl TaroHardware {
@@ -40,6 +41,11 @@ impl TaroHardware {
     /// Graphics queue for this hardware
     pub fn queue(&self) -> &wgpu::Queue {
         &self.queue
+    }
+
+    /// Gets the texture format that this hardware expects to render
+    pub fn format(&self) -> &wgpu::TextureFormat {
+        &self.format
     }
 }
 
@@ -89,6 +95,17 @@ impl<'a> HardwareBuilder<'a> {
             pollster::block_on(adapter.request_device(&self.device_descriptor, None))
                 .expect("Graphics adapter could not be initialized");
 
-        TaroHardware { id, device, queue }
+        let format = if let Some(surface) = self.adapter_options.compatible_surface {
+            surface.get_supported_formats(&adapter)[0]
+        } else {
+            wgpu::TextureFormat::Bgra8UnormSrgb
+        };
+
+        TaroHardware {
+            id,
+            device,
+            queue,
+            format,
+        }
     }
 }
