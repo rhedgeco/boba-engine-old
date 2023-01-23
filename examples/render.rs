@@ -9,7 +9,7 @@ use taro_core::{
         texture::{Texture2D, Texture2DView},
         Mesh,
     },
-    rendering::{shaders::UnlitShader, TaroMeshRenderer, TaroRenderPearls},
+    rendering::{shaders::LitShader, TaroMeshRenderer, TaroRenderPearls},
     wgpu::Color,
     TaroCamera,
 };
@@ -79,11 +79,11 @@ fn main() {
         Texture2D::from_bytes(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
     let grid_texture = Texture2D::from_bytes(include_bytes!("../assets/uv_grid.png")).unwrap();
 
-    let boba_shader = UnlitShader::new(
+    let boba_shader = LitShader::new(
         Color::WHITE.into(),
         Texture2DView::from_texture(boba_texture),
     );
-    let grid_shader = UnlitShader::new(
+    let grid_shader = LitShader::new(
         Color::WHITE.into(),
         Texture2DView::from_texture(grid_texture),
     );

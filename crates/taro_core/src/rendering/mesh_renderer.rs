@@ -31,7 +31,7 @@ impl<Shader> TaroMeshRenderer<Shader> {
         Self::new(Pearl::wrap(transform), mesh, shader)
     }
 
-    pub fn get_updated_model_matrix(
+    pub fn update_and_get_model_matrix(
         &self,
         hardware: &TaroHardware,
     ) -> &Taro<UniformBinding<TransformMatrix>> {
@@ -49,6 +49,10 @@ impl<Shader> TaroMeshRenderer<Shader> {
             }
         };
 
+        &self.model_matrix
+    }
+
+    pub fn get_model_matrix(&self) -> &Taro<UniformBinding<TransformMatrix>> {
         &self.model_matrix
     }
 }

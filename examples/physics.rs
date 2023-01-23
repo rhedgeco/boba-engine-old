@@ -8,9 +8,9 @@ use std::fs::File;
 use taro_core::{
     data::{
         texture::{Texture2D, Texture2DView},
-        Mesh,
+        Mesh, PointLight,
     },
-    rendering::{shaders::UnlitShader, TaroMeshRenderer, TaroRenderPearls},
+    rendering::{shaders::LitShader, TaroMeshRenderer, TaroRenderPearls},
     wgpu::Color,
     TaroCamera,
 };
@@ -44,11 +44,11 @@ fn main() {
         Texture2D::from_bytes(include_bytes!("../readme_assets/boba-logo.png")).unwrap();
     let grid_texture = Texture2D::from_bytes(include_bytes!("../assets/uv_grid.png")).unwrap();
 
-    let boba_shader = UnlitShader::new(
+    let boba_shader = LitShader::new(
         Color::WHITE.into(),
         Texture2DView::from_texture(boba_texture),
     );
-    let grid_shader = UnlitShader::new(
+    let grid_shader = LitShader::new(
         Color::WHITE.into(),
         Texture2DView::from_texture(grid_texture),
     );
@@ -71,11 +71,15 @@ fn main() {
         boba_shader.clone(),
     );
 
+    // create a point light
+    let point_light = PointLight::new_simple(Vec3::new(0., 0.1, 0.), Color::WHITE);
+
     // create TaroRenderPearls to hold mesh renderers
     let mut render_pearls = TaroRenderPearls::default();
     render_pearls.add(Pearl::wrap(plane_renderer));
     render_pearls.add(Pearl::wrap(sphere_renderer));
     render_pearls.add(Pearl::wrap(cube_renderer));
+    render_pearls.add(Pearl::wrap(point_light));
 
     // create camera with transform
     let camera = TaroCamera::new_simple(

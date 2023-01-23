@@ -146,7 +146,11 @@ impl Mesh {
                         mesh.texcoords[texcoord_offset],
                         1. - mesh.texcoords[texcoord_offset + 1],
                     ],
-                    normal: [0., 0., 0.],
+                    normal: [
+                        mesh.normals[pos_offset],
+                        mesh.normals[pos_offset + 1],
+                        mesh.normals[pos_offset + 2],
+                    ],
                 };
 
                 vertices.push(vertex);
