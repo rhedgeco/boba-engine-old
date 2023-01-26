@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use image::{DynamicImage, ImageResult};
 use wgpu::util::DeviceExt;
 
-use crate::{BindingCompiler, Compiler, Taro};
+use crate::{BindCompiler, BindSettings, Compiler, Taro};
 
 pub trait TextureBuilder: 'static {
     const LABEL: &'static str;
@@ -94,16 +94,25 @@ impl<T: TextureBuilder> Compiler for Texture2DView<T> {
     }
 }
 
-impl<T: TextureBuilder> BindingCompiler for Taro<Texture2DView<T>> {
-    const LABEL: &'static str = "Texture2D View";
-    const COUNT: Option<std::num::NonZeroU32> = None;
-    const BIND_TYPE: wgpu::BindingType = wgpu::BindingType::Texture {
-        sample_type: wgpu::TextureSampleType::Float { filterable: true },
-        view_dimension: wgpu::TextureViewDimension::D2,
-        multisampled: false,
-    };
+impl<T: TextureBuilder> BindCompiler for Taro<Texture2DView<T>> {
+    // const LABEL: &'static str = "Texture2D View";
+    // const COUNT: Option<std::num::NonZeroU32> = None;
+    // const BIND_TYPE: wgpu::BindingType = wgpu::BindingType::Texture {
+    //     sample_type: wgpu::TextureSampleType::Float { filterable: true },
+    //     view_dimension: wgpu::TextureViewDimension::D2,
+    //     multisampled: false,
+    // };
+    const SETTINGS: BindSettings = BindSettings::new("Texture2D View", None);
 
-    fn compile_new_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource {
+    fn bind_type(&self) -> wgpu::BindingType {
+        wgpu::BindingType::Texture {
+            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+            view_dimension: wgpu::TextureViewDimension::D2,
+            multisampled: false,
+        }
+    }
+
+    fn compile_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource {
         wgpu::BindingResource::TextureView(self.get_or_compile(hardware))
     }
 }

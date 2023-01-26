@@ -45,7 +45,7 @@ impl PointLight {
     ) -> &Taro<UniformBinding<buffers::PointLight>> {
         match self.transform.borrow() {
             Ok(t) => {
-                self.light_binding.get_bind_data().write_to_hardware(
+                self.light_binding.bind_data().write_to_hardware(
                     buffers::PointLight::new(t.world_position(), self.color).into(),
                     hardware,
                 );

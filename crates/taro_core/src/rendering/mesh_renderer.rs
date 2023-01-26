@@ -39,7 +39,7 @@ impl<Shader> TaroMeshRenderer<Shader> {
             Ok(t) => {
                 let matrix: TransformMatrix = t.world_matrix().into();
                 self.model_matrix
-                    .get_bind_data()
+                    .bind_data()
                     .write_to_hardware(matrix.into(), hardware);
             }
             Err(e) => {
