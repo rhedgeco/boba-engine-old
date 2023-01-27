@@ -84,7 +84,7 @@ fn main() {
     // create camera with transform
     let camera = TaroCamera::new_simple(
         BobaTransform::from_position_look_at(Vec3::new(0., 2., 3.), Vec3::Y * 0.5),
-        DeferredPipeline,
+        DeferredPipeline::new(),
     );
 
     // add all required stages

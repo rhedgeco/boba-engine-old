@@ -348,8 +348,8 @@ impl DeferredShader for LitShader {
                             module,
                             entry_point: "specular_main",
                             targets: &[Some(wgpu::ColorTargetState {
-                                format: wgpu::TextureFormat::Bgra8UnormSrgb,
-                                blend: Some(wgpu::BlendState::REPLACE),
+                                format: wgpu::TextureFormat::Rgba32Float,
+                                blend: None,
                                 write_mask: wgpu::ColorWrites::ALL,
                             })],
                         }),

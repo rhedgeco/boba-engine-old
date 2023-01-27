@@ -3,14 +3,14 @@ use std::sync::Arc;
 use crate::{
     data::{
         buffers::Color,
-        texture::{Simple, Texture2DView},
+        texture::{Rgba8Srgb, Texture2DView},
         Buffer, Sampler, UniformBuffer,
     },
     Bind, BindGroup, BindGroupBuilder, Taro,
 };
 
 pub struct LitShader {
-    albedo: Taro<Texture2DView<Simple>>,
+    albedo: Taro<Texture2DView<Rgba8Srgb>>,
     albedo_sampler: Taro<Sampler>,
     color: Taro<UniformBuffer<Color>>,
     bindings: Taro<BindGroup>,
@@ -18,7 +18,7 @@ pub struct LitShader {
 
 impl LitShader {
     /// Creates a new unlit shader
-    pub fn new(color: Color, albedo: Taro<Texture2DView<Simple>>) -> Arc<Self> {
+    pub fn new(color: Color, albedo: Taro<Texture2DView<Rgba8Srgb>>) -> Arc<Self> {
         let albedo_sampler = Sampler::new();
         let color: Taro<UniformBuffer<Color>> =
             Buffer::new_with_default(wgpu::BufferUsages::empty(), color.into());
@@ -36,7 +36,7 @@ impl LitShader {
     }
 
     /// Get the albedo texture for this shader
-    pub fn albedo(&self) -> &Taro<Texture2DView<Simple>> {
+    pub fn albedo(&self) -> &Taro<Texture2DView<Rgba8Srgb>> {
         &self.albedo
     }
 
