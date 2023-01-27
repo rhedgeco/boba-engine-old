@@ -1,6 +1,11 @@
 use wgpu::util::DeviceExt;
 
-use crate::{BindingCompiler, Compiler, Taro, TaroHardware};
+use crate::{Bind, BindCompiler, BindSettings, Compiler, Taro, TaroHardware};
+
+pub type UniformBuffer<T> = Buffer<Uniform<T>>;
+pub type StorageBuffer<T> = Buffer<Uniform<T>>;
+pub type UniformBinding<T> = Bind<Buffer<Uniform<T>>>;
+pub type StorageBinding<T> = Bind<Buffer<Uniform<T>>>;
 
 /// Required for data to be uploaded to the GPU
 pub trait BytesBuilder: Default + 'static {
@@ -61,16 +66,18 @@ impl<T: BufferBuilder> Compiler for Buffer<T> {
     }
 }
 
-impl<T: BufferBuilder> BindingCompiler for Taro<Buffer<T>> {
-    const LABEL: &'static str = T::LABEL;
-    const COUNT: Option<std::num::NonZeroU32> = None;
-    const BIND_TYPE: wgpu::BindingType = wgpu::BindingType::Buffer {
-        ty: wgpu::BufferBindingType::Uniform,
-        has_dynamic_offset: false,
-        min_binding_size: None,
-    };
+impl<T: BufferBuilder> BindCompiler for Taro<Buffer<T>> {
+    const SETTINGS: BindSettings = BindSettings::new("Buffer", None);
 
-    fn compile_new_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource {
+    fn bind_type(&self) -> wgpu::BindingType {
+        wgpu::BindingType::Buffer {
+            ty: T::BUFFER_TYPE,
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        }
+    }
+
+    fn compile_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource {
         self.get_or_compile(hardware).as_entire_binding()
     }
 }

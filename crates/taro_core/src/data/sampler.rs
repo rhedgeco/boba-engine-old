@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use crate::{BindingCompiler, Compiler, Taro};
+use crate::{BindCompiler, BindSettings, Compiler, Taro};
 
 #[derive(Clone)]
 pub struct SamplerSettings {
@@ -97,13 +97,24 @@ impl Compiler for Sampler {
     }
 }
 
-impl BindingCompiler for Taro<Sampler> {
-    const LABEL: &'static str = "Taro Sampler Binding";
-    const COUNT: Option<std::num::NonZeroU32> = None;
-    const BIND_TYPE: wgpu::BindingType =
-        wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering);
+impl BindCompiler for Taro<Sampler> {
+    const SETTINGS: BindSettings = BindSettings::new("Sampler", None);
 
-    fn compile_new_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource {
+    fn bind_type(&self) -> wgpu::BindingType {
+        let sampler_type = match self.settings() {
+            s if s.compare.is_some() => wgpu::SamplerBindingType::Comparison,
+            s if s.mag_filter == wgpu::FilterMode::Linear
+                || s.min_filter == wgpu::FilterMode::Linear
+                || s.mipmap_filter == wgpu::FilterMode::Linear =>
+            {
+                wgpu::SamplerBindingType::Filtering
+            }
+            _ => wgpu::SamplerBindingType::NonFiltering,
+        };
+        wgpu::BindingType::Sampler(sampler_type)
+    }
+
+    fn compile_resource(&self, hardware: &crate::TaroHardware) -> wgpu::BindingResource {
         wgpu::BindingResource::Sampler(self.get_or_compile(hardware))
     }
 }
