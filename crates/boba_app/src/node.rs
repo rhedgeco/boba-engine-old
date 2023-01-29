@@ -48,30 +48,7 @@ impl Hash for Node {
     }
 }
 
-impl Default for Node {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Node {
-    /// Creates a new node with no connections
-    pub fn new() -> Self {
-        let relations = NodeRelations {
-            parent: None,
-            children: HashSet::new(),
-        };
-
-        let inner = InnerNode {
-            id: BobaId::new(),
-            relations: RefCell::new(relations),
-        };
-
-        Self {
-            inner: Rc::new(inner),
-        }
-    }
-
     /// Gets clone of the current nodes parent, returning `None` if no parent exists.
     ///
     /// This is not free as it has to make a clone, and should be cached if the parent is to be used multiple times.
@@ -184,9 +161,25 @@ impl Node {
 mod tests {
     use super::*;
 
+    fn create_node() -> Node {
+        let relations = NodeRelations {
+            parent: None,
+            children: HashSet::new(),
+        };
+
+        let inner = InnerNode {
+            id: BobaId::new(),
+            relations: RefCell::new(relations),
+        };
+
+        Node {
+            inner: Rc::new(inner),
+        }
+    }
+
     #[test]
     fn self_assign() {
-        let node = Node::new();
+        let node = create_node();
         node.set_parent(&node);
 
         let relation = node.inner.relations.borrow();
@@ -196,8 +189,8 @@ mod tests {
 
     #[test]
     fn redundant_assign() {
-        let node1 = Node::new();
-        let node2 = Node::new();
+        let node1 = create_node();
+        let node2 = create_node();
         node2.set_parent(&node1);
         node2.set_parent(&node1);
 
@@ -213,9 +206,9 @@ mod tests {
 
     #[test]
     fn simple_chain() {
-        let node1 = Node::new();
-        let node2 = Node::new();
-        let node3 = Node::new();
+        let node1 = create_node();
+        let node2 = create_node();
+        let node3 = create_node();
         node2.set_parent(&node1);
         node3.set_parent(&node2);
 
@@ -236,11 +229,11 @@ mod tests {
 
     #[test]
     fn branching_chain() {
-        let node1 = Node::new();
-        let node2 = Node::new();
-        let node3 = Node::new();
-        let node4 = Node::new();
-        let node5 = Node::new();
+        let node1 = create_node();
+        let node2 = create_node();
+        let node3 = create_node();
+        let node4 = create_node();
+        let node5 = create_node();
         node2.set_parent(&node1);
         node3.set_parent(&node1);
         node4.set_parent(&node2);
@@ -275,9 +268,9 @@ mod tests {
 
     #[test]
     fn simple_reassign() {
-        let node1 = Node::new();
-        let node2 = Node::new();
-        let node3 = Node::new();
+        let node1 = create_node();
+        let node2 = create_node();
+        let node3 = create_node();
         node3.set_parent(&node1);
         node3.set_parent(&node2);
 
@@ -308,11 +301,11 @@ mod tests {
     //                    4
     #[test]
     fn branching_reassign() {
-        let node1 = Node::new();
-        let node2 = Node::new();
-        let node3 = Node::new();
-        let node4 = Node::new();
-        let node5 = Node::new();
+        let node1 = create_node();
+        let node2 = create_node();
+        let node3 = create_node();
+        let node4 = create_node();
+        let node5 = create_node();
         node2.set_parent(&node1);
         node3.set_parent(&node1);
         node4.set_parent(&node3);
