@@ -18,7 +18,7 @@ struct NodeRelations {
 #[derive(Clone)]
 pub struct Node {
     id: BobaId,
-    /// `relations` can only be accessed internally and has exposing api.
+    /// `relations` can only be accessed internally and has no exposing api.
     /// So any cloning of ref cell and multiple accesses to the node will not break
     /// any of the methods that utilize the relations.
     ///
@@ -37,6 +37,12 @@ impl PartialEq for Node {
 impl Hash for Node {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id.hash(state);
+    }
+}
+
+impl Default for Node {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
