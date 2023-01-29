@@ -15,28 +15,32 @@ struct NodeRelations {
     children: HashSet<Node>,
 }
 
-#[derive(Clone)]
-pub struct Node {
+struct InnerNode {
     id: BobaId,
     /// `relations` can only be accessed internally and has no exposing api.
     /// So any cloning of ref cell and multiple accesses to the node will not break
     /// any of the methods that utilize the relations.
     ///
     /// Any errors related to the relations field, is directly tied to bad logic in one of the nodes methods.
-    relations: Rc<RefCell<NodeRelations>>,
+    relations: RefCell<NodeRelations>,
+}
+
+#[derive(Clone)]
+pub struct Node {
+    inner: Rc<InnerNode>,
 }
 
 impl Eq for Node {}
 
 impl PartialEq for Node {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
+        self.inner.id == other.inner.id
     }
 }
 
 impl Hash for Node {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
+        self.inner.id.hash(state);
     }
 }
 
@@ -53,9 +57,13 @@ impl Node {
             children: HashSet::new(),
         };
 
-        Self {
+        let inner = InnerNode {
             id: BobaId::new(),
-            relations: Rc::new(RefCell::new(relations)),
+            relations: RefCell::new(relations),
+        };
+
+        Self {
+            inner: Rc::new(inner),
         }
     }
 
@@ -67,7 +75,7 @@ impl Node {
         }
 
         // get current nodes relations
-        let mut this_relation = self.relations.as_ref().borrow_mut();
+        let mut this_relation = self.inner.relations.borrow_mut();
 
         // check if the current node has a parent
         if let Some(this_parent) = &this_relation.parent {
@@ -78,7 +86,7 @@ impl Node {
             }
 
             // remove this node from its parents set of linked children
-            let mut this_parent_relation = this_parent.relations.as_ref().borrow_mut();
+            let mut this_parent_relation = this_parent.inner.relations.borrow_mut();
             this_parent_relation.children.remove(self);
         }
 
@@ -90,7 +98,7 @@ impl Node {
                     if current_node == next_parent {
                         true
                     } else {
-                        let next_parent_relation = next_parent.relations.as_ref().borrow_mut();
+                        let next_parent_relation = next_parent.inner.relations.borrow_mut();
                         is_cyclic(current_node, &next_parent_relation)
                     }
                 }
@@ -98,7 +106,7 @@ impl Node {
         }
 
         // get new parent relations
-        let mut new_parent_relation = parent.relations.as_ref().borrow_mut();
+        let mut new_parent_relation = parent.inner.relations.borrow_mut();
 
         // check if this parent relation is cyclic
         // if it is, reorder the stack to resolve cyclic dependency
@@ -115,7 +123,7 @@ impl Node {
                     this_relation.children.remove(parent);
                 } else {
                     let mut new_parents_parents_relation =
-                        new_parents_parent.relations.as_ref().borrow_mut();
+                        new_parents_parent.inner.relations.borrow_mut();
                     new_parents_parents_relation.children.remove(parent);
                 };
             }
@@ -129,7 +137,7 @@ impl Node {
             // add the new parent node as a child of this nodes old parent
             if let Some(this_nodes_old_parent) = &this_relation.parent {
                 let mut this_nodes_old_parent_relation =
-                    this_nodes_old_parent.relations.as_ref().borrow_mut();
+                    this_nodes_old_parent.inner.relations.borrow_mut();
                 this_nodes_old_parent_relation
                     .children
                     .insert(parent.clone());
@@ -139,7 +147,7 @@ impl Node {
         // replace this nodes parent with the new one
         let _ = replace(&mut this_relation.parent, Some(parent.clone()));
 
-        // add this node to the new parents child list
+        // add this node to the new parents child listrelations
         new_parent_relation.children.insert(self.clone());
     }
 }
@@ -154,7 +162,7 @@ mod tests {
         let node = Node::new();
         node.set_parent(&node);
 
-        let relation = node.relations.as_ref().borrow();
+        let relation = node.inner.relations.borrow();
         assert!(relation.parent.is_none());
         assert!(relation.children.len() == 0);
     }
@@ -166,12 +174,12 @@ mod tests {
         node2.set_parent(&node1);
         node2.set_parent(&node1);
 
-        let relation1 = node1.relations.as_ref().borrow();
+        let relation1 = node1.inner.relations.borrow();
         assert!(relation1.parent.is_none());
         assert!(relation1.children.contains(&node2));
         drop(relation1);
 
-        let relation2 = node2.relations.as_ref().borrow();
+        let relation2 = node2.inner.relations.borrow();
         assert!(relation2.parent.as_ref().unwrap() == &node1);
         assert!(relation2.children.len() == 0);
     }
@@ -184,17 +192,17 @@ mod tests {
         node2.set_parent(&node1);
         node3.set_parent(&node2);
 
-        let relation1 = node1.relations.as_ref().borrow();
+        let relation1 = node1.inner.relations.borrow();
         assert!(relation1.parent.is_none());
         assert!(relation1.children.contains(&node2));
         drop(relation1);
 
-        let relation2 = node2.relations.as_ref().borrow();
+        let relation2 = node2.inner.relations.borrow();
         assert!(relation2.parent.as_ref().unwrap() == &node1);
         assert!(relation2.children.contains(&node3));
         drop(relation2);
 
-        let relation3 = node3.relations.as_ref().borrow();
+        let relation3 = node3.inner.relations.borrow();
         assert!(relation3.parent.as_ref().unwrap() == &node2);
         assert!(relation3.children.len() == 0);
     }
@@ -211,29 +219,29 @@ mod tests {
         node4.set_parent(&node2);
         node5.set_parent(&node2);
 
-        let relation1 = node1.relations.as_ref().borrow();
+        let relation1 = node1.inner.relations.borrow();
         assert!(relation1.parent.is_none());
         assert!(relation1.children.contains(&node2));
         assert!(relation1.children.contains(&node3));
         drop(relation1);
 
-        let relation2 = node2.relations.as_ref().borrow();
+        let relation2 = node2.inner.relations.borrow();
         assert!(relation2.parent.as_ref().unwrap() == &node1);
         assert!(relation2.children.contains(&node4));
         assert!(relation2.children.contains(&node5));
         drop(relation2);
 
-        let relation3 = node3.relations.as_ref().borrow();
+        let relation3 = node3.inner.relations.borrow();
         assert!(relation3.parent.as_ref().unwrap() == &node1);
         assert!(relation3.children.len() == 0);
         drop(relation3);
 
-        let relation4 = node4.relations.as_ref().borrow();
+        let relation4 = node4.inner.relations.borrow();
         assert!(relation4.parent.as_ref().unwrap() == &node2);
         assert!(relation4.children.len() == 0);
         drop(relation4);
 
-        let relation5 = node5.relations.as_ref().borrow();
+        let relation5 = node5.inner.relations.borrow();
         assert!(relation5.parent.as_ref().unwrap() == &node2);
         assert!(relation5.children.len() == 0);
     }
@@ -246,17 +254,17 @@ mod tests {
         node3.set_parent(&node1);
         node3.set_parent(&node2);
 
-        let relation1 = node1.relations.as_ref().borrow();
+        let relation1 = node1.inner.relations.borrow();
         assert!(relation1.parent.is_none());
         assert!(relation1.children.len() == 0);
         drop(relation1);
 
-        let relation2 = node2.relations.as_ref().borrow();
+        let relation2 = node2.inner.relations.borrow();
         assert!(relation2.parent.is_none());
         assert!(relation2.children.contains(&node3));
         drop(relation2);
 
-        let relation3 = node3.relations.as_ref().borrow();
+        let relation3 = node3.inner.relations.borrow();
         assert!(relation3.parent.as_ref().unwrap() == &node2);
         assert!(relation3.children.len() == 0);
     }
@@ -284,28 +292,28 @@ mod tests {
         node5.set_parent(&node3);
         node3.set_parent(&node5);
 
-        let relation1 = node1.relations.as_ref().borrow();
+        let relation1 = node1.inner.relations.borrow();
         assert!(relation1.parent.is_none());
         assert!(relation1.children.contains(&node2));
         assert!(relation1.children.contains(&node5));
         drop(relation1);
 
-        let relation2 = node2.relations.as_ref().borrow();
+        let relation2 = node2.inner.relations.borrow();
         assert!(relation2.parent.as_ref().unwrap() == &node1);
         assert!(relation2.children.len() == 0);
         drop(relation2);
 
-        let relation3 = node3.relations.as_ref().borrow();
+        let relation3 = node3.inner.relations.borrow();
         assert!(relation3.parent.as_ref().unwrap() == &node5);
         assert!(relation3.children.contains(&node4));
         drop(relation3);
 
-        let relation4 = node4.relations.as_ref().borrow();
+        let relation4 = node4.inner.relations.borrow();
         assert!(relation4.parent.as_ref().unwrap() == &node3);
         assert!(relation4.children.len() == 0);
         drop(relation4);
 
-        let relation5 = node5.relations.as_ref().borrow();
+        let relation5 = node5.inner.relations.borrow();
         assert!(relation5.parent.as_ref().unwrap() == &node1);
         assert!(relation5.children.contains(&node3));
     }
