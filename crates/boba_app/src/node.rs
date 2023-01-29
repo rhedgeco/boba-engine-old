@@ -25,6 +25,10 @@ struct InnerNode {
     relations: RefCell<NodeRelations>,
 }
 
+/// A node in a hierarchy of nodes.
+///
+/// This will represent a node in a branching list of nodes.
+/// The list is doubly linked, and logic flow may move up and down the branches as necessary
 #[derive(Clone)]
 pub struct Node {
     inner: Rc<InnerNode>,
@@ -51,6 +55,7 @@ impl Default for Node {
 }
 
 impl Node {
+    /// Creates a new node with no connections
     pub fn new() -> Self {
         let relations = NodeRelations {
             parent: None,
@@ -67,6 +72,28 @@ impl Node {
         }
     }
 
+    /// Gets clone of the current nodes parent, returning `None` if no parent exists.
+    ///
+    /// This is not free as it has to make a clone, and should be cached if the parent is to be used multiple times.
+    pub fn get_parent(&self) -> Option<Node> {
+        self.inner.relations.borrow().parent.clone()
+    }
+
+    /// Gets a vector of clones of the current nodes children.
+    ///
+    /// This is not free as it has to clone every child into a new vector. This should be cached if it has to be used multiple times.
+    pub fn get_children(&self) -> Vec<Node> {
+        let children = &self.inner.relations.borrow().children;
+        children.iter().map(|n| n.clone()).collect()
+    }
+
+    /// Sets the parent of this node to `parent`.
+    ///
+    /// This is not a simple operation and it has to do a recursive check up the tree of nodes to check for cyclic parent structures.
+    /// Any cyclic parent structures will be auto-magically resolved by reordering the stack of nodes in the best way possible.
+    ///
+    /// The complexity of this operation is **O(n)** where n is the depth of the parent node from the root.
+    /// At the end of the day, it will still be very fast, but it is good to know this if many parenting operations are required.
     pub fn set_parent(&self, parent: &Node) {
         // check to make sure nodes are not identical
         if parent == self {
