@@ -49,6 +49,11 @@ impl Hash for Node {
 }
 
 impl Node {
+    /// Gets the [`BobaId`] for this node
+    pub fn id(&self) -> &BobaId {
+        &self.inner.id
+    }
+
     /// Gets clone of the current nodes parent, returning `None` if no parent exists.
     ///
     /// This is not free as it has to make a clone, and should be cached if the parent is to be used multiple times.
