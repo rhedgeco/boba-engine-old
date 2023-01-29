@@ -6,6 +6,12 @@ pub struct BobaId {
     _id: u64,
 }
 
+impl Default for BobaId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl BobaId {
     /// Creates a new BobaId.
     ///
