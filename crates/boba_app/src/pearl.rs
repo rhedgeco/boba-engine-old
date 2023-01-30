@@ -39,6 +39,12 @@ pub struct Pearl<T> {
     core: Rc<PearlCore<T>>,
 }
 
+impl<T> PartialEq<PearlLink<T>> for Pearl<T> {
+    fn eq(&self, other: &PearlLink<T>) -> bool {
+        self.core.id == other.core.id
+    }
+}
+
 impl<T> Deref for Pearl<T> {
     type Target = PearlCore<T>;
 
@@ -80,6 +86,12 @@ impl<T> Eq for PearlLink<T> {}
 
 impl<T> PartialEq for PearlLink<T> {
     fn eq(&self, other: &Self) -> bool {
+        self.core.id == other.core.id
+    }
+}
+
+impl<T> PartialEq<Pearl<T>> for PearlLink<T> {
+    fn eq(&self, other: &Pearl<T>) -> bool {
         self.core.id == other.core.id
     }
 }
