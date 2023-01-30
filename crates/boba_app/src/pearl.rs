@@ -1,11 +1,15 @@
 use std::{
+    any::{type_name, Any, TypeId},
     cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut},
     hash::Hash,
     ops::Deref,
     rc::Rc,
 };
 
-use crate::BobaId;
+use indexmap::{map::Entry, IndexMap};
+use log::error;
+
+use crate::{BobaId, BobaResult, Node};
 
 /// The internal structure that is shared between [`Pearl`] and [`PearlLink`]
 pub struct PearlCore<T> {
@@ -76,7 +80,7 @@ impl<T> Pearl<T> {
     /// Creates a clone of the pearl struct
     ///
     /// This is for internal management only
-    pub(crate) fn sealed_clone(&self) -> Pearl<T> {
+    fn sealed_clone(&self) -> Pearl<T> {
         Self {
             core: self.core.clone(),
         }
@@ -116,5 +120,88 @@ impl<T> Deref for PearlLink<T> {
 
     fn deref(&self) -> &Self::Target {
         &self.core
+    }
+}
+
+pub trait NodeEvent<Data>: Sized + 'static {
+    fn update(pearl: &Pearl<Self>, node: &Node, data: &Data) -> BobaResult;
+}
+
+pub trait EventRegistrar {
+    fn add_listener<Data: 'static>(&mut self, pearl: &Pearl<impl NodeEvent<Data>>);
+}
+
+pub trait RegisterEvents: Sized + 'static {
+    fn register(pearl: Pearl<Self>, registrar: &mut impl EventRegistrar);
+}
+
+trait PearlUpdater<Data> {
+    fn update(&self, node: &Node, data: &Data);
+}
+
+impl<Data, Event: NodeEvent<Data>> PearlUpdater<Data> for Pearl<Event> {
+    fn update(&self, node: &Node, data: &Data) {
+        if let Err(e) = Event::update(self, node, data) {
+            let name = type_name::<Event>();
+            error!("There was an error while updating Pearl<{name}>. Error: {e}");
+        }
+    }
+}
+
+struct EventCollection<Data> {
+    listeners: IndexMap<BobaId, Box<dyn PearlUpdater<Data>>>,
+}
+
+impl<Data> Default for EventCollection<Data> {
+    fn default() -> Self {
+        Self {
+            listeners: Default::default(),
+        }
+    }
+}
+
+impl<Data> EventCollection<Data> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn add(&mut self, pearl: &Pearl<impl NodeEvent<Data>>) {
+        self.listeners
+            .insert(pearl.id().clone(), Box::new(pearl.sealed_clone()));
+    }
+
+    pub fn update(&self, node: &Node, data: &Data) {
+        for listener in self.listeners.values() {
+            listener.update(node, data);
+        }
+    }
+}
+
+pub struct EventMap {
+    events: IndexMap<TypeId, Box<dyn Any>>,
+}
+
+impl EventRegistrar for EventMap {
+    fn add_listener<Data: 'static>(&mut self, pearl: &Pearl<impl NodeEvent<Data>>) {
+        let dataid = TypeId::of::<Data>();
+        match self.events.entry(dataid) {
+            Entry::Occupied(e) => e.into_mut(),
+            Entry::Vacant(e) => e.insert(Box::new(EventCollection::<Data>::new())),
+        }
+        .downcast_mut::<EventCollection<Data>>()
+        .unwrap()
+        .add(pearl);
+    }
+}
+
+impl EventMap {
+    pub fn update<Data: 'static>(&self, node: &Node, data: &Data) {
+        let dataid = TypeId::of::<Data>();
+        if let Some(any_collection) = self.events.get(&dataid) {
+            let collection = any_collection
+                .downcast_ref::<EventCollection<Data>>()
+                .unwrap();
+            collection.update(node, data)
+        }
     }
 }
