@@ -5,14 +5,14 @@ use std::{
     rc::Rc,
 };
 
-use hashbrown::HashSet;
+use indexmap::IndexSet;
 use log::warn;
 
 use crate::BobaId;
 
 struct NodeRelations {
     parent: Option<Node>,
-    children: HashSet<Node>,
+    children: IndexSet<Node>,
 }
 
 struct InnerNode {
@@ -169,7 +169,7 @@ mod tests {
     fn create_node() -> Node {
         let relations = NodeRelations {
             parent: None,
-            children: HashSet::new(),
+            children: IndexSet::new(),
         };
 
         let inner = InnerNode {
