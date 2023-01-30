@@ -1,14 +1,15 @@
 use std::{
+    any::{Any, TypeId},
     cell::{RefCell, RefMut},
     hash::Hash,
     mem::replace,
     rc::Rc,
 };
 
-use indexmap::IndexSet;
+use indexmap::{IndexMap, IndexSet};
 use log::warn;
 
-use crate::BobaId;
+use crate::{BobaId, Pearl};
 
 struct NodeRelations {
     parent: Option<Node>,
@@ -23,6 +24,7 @@ struct InnerNode {
     ///
     /// Any errors related to the relations field, is directly tied to bad logic in one of the nodes methods.
     relations: RefCell<NodeRelations>,
+    pearls: RefCell<IndexMap<TypeId, Box<dyn Any>>>,
 }
 
 /// A node in a hierarchy of nodes.
@@ -67,6 +69,21 @@ impl Node {
     pub fn get_children(&self) -> Vec<Node> {
         let children = &self.inner.relations.borrow().children;
         children.iter().map(|n| n.clone()).collect()
+    }
+
+    /// Creates a new pearl out of `pearl_data` and adds it to the node
+    pub fn add_pearl<T: 'static>(&self, pearl_data: T) -> Pearl<T> {
+        let pearl = Pearl::new(pearl_data, self.clone());
+        let mut pearl_map = self.inner.pearls.borrow_mut();
+        pearl_map.insert(TypeId::of::<T>(), Box::new(pearl.clone()));
+        pearl
+    }
+
+    /// Queries the nodes pearls, and returns a clone of the pearl if it exists
+    pub fn get_pearl<T: 'static>(&self) -> Option<Pearl<T>> {
+        let pearl_map = self.inner.pearls.borrow();
+        let pearl = pearl_map.get(&TypeId::of::<T>())?;
+        Some(pearl.downcast_ref::<Pearl<T>>().unwrap().clone())
     }
 
     /// Sets the parent of this node to `parent`.
@@ -175,6 +192,7 @@ mod tests {
         let inner = InnerNode {
             id: BobaId::new(),
             relations: RefCell::new(relations),
+            pearls: RefCell::new(IndexMap::new()),
         };
 
         Node {
