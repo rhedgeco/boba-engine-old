@@ -44,8 +44,7 @@ impl<Data> EventSet<Data> {
     }
 
     pub fn add_listener(&mut self, pearl: &Pearl<impl OnEvent<Data>>) {
-        self.listeners
-            .insert(pearl.id().clone(), Box::new(pearl.clone()));
+        self.listeners.insert(*pearl.id(), Box::new(pearl.clone()));
     }
 }
 

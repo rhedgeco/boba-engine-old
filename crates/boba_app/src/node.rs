@@ -68,7 +68,7 @@ impl Node {
     /// This is not free as it has to clone every child into a new vector. This should be cached if it has to be used multiple times.
     pub fn get_children(&self) -> Vec<Node> {
         let children = &self.inner.relations.borrow().children;
-        children.iter().map(|n| n.clone()).collect()
+        children.iter().cloned().collect()
     }
 
     /// Creates a new pearl out of `pearl_data` and adds it to the node
@@ -113,7 +113,7 @@ impl Node {
             let pearl_map = node.inner.pearls.borrow();
             if let Some(any_pearl) = pearl_map.get(&TypeId::of::<T>()) {
                 let pearl = any_pearl.downcast_ref::<Pearl<T>>().unwrap();
-                if let Err(e) = f(&pearl) {
+                if let Err(e) = f(pearl) {
                     let name = type_name::<T>();
                     error!("There was an error while calling Pearl<{name}> using 'call_pearls_in_children'. Error: {e}")
                 }
