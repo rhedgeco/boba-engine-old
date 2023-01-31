@@ -9,7 +9,7 @@ use std::{
 use indexmap::{IndexMap, IndexSet};
 use log::{error, warn};
 
-use crate::{BobaId, BobaResult, Pearl};
+use crate::{BobaId, BobaResult, EventListenerCollection, Pearl, RegisterEvents};
 
 struct NodeRelations {
     parent: Option<Node>,
@@ -25,6 +25,7 @@ struct InnerNode {
     /// Any errors related to the relations field, is directly tied to bad logic in one of the nodes methods.
     relations: RefCell<NodeRelations>,
     pearls: RefCell<IndexMap<TypeId, Box<dyn Any>>>,
+    listeners: RefCell<EventListenerCollection>,
 }
 
 /// A node in a hierarchy of nodes.
@@ -72,10 +73,12 @@ impl Node {
     }
 
     /// Creates a new pearl out of `pearl_data` and adds it to the node
-    pub fn add_pearl<T: 'static>(&self, pearl_data: T) -> Pearl<T> {
+    pub fn add_pearl<T: RegisterEvents>(&self, pearl_data: T) -> Pearl<T> {
         let pearl = Pearl::new(pearl_data, self.clone());
         let mut pearl_map = self.inner.pearls.borrow_mut();
+        let mut listeners = self.inner.listeners.borrow_mut();
         pearl_map.insert(TypeId::of::<T>(), Box::new(pearl.clone()));
+        listeners.register_pearl(&pearl);
         pearl
     }
 
@@ -126,6 +129,12 @@ impl Node {
         }
 
         recurse_children::<T>(self, &f);
+    }
+
+    /// Updates all the pearls that are listening to `data` events
+    pub fn update<Data: 'static>(&self, data: &Data) {
+        let listeners = self.inner.listeners.borrow();
+        listeners.update(data);
     }
 
     /// Sets the parent of this node to `parent`.
@@ -235,6 +244,7 @@ mod tests {
             id: BobaId::new(),
             relations: RefCell::new(relations),
             pearls: RefCell::new(IndexMap::new()),
+            listeners: RefCell::new(Default::default()),
         };
 
         Node {
