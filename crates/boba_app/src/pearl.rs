@@ -12,11 +12,7 @@ struct PearlCore<T> {
     data: RefCell<T>,
 }
 
-/// Core struct for wrapping data to connected to a node
-///
-/// While this could technically be cloned, it is prevented from doing so as to not connect the same pearl to multiple [`Node`]s.
-/// Instead, the pearl can be built into a [`PearlLink`] which has essentially the same functionality, but can be cloned and used across anywhere it is needed.
-/// However, links cannot be added directly to a [`Node`].
+/// Core struct for wrapping data connected to a node
 pub struct Pearl<T> {
     core: Rc<PearlCore<T>>,
 }
