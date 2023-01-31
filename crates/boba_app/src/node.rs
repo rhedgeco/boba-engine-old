@@ -1,5 +1,5 @@
 use std::{
-    any::{Any, TypeId},
+    any::{type_name, Any, TypeId},
     cell::{RefCell, RefMut},
     hash::Hash,
     mem::replace,
@@ -7,9 +7,9 @@ use std::{
 };
 
 use indexmap::{IndexMap, IndexSet};
-use log::warn;
+use log::{error, warn};
 
-use crate::{BobaId, Pearl};
+use crate::{BobaId, BobaResult, Pearl};
 
 struct NodeRelations {
     parent: Option<Node>,
@@ -84,6 +84,48 @@ impl Node {
         let pearl_map = self.inner.pearls.borrow();
         let pearl = pearl_map.get(&TypeId::of::<T>())?;
         Some(pearl.downcast_ref::<Pearl<T>>().unwrap().clone())
+    }
+
+    /// Queries this node and all its children, and gets a clone of every matching pearl of type `T`
+    pub fn get_pearls_in_children<T: 'static>(&self) -> Vec<Pearl<T>> {
+        fn recurse_children<T: 'static>(node: &Node, pearls: &mut Vec<Pearl<T>>) {
+            if let Some(pearl) = node.get_pearl::<T>() {
+                pearls.push(pearl);
+            }
+
+            let relation = node.inner.relations.borrow();
+            for child in relation.children.iter() {
+                recurse_children(child, pearls);
+            }
+        }
+
+        let mut pearls = Vec::<Pearl<T>>::new();
+        recurse_children(self, &mut pearls);
+        pearls
+    }
+
+    /// Queries this node and all its children for pearls of type `T`, and calls the function `f` on them
+    ///
+    /// This is faster than trying to do the same using `get_pearls_in_children`
+    /// because a new `Vec` is not allocated/updated and the pearls do not have to be cloned.
+    pub fn call_pearls_in_children<T: 'static>(&self, f: impl Fn(&Pearl<T>) -> BobaResult) {
+        fn recurse_children<T: 'static>(node: &Node, f: &impl Fn(&Pearl<T>) -> BobaResult) {
+            let pearl_map = node.inner.pearls.borrow();
+            if let Some(any_pearl) = pearl_map.get(&TypeId::of::<T>()) {
+                let pearl = any_pearl.downcast_ref::<Pearl<T>>().unwrap();
+                if let Err(e) = f(&pearl) {
+                    let name = type_name::<T>();
+                    error!("There was an error while calling Pearl<{name}> using 'call_pearls_in_children'. Error: {e}")
+                }
+            }
+
+            let relation = node.inner.relations.borrow();
+            for child in relation.children.iter() {
+                recurse_children::<T>(child, f);
+            }
+        }
+
+        recurse_children::<T>(self, &f);
     }
 
     /// Sets the parent of this node to `parent`.
