@@ -149,4 +149,12 @@ impl<T, const ID: usize> HandleMap<T, ID> {
             }
         }
     }
+
+    /// Invalidates every handle and drops every item from the map
+    pub fn clear(&mut self) {
+        for item in self.items.iter() {
+            item.handle.invalidate();
+        }
+        self.items.clear();
+    }
 }

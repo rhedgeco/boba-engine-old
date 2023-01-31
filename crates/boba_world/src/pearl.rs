@@ -84,6 +84,11 @@ impl<const ID: usize> PearlMap<ID> {
         let any = self.pearl_map.remove(&handle.inner)?;
         Ok(*any.downcast::<Pearl<T>>().unwrap())
     }
+
+    /// Invalidates every handle and drops every [`Pearl`] from the map
+    pub fn clear(&mut self) {
+        self.pearl_map.clear()
+    }
 }
 
 /// A wrapper around `T` to allow insertion into a [`PearlMap`]
