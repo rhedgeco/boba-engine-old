@@ -78,7 +78,7 @@ impl<T, const ID: usize> HandleMapItem<T, ID> {
 #[error("Tried to access data in HandleMap using invalid handle")]
 pub struct InvalidHandleError;
 
-/// A collection of `T` that produces handles to each item
+/// A collection of `T` that produces [`Handle`] links
 pub struct HandleMap<T, const ID: usize> {
     items: Vec<HandleMapItem<T, ID>>,
     _type: PhantomData<T>,
@@ -113,7 +113,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// ## Warning
     /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
     /// and may sometimes result in a panic
-    pub fn get(&self, handle: &Handle<T, ID>) -> Result<&T, InvalidHandleError> {
+    pub fn get(&self, handle: &Handle<T, ID>) -> HandleResult<&T> {
         match handle.is_valid() {
             false => Err(InvalidHandleError),
             true => Ok(&self.items[handle.index()].item),
@@ -125,7 +125,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// ## Warning
     /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
     /// and may sometimes result in a panic
-    pub fn get_mut(&mut self, handle: &Handle<T, ID>) -> Result<&mut T, InvalidHandleError> {
+    pub fn get_mut(&mut self, handle: &Handle<T, ID>) -> HandleResult<&mut T> {
         match handle.is_valid() {
             false => Err(InvalidHandleError),
             true => Ok(&mut self.items[handle.index()].item),
@@ -137,7 +137,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// ## Warning
     /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
     /// and may sometimes result in a panic
-    pub fn remove(&mut self, handle: &Handle<T, ID>) -> Result<T, InvalidHandleError> {
+    pub fn remove(&mut self, handle: &Handle<T, ID>) -> HandleResult<T> {
         match handle.is_valid() {
             false => Err(InvalidHandleError),
             true => {
