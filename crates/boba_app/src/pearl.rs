@@ -45,6 +45,8 @@ impl<T> Clone for Pearl<T> {
 
 impl<T> Pearl<T> {
     /// Creates a new `Pearl` containing `data`
+    ///
+    /// This should only be called within a node when the pearl is being created and attached
     pub(crate) fn new(data: T, node: Node) -> Self {
         let inner = PearlCore {
             id: BobaId::new(),
