@@ -78,4 +78,14 @@ impl EventListenerCollection {
     pub fn register_pearl<T: RegisterEvents>(&mut self, pearl: &Pearl<T>) {
         T::register(pearl, self);
     }
+
+    pub fn update<Data: 'static>(&self, data: &Data) {
+        let typeid = TypeId::of::<Data>();
+        if let Some(any_event_set) = self.event_sets.get(&typeid) {
+            let event_set = any_event_set.downcast_ref::<EventSet<Data>>().unwrap();
+            for listener in event_set.listeners.values() {
+                listener.update(data);
+            }
+        }
+    }
 }
