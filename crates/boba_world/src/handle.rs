@@ -1,11 +1,15 @@
-use std::{cell::Cell, marker::PhantomData, rc::Rc};
+use std::{cell::Cell, hash::Hash, marker::PhantomData, rc::Rc};
 
 use thiserror::Error;
 
-pub type HandleResult<T> = Result<T, InvalidHandleError>;
+use crate::BobaId;
+
+pub type HandleResult<T> = Result<T, HandleError>;
 
 /// The inner representation of a [`Handle`]
 struct InnerHandle {
+    id: BobaId,
+    map_id: BobaId,
     valid: Cell<bool>,
     index: Cell<usize>,
 }
@@ -14,6 +18,20 @@ struct InnerHandle {
 pub struct Handle<T, const ID: usize> {
     inner: Rc<InnerHandle>,
     _type: PhantomData<*const T>,
+}
+
+impl<T, const ID: usize> Eq for Handle<T, ID> {}
+
+impl<T, const ID: usize> PartialEq for Handle<T, ID> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id() == other.id()
+    }
+}
+
+impl<T, const ID: usize> Hash for Handle<T, ID> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id().hash(state);
+    }
 }
 
 impl<T, const ID: usize> Clone for Handle<T, ID> {
@@ -27,8 +45,10 @@ impl<T, const ID: usize> Clone for Handle<T, ID> {
 
 impl<T, const ID: usize> Handle<T, ID> {
     /// Creates a new handle at `index`
-    fn new(index: usize) -> Self {
+    fn new(index: usize, map_id: BobaId) -> Self {
         let inner = InnerHandle {
+            map_id,
+            id: BobaId::new(),
             valid: Cell::new(true),
             index: Cell::new(index),
         };
@@ -54,6 +74,11 @@ impl<T, const ID: usize> Handle<T, ID> {
         self.inner.index.set(index)
     }
 
+    /// Gets the [`BobaId`] for this handle
+    pub fn id(&self) -> &BobaId {
+        &self.inner.id
+    }
+
     /// Checks if this handle's data id still valid in its [`HandleMap`]
     pub fn is_valid(&self) -> bool {
         self.inner.valid.get()
@@ -75,11 +100,16 @@ impl<T, const ID: usize> HandleMapItem<T, ID> {
 
 /// Error type for invalid access of [`HandleMap`]
 #[derive(Debug, Error)]
-#[error("Tried to access data in HandleMap using invalid handle")]
-pub struct InvalidHandleError;
+pub enum HandleError {
+    #[error("Tried to access data in HandleMap using invalid Handle")]
+    Invalid,
+    #[error("Tried to use a Handle in an incorrect HandleMap")]
+    IncorrectMap,
+}
 
 /// A collection of `T` that produces [`Handle`] links
 pub struct HandleMap<T, const ID: usize> {
+    id: BobaId,
     items: Vec<HandleMapItem<T, ID>>,
     _type: PhantomData<T>,
 }
@@ -87,6 +117,7 @@ pub struct HandleMap<T, const ID: usize> {
 impl<T, const ID: usize> Default for HandleMap<T, ID> {
     fn default() -> Self {
         Self {
+            id: BobaId::new(),
             items: Default::default(),
             _type: PhantomData,
         }
@@ -102,7 +133,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// Inserts `item` into the map and returns a [`Handle`] to its location
     pub fn insert(&mut self, item: T) -> Handle<T, ID> {
         let index = self.items.len();
-        let handle = Handle::new(index);
+        let handle = Handle::new(index, self.id);
         let handle_item = HandleMapItem::new(handle.clone(), item);
         self.items.push(handle_item);
         handle
@@ -114,8 +145,12 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
     /// and may sometimes result in a panic
     pub fn get(&self, handle: &Handle<T, ID>) -> HandleResult<&T> {
+        if handle.inner.map_id != self.id {
+            return Err(HandleError::IncorrectMap);
+        }
+
         match handle.is_valid() {
-            false => Err(InvalidHandleError),
+            false => Err(HandleError::Invalid),
             true => Ok(&self.items[handle.index()].item),
         }
     }
@@ -126,8 +161,12 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
     /// and may sometimes result in a panic
     pub fn get_mut(&mut self, handle: &Handle<T, ID>) -> HandleResult<&mut T> {
+        if handle.inner.map_id != self.id {
+            return Err(HandleError::IncorrectMap);
+        }
+
         match handle.is_valid() {
-            false => Err(InvalidHandleError),
+            false => Err(HandleError::Invalid),
             true => Ok(&mut self.items[handle.index()].item),
         }
     }
@@ -138,8 +177,12 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
     /// and may sometimes result in a panic
     pub fn remove(&mut self, handle: &Handle<T, ID>) -> HandleResult<T> {
+        if handle.inner.map_id != self.id {
+            return Err(HandleError::IncorrectMap);
+        }
+
         match handle.is_valid() {
-            false => Err(InvalidHandleError),
+            false => Err(HandleError::Invalid),
             true => {
                 let index = handle.index();
                 let item = self.items.swap_remove(index);
