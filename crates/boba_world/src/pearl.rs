@@ -95,9 +95,13 @@ impl<const ID: usize> PearlMap<ID> {
     /// ## Warning
     /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
     /// and may sometimes result in a panic
-    pub fn remove<T: 'static>(&mut self, handle: &PearlHandle<T, ID>) -> HandleResult<Pearl<T>> {
+    pub fn remove<T: 'static>(
+        &mut self,
+        handle: &PearlHandle<T, ID>,
+    ) -> HandleResult<Option<Pearl<T>>> {
         let any = self.pearl_map.remove(&handle.inner)?;
-        Ok(*any.downcast::<Pearl<T>>().unwrap())
+        let Some(any) = any else { return Ok(None); };
+        Ok(Some(*any.downcast::<Pearl<T>>().unwrap()))
     }
 
     /// Invalidates every handle and drops every [`Pearl`] from the map
