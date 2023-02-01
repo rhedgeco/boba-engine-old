@@ -1,5 +1,6 @@
 use std::{
     any::Any,
+    hash::Hash,
     marker::PhantomData,
     ops::{Deref, DerefMut},
 };
@@ -12,6 +13,20 @@ use crate::{Handle, HandleMap, HandleResult};
 pub struct PearlHandle<T, const ID: usize> {
     inner: Handle<Box<dyn Any>, ID>,
     _type: PhantomData<*const T>,
+}
+
+impl<T, const ID: usize> Eq for PearlHandle<T, ID> {}
+
+impl<T, const ID: usize> PartialEq for PearlHandle<T, ID> {
+    fn eq(&self, other: &Self) -> bool {
+        self.id() == other.id()
+    }
+}
+
+impl<T, const ID: usize> Hash for PearlHandle<T, ID> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id().hash(state);
+    }
 }
 
 impl<T, const ID: usize> Deref for PearlHandle<T, ID> {
