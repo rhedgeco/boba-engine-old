@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::BobaId;
 
-pub type HandleResult<T> = Result<T, HandleError>;
+pub type HandleResult<T> = Result<T, InvalidHandleError>;
 
 /// The inner representation of a [`Handle`]
 struct InnerHandle {
@@ -105,12 +105,8 @@ impl<T> HandleMapItem<T> {
 
 /// Error type for invalid access of [`HandleMap`]
 #[derive(Debug, Error)]
-pub enum HandleError {
-    #[error("Tried to access data in HandleMap using invalid Handle")]
-    Invalid,
-    #[error("Tried to use a Handle in an incorrect HandleMap")]
-    IncorrectMap,
-}
+#[error("Tried to access data in HandleMap using invalid Handle")]
+pub struct InvalidHandleError;
 
 /// A collection of `T` that produces [`Handle`] links
 pub struct HandleMap<T> {
@@ -155,13 +151,14 @@ impl<T> HandleMap<T> {
     }
 
     /// Gets a reference to the item in this map that is associated with `handle`
+    ///
+    /// # Panics
+    /// This will panic if `handle` was created by a different map
     pub fn get(&self, handle: &Handle<T>) -> HandleResult<&T> {
-        if handle.inner.map_id != self.id {
-            return Err(HandleError::IncorrectMap);
-        }
+        self.validate_id_or_panic(handle.id());
 
         match handle.is_valid() {
-            false => Err(HandleError::Invalid),
+            false => Err(InvalidHandleError),
             // SAFETY: Checks for map id and handle validity are performed before this
             true => Ok(unsafe { self.get_unchecked(handle) }),
         }
@@ -179,13 +176,14 @@ impl<T> HandleMap<T> {
     }
 
     /// Gets a mutable reference to the item in this map that is associated with `handle`
+    ///
+    /// # Panics
+    /// This will panic if `handle` was created by a different map
     pub fn get_mut(&mut self, handle: &Handle<T>) -> HandleResult<&mut T> {
-        if handle.inner.map_id != self.id {
-            return Err(HandleError::IncorrectMap);
-        }
+        self.validate_id_or_panic(handle.id());
 
         match handle.is_valid() {
-            false => Err(HandleError::Invalid),
+            false => Err(InvalidHandleError),
             // SAFETY: Checks for map id and handle validity are performed before this
             true => Ok(unsafe { self.get_unchecked_mut(handle) }),
         }
@@ -204,16 +202,13 @@ impl<T> HandleMap<T> {
 
     /// Removes the item in this map that is associated with `handle`, and then invalidates the handle.
     ///
-    /// ## Warning
-    /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
-    /// and may sometimes result in a panic
+    /// # Panics
+    /// This will panic if `handle` was created by a different map
     pub fn remove(&mut self, handle: &Handle<T>) -> HandleResult<Option<T>> {
-        if handle.inner.map_id != self.id {
-            return Err(HandleError::IncorrectMap);
-        }
+        self.validate_id_or_panic(handle.id());
 
         match handle.is_valid() {
-            false => Err(HandleError::Invalid),
+            false => Err(InvalidHandleError),
             // SAFETY: Checks for map id and handle validity are performed before this
             true => Ok(unsafe { self.remove_unchecked(handle) }),
         }
@@ -256,5 +251,13 @@ impl<T> HandleMap<T> {
             item.handle.invalidate();
         }
         self.items.clear();
+    }
+
+    /// Validates a id matches this map.
+    /// If it doesn't match the system panics.
+    fn validate_id_or_panic(&self, id: &BobaId) {
+        if id != self.id() {
+            panic!("Tried using a handle to access data, but using the wrong map.")
+        }
     }
 }
