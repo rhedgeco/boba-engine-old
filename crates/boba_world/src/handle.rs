@@ -1,5 +1,7 @@
 use std::{cell::Cell, hash::Hash, marker::PhantomData, rc::Rc};
 
+use indexmap::IndexSet;
+
 use crate::BobaId;
 
 /// The inner representation of a [`Handle`]
@@ -132,6 +134,11 @@ impl<T> HandleMap<T> {
         self.items.len()
     }
 
+    /// Checks if the number of elements in the map is zero
+    pub fn is_empty(&self) -> bool {
+        self.items.len() == 0
+    }
+
     /// Inserts `item` into the map and returns a [`Handle`] to its location
     pub fn insert(&mut self, item: T) -> Handle<T> {
         let index = self.items.len();
@@ -141,7 +148,9 @@ impl<T> HandleMap<T> {
         handle
     }
 
-    /// Gets a reference to the item in this map that is associated with `handle`
+    /// Gets a reference to the item in this map that is associated with `handle`.
+    ///
+    /// Returns `None` if the handle is invalid.
     ///
     /// # Panics
     /// This will panic if `handle` was created by a different map
@@ -155,10 +164,24 @@ impl<T> HandleMap<T> {
         }
     }
 
+    /// Returns a vec of references to the items in `handle_set`.
+    ///
+    /// If any handle in the set is invalid, it will be excluded from the final collection
+    ///
+    /// # Panics
+    /// This will panic if any `handle` was created by a different map
+    pub fn get_many(&self, handle_set: &IndexSet<Handle<T>>) -> Vec<&T> {
+        handle_set.iter().filter_map(|h| self.get(h)).collect()
+    }
+
     /// Gets a reference to the item in this map that is associated with `handle`
     ///
     /// Potentially accessing random or uninitialized memory if any pre-checks are avoided.
-    /// ## How to use safely ⚠️
+    ///
+    /// For a safe alternative, use `get`
+    ///
+    /// # Safety
+    ///
     /// The following checks are not performed when using this method, and should be done externally beforehand.
     /// - Check if the [`BobaId`] of the map and the `map_id` of the handle are equivilant.
     /// - Check if the [`Handle`] is still valid using `is_valid`.
@@ -180,10 +203,35 @@ impl<T> HandleMap<T> {
         }
     }
 
+    /// Returns a vec of references to the items in `handle_set`.
+    ///
+    /// If any handle in the set is invalid, it will be excluded from the final collection
+    ///
+    /// # Panics
+    /// This will panic if any `handle` was created by a different map
+    pub fn get_many_mut(&mut self, handle_set: &IndexSet<Handle<T>>) -> Vec<&mut T> {
+        handle_set
+            .iter()
+            .filter_map(|h| match h.is_valid() {
+                false => None,
+                true => Some(unsafe {
+                    // SAFETY: Since all items are in a set, each one must have a unique index
+                    // since each index is unique, there will be no overlapping mutablity access
+                    let ptr = self.items.as_ptr().add(h.index()) as *mut HandleMapItem<T>;
+                    &mut (*ptr).item
+                }),
+            })
+            .collect()
+    }
+
     /// Gets a mutable reference to the item in this map that is associated with `handle`
     ///
     /// Potentially accessing random or uninitialized memory if any pre-checks are avoided.
-    /// ## How to use safely ⚠️
+    ///
+    /// For a safe alternative, use `get_mut`
+    ///
+    /// # Safety
+    ///
     /// The following checks are not performed when using this method, and should be done externally beforehand.
     /// - Check if the [`BobaId`] of the map and the `map_id` of the handle are equivilant.
     /// - Check if the [`Handle`] is still valid using `is_valid`.
@@ -210,7 +258,8 @@ impl<T> HandleMap<T> {
     ///
     /// Potentially accessing random or uninitialized memory if any pre-checks are avoided.
     ///
-    /// ## How to use safely ⚠️
+    /// # Safety
+    ///
     /// The following checks are not performed when using this method, and should be done externally beforehand.
     /// - Check if the [`BobaId`] of the map and the `map_id` of the handle are equivilant.
     /// - Check if the [`Handle`] is still valid using `is_valid`.
@@ -246,7 +295,7 @@ impl<T> HandleMap<T> {
 
     /// Validates a id matches this map.
     /// If it doesn't match the system panics.
-    fn validate_id_or_panic(&self, id: &BobaId) {
+    pub fn validate_id_or_panic(&self, id: &BobaId) {
         if id != self.id() {
             panic!("Tried using a handle to access data, but using the wrong map.")
         }
