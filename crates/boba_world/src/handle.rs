@@ -15,26 +15,26 @@ struct InnerHandle {
 }
 
 /// A handle to some data `T` inside a [`HandleMap`]
-pub struct Handle<T, const ID: usize> {
+pub struct Handle<T> {
     inner: Rc<InnerHandle>,
     _type: PhantomData<*const T>,
 }
 
-impl<T, const ID: usize> Eq for Handle<T, ID> {}
+impl<T> Eq for Handle<T> {}
 
-impl<T, const ID: usize> PartialEq for Handle<T, ID> {
+impl<T> PartialEq for Handle<T> {
     fn eq(&self, other: &Self) -> bool {
         self.id() == other.id()
     }
 }
 
-impl<T, const ID: usize> Hash for Handle<T, ID> {
+impl<T> Hash for Handle<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.id().hash(state);
     }
 }
 
-impl<T, const ID: usize> Clone for Handle<T, ID> {
+impl<T> Clone for Handle<T> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -43,7 +43,7 @@ impl<T, const ID: usize> Clone for Handle<T, ID> {
     }
 }
 
-impl<T, const ID: usize> Handle<T, ID> {
+impl<T> Handle<T> {
     /// Creates a new handle at `index`
     fn new(index: usize, map_id: BobaId) -> Self {
         let inner = InnerHandle {
@@ -91,14 +91,14 @@ impl<T, const ID: usize> Handle<T, ID> {
 }
 
 /// Structure used to manage entries in a [`HandleMap`]
-struct HandleMapItem<T, const ID: usize> {
-    handle: Handle<T, ID>,
+struct HandleMapItem<T> {
+    handle: Handle<T>,
     item: T,
 }
 
-impl<T, const ID: usize> HandleMapItem<T, ID> {
+impl<T> HandleMapItem<T> {
     /// Creates a new map item with `handle` and `item`
-    fn new(handle: Handle<T, ID>, item: T) -> Self {
+    fn new(handle: Handle<T>, item: T) -> Self {
         Self { handle, item }
     }
 }
@@ -113,13 +113,13 @@ pub enum HandleError {
 }
 
 /// A collection of `T` that produces [`Handle`] links
-pub struct HandleMap<T, const ID: usize> {
+pub struct HandleMap<T> {
     id: BobaId,
-    items: Vec<HandleMapItem<T, ID>>,
+    items: Vec<HandleMapItem<T>>,
     _type: PhantomData<T>,
 }
 
-impl<T, const ID: usize> Default for HandleMap<T, ID> {
+impl<T> Default for HandleMap<T> {
     fn default() -> Self {
         Self {
             id: BobaId::new(),
@@ -129,7 +129,7 @@ impl<T, const ID: usize> Default for HandleMap<T, ID> {
     }
 }
 
-impl<T, const ID: usize> HandleMap<T, ID> {
+impl<T> HandleMap<T> {
     /// Creates a new `HandleMap`
     pub fn new() -> Self {
         Self::default()
@@ -146,7 +146,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     }
 
     /// Inserts `item` into the map and returns a [`Handle`] to its location
-    pub fn insert(&mut self, item: T) -> Handle<T, ID> {
+    pub fn insert(&mut self, item: T) -> Handle<T> {
         let index = self.items.len();
         let handle = Handle::new(index, self.id);
         let handle_item = HandleMapItem::new(handle.clone(), item);
@@ -155,7 +155,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     }
 
     /// Gets a reference to the item in this map that is associated with `handle`
-    pub fn get(&self, handle: &Handle<T, ID>) -> HandleResult<&T> {
+    pub fn get(&self, handle: &Handle<T>) -> HandleResult<&T> {
         if handle.inner.map_id != self.id {
             return Err(HandleError::IncorrectMap);
         }
@@ -174,12 +174,12 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// The following checks are not performed when using this method, and should be done externally beforehand.
     /// - Check if the [`BobaId`] of the map and the `map_id` of the handle are equivilant.
     /// - Check if the [`Handle`] is still valid using `is_valid`.
-    pub unsafe fn get_unchecked(&self, handle: &Handle<T, ID>) -> &T {
+    pub unsafe fn get_unchecked(&self, handle: &Handle<T>) -> &T {
         &self.items.get_unchecked(handle.index()).item
     }
 
     /// Gets a mutable reference to the item in this map that is associated with `handle`
-    pub fn get_mut(&mut self, handle: &Handle<T, ID>) -> HandleResult<&mut T> {
+    pub fn get_mut(&mut self, handle: &Handle<T>) -> HandleResult<&mut T> {
         if handle.inner.map_id != self.id {
             return Err(HandleError::IncorrectMap);
         }
@@ -198,7 +198,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// The following checks are not performed when using this method, and should be done externally beforehand.
     /// - Check if the [`BobaId`] of the map and the `map_id` of the handle are equivilant.
     /// - Check if the [`Handle`] is still valid using `is_valid`.
-    pub unsafe fn get_unchecked_mut(&mut self, handle: &Handle<T, ID>) -> &mut T {
+    pub unsafe fn get_unchecked_mut(&mut self, handle: &Handle<T>) -> &mut T {
         &mut self.items.get_unchecked_mut(handle.index()).item
     }
 
@@ -207,7 +207,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// ## Warning
     /// Trying to use a handle on a map that the handle did not come from is ***undefined behaviour***
     /// and may sometimes result in a panic
-    pub fn remove(&mut self, handle: &Handle<T, ID>) -> HandleResult<Option<T>> {
+    pub fn remove(&mut self, handle: &Handle<T>) -> HandleResult<Option<T>> {
         if handle.inner.map_id != self.id {
             return Err(HandleError::IncorrectMap);
         }
@@ -228,7 +228,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
     /// The following checks are not performed when using this method, and should be done externally beforehand.
     /// - Check if the [`BobaId`] of the map and the `map_id` of the handle are equivilant.
     /// - Check if the [`Handle`] is still valid using `is_valid`.
-    pub unsafe fn remove_unchecked(&mut self, handle: &Handle<T, ID>) -> Option<T> {
+    pub unsafe fn remove_unchecked(&mut self, handle: &Handle<T>) -> Option<T> {
         handle.invalidate();
         let length = self.len();
         match length {
@@ -241,7 +241,7 @@ impl<T, const ID: usize> HandleMap<T, ID> {
             }
             // if many items, swap item with last item
             length => {
-                let hole: *mut HandleMapItem<T, ID> = self.items.get_unchecked_mut(handle.index());
+                let hole: *mut HandleMapItem<T> = self.items.get_unchecked_mut(handle.index());
                 self.items.set_len(length - 1);
                 let last = std::ptr::read(self.items.as_ptr().add(self.items.len()));
                 last.handle.reset_index(handle.index());
