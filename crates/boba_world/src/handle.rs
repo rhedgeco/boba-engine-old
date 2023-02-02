@@ -1,10 +1,6 @@
 use std::{cell::Cell, hash::Hash, marker::PhantomData, rc::Rc};
 
-use thiserror::Error;
-
 use crate::BobaId;
-
-pub type HandleResult<T> = Result<T, InvalidHandleError>;
 
 /// The inner representation of a [`Handle`]
 struct InnerHandle {
@@ -103,11 +99,6 @@ impl<T> HandleMapItem<T> {
     }
 }
 
-/// Error type for invalid access of [`HandleMap`]
-#[derive(Debug, Error)]
-#[error("Tried to access data in HandleMap using invalid Handle")]
-pub struct InvalidHandleError;
-
 /// A collection of `T` that produces [`Handle`] links
 pub struct HandleMap<T> {
     id: BobaId,
@@ -154,13 +145,13 @@ impl<T> HandleMap<T> {
     ///
     /// # Panics
     /// This will panic if `handle` was created by a different map
-    pub fn get(&self, handle: &Handle<T>) -> HandleResult<&T> {
+    pub fn get(&self, handle: &Handle<T>) -> Option<&T> {
         self.validate_id_or_panic(handle.id());
 
         match handle.is_valid() {
-            false => Err(InvalidHandleError),
+            false => None,
             // SAFETY: Checks for map id and handle validity are performed before this
-            true => Ok(unsafe { self.get_unchecked(handle) }),
+            true => Some(unsafe { self.get_unchecked(handle) }),
         }
     }
 
@@ -179,13 +170,13 @@ impl<T> HandleMap<T> {
     ///
     /// # Panics
     /// This will panic if `handle` was created by a different map
-    pub fn get_mut(&mut self, handle: &Handle<T>) -> HandleResult<&mut T> {
+    pub fn get_mut(&mut self, handle: &Handle<T>) -> Option<&mut T> {
         self.validate_id_or_panic(handle.id());
 
         match handle.is_valid() {
-            false => Err(InvalidHandleError),
+            false => None,
             // SAFETY: Checks for map id and handle validity are performed before this
-            true => Ok(unsafe { self.get_unchecked_mut(handle) }),
+            true => Some(unsafe { self.get_unchecked_mut(handle) }),
         }
     }
 
@@ -204,13 +195,13 @@ impl<T> HandleMap<T> {
     ///
     /// # Panics
     /// This will panic if `handle` was created by a different map
-    pub fn remove(&mut self, handle: &Handle<T>) -> HandleResult<Option<T>> {
+    pub fn remove(&mut self, handle: &Handle<T>) -> Option<T> {
         self.validate_id_or_panic(handle.id());
 
         match handle.is_valid() {
-            false => Err(InvalidHandleError),
+            false => None,
             // SAFETY: Checks for map id and handle validity are performed before this
-            true => Ok(unsafe { self.remove_unchecked(handle) }),
+            true => unsafe { self.remove_unchecked(handle) },
         }
     }
 
