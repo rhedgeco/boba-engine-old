@@ -108,6 +108,14 @@ pub struct HandleMap<T> {
     _type: PhantomData<T>,
 }
 
+impl<T> Drop for HandleMap<T> {
+    fn drop(&mut self) {
+        for item in self.items.iter() {
+            item.handle.invalidate();
+        }
+    }
+}
+
 impl<T> Default for HandleMap<T> {
     fn default() -> Self {
         Self {
