@@ -8,6 +8,7 @@ use indexmap::{IndexMap, IndexSet};
 
 use crate::{BobaId, Handle, HandleMap};
 
+/// A central location to store [`Node`] and [`Pearl`] obejcts
 #[derive(Default)]
 pub struct World {
     nodes: HandleMap<Node>,
@@ -49,6 +50,14 @@ impl World {
         let pearl_handle = node.pearls.get(&TypeId::of::<T>())?;
         let any = self.pearls.get(pearl_handle)?;
         any.downcast_ref::<Pearl<T>>()
+    }
+
+    /// Returns the pearl of type `T` associated with `handle`.
+    ///
+    /// Returns `None` if the handle is invalid, or the pearl does not exist for this handle
+    pub fn get_node_pearl_link<T: 'static>(&self, handle: &Handle<Node>) -> Option<PearlLink<T>> {
+        let node = self.nodes.get(handle)?;
+        node.new_pearl_link::<T>()
     }
 
     /// Returns the pearl of type `T` associated with `handle`.
