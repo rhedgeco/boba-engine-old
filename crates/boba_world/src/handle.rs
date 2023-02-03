@@ -178,7 +178,7 @@ impl<T> HandleMap<T> {
     ///
     /// # Panics
     /// This will panic if any `handle` was created by a different map
-    pub fn get_many(&self, handle_set: &IndexSet<Handle<T>>) -> Vec<&T> {
+    pub fn get_many(&self, handle_set: &IndexSet<&Handle<T>>) -> Vec<&T> {
         handle_set.iter().filter_map(|h| self.get(h)).collect()
     }
 
@@ -217,7 +217,7 @@ impl<T> HandleMap<T> {
     ///
     /// # Panics
     /// This will panic if any `handle` was created by a different map
-    pub fn get_many_mut(&mut self, handle_set: &IndexSet<Handle<T>>) -> Vec<&mut T> {
+    pub fn get_many_mut(&mut self, handle_set: &IndexSet<&Handle<T>>) -> Vec<&mut T> {
         handle_set
             .iter()
             .filter_map(|h| match h.is_valid() {
