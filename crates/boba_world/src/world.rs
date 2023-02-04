@@ -181,26 +181,26 @@ impl World {
         mut f: impl FnMut(&mut Pearl<T>),
     ) {
         fn recurse<T: 'static>(
-            world: &mut World,
+            nodes: &HandleMap<Node>,
+            pearls: &mut HandleMap<Box<dyn Any>>,
             handle: &Handle<Node>,
             f: &mut impl FnMut(&mut Pearl<T>),
         ) {
-            let Some(node) = world.nodes.get(handle) else {
+            let Some(node) = nodes.get(handle) else {
                 return;
             };
 
-            let children = node.children.iter().cloned().collect::<Vec<_>>();
-            for child_handle in children.iter() {
-                let Some(child) = world.nodes.get(child_handle) else { continue; };
+            for child_handle in node.children.iter() {
+                let Some(child) = nodes.get(child_handle) else { continue; };
                 let Some(pearl_handle) = child.pearls.get(&TypeId::of::<T>()) else { continue; };
-                let Some(any) = world.pearls.get_mut(pearl_handle) else { continue; };
+                let Some(any) = pearls.get_mut(pearl_handle) else { continue; };
                 let Some(pearl) = any.downcast_mut::<Pearl<T>>() else { continue; };
                 f(pearl);
-                recurse(world, child_handle, f);
+                recurse(nodes, pearls, child_handle, f);
             }
         }
 
-        recurse(self, handle, &mut f);
+        recurse(&self.nodes, &mut self.pearls, handle, &mut f);
     }
 
     /// Inserts a pearl into a node and returns a link to the pearl
