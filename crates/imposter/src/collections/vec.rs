@@ -34,7 +34,7 @@ impl<M: MemoryBuilder> ImposterVec<M> {
     }
 
     /// Creates a new `ImposterVec` with the initial value `imposter`
-    pub fn with_imposter(imposter: Imposter) -> Self {
+    pub fn from_imposter(imposter: Imposter) -> Self {
         let mut vec = Self {
             typeid: imposter.type_id(),
             memory: M::from_layout(imposter.layout()),
@@ -94,6 +94,26 @@ impl<M: MemoryBuilder> ImposterVec<M> {
         self.len += 1;
 
         None
+    }
+
+    /// Drops the value at `index` by swapping it with the last value
+    pub fn swap_drop(&mut self, index: usize) {
+        if index >= self.len {
+            panic!("Index out of bounds");
+        }
+
+        let data_size = self.memory.layout().size();
+        let last_offset = (self.len - 1) * data_size;
+        let drop_offset = index * data_size;
+        unsafe {
+            let last = self.memory.ptr().add(last_offset);
+            let drop = self.memory.ptr().add(drop_offset);
+            ptr::swap_nonoverlapping(last, drop, data_size);
+            if let Some(drop) = self.drop {
+                drop(last)
+            }
+        }
+        self.len -= 1;
     }
 
     /// Clears all the elements in the vector, calling their drop function if necessary
