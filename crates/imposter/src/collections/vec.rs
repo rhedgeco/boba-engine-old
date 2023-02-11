@@ -1,8 +1,4 @@
-use std::{
-    any::TypeId,
-    mem,
-    ptr::{self, NonNull},
-};
+use std::{any::TypeId, mem, ptr};
 
 use crate::{
     alloc::{GlobalMemoryBuilder, MemoryBuilder},
@@ -87,15 +83,14 @@ impl<M: MemoryBuilder> ImposterVec<M> {
             self.memory.resize(self.memory.capacity() * 2);
         }
 
-        let item_ptr = NonNull::from(&item).cast::<u8>().as_ptr();
-        mem::forget(item);
-
+        let item_ptr = ptr::NonNull::from(&item).cast::<u8>().as_ptr();
         let data_size = self.memory.layout().size();
         let offset = self.len * data_size;
         unsafe {
             let end = self.memory.ptr().add(offset);
             ptr::copy_nonoverlapping(item_ptr, end, data_size);
         }
+        mem::forget(item);
         self.len += 1;
 
         None
