@@ -3,15 +3,29 @@ use std::{
     ptr::NonNull,
 };
 
-use super::MemoryBuilder;
-
-pub struct GlobalMemoryBuilder {
+pub struct MemoryBuilder {
     ptr: NonNull<u8>,
     cap: usize,
     layout: Layout,
 }
 
-impl GlobalMemoryBuilder {
+impl Drop for MemoryBuilder {
+    fn drop(&mut self) {
+        if self.cap == 0 {
+            return;
+        }
+
+        unsafe {
+            let array_layout = Layout::from_size_align_unchecked(
+                self.layout.size() * self.cap,
+                self.layout.align(),
+            );
+            dealloc(self.ptr.as_ptr(), array_layout);
+        }
+    }
+}
+
+impl MemoryBuilder {
     /// Creates a dangling pointer with a specified layout
     ///
     /// # Safety
@@ -20,12 +34,20 @@ impl GlobalMemoryBuilder {
     /// This pointer should only be used to `alloc` new memory with the same alignment.
     #[inline]
     unsafe fn dangling_ptr(layout: &Layout) -> NonNull<u8> {
-        NonNull::new_unchecked(layout.align() as *mut u8)
+        #[cfg(miri)]
+        {
+            // Miri hack to track dangling pointer errors
+            layout.dangling()
+        }
+        #[cfg(not(miri))]
+        {
+            NonNull::new_unchecked(layout.align() as *mut u8)
+        }
     }
 }
 
-impl MemoryBuilder for GlobalMemoryBuilder {
-    fn new<T: 'static>() -> Self {
+impl MemoryBuilder {
+    pub fn new<T: 'static>() -> Self {
         Self {
             ptr: NonNull::<T>::dangling().cast(),
             cap: 0,
@@ -33,35 +55,30 @@ impl MemoryBuilder for GlobalMemoryBuilder {
         }
     }
 
-    fn from_layout(layout: Layout) -> Self {
-        // SAFETY:
-        // Creates dangling pointer, which is not inherently unsafe.
-        // It is only unsafe if is dereferenced.
-        // This pointer, in its dangling state, should only be used to alloc new memory locations
-        let ptr = unsafe { Self::dangling_ptr(&layout) };
+    pub fn from_layout(layout: Layout) -> Self {
         Self {
-            ptr,
-            cap: 1,
+            ptr: unsafe { Self::dangling_ptr(&layout) },
+            cap: 0,
             layout,
         }
     }
 
     #[inline]
-    fn ptr(&self) -> *mut u8 {
+    pub fn ptr(&self) -> *mut u8 {
         self.ptr.as_ptr()
     }
 
     #[inline]
-    fn capacity(&self) -> usize {
+    pub fn capacity(&self) -> usize {
         self.cap
     }
 
     #[inline]
-    fn layout(&self) -> Layout {
+    pub fn layout(&self) -> Layout {
         self.layout
     }
 
-    fn resize(&mut self, new_capacity: usize) {
+    pub fn resize(&mut self, new_capacity: usize) {
         if self.cap == new_capacity {
             return;
         }
@@ -87,8 +104,9 @@ impl MemoryBuilder for GlobalMemoryBuilder {
                         NonNull::new(realloc(self.ptr(), array_layout, new_array_size))
                     }
                     .unwrap_or_else(|| handle_alloc_error(new_array_layout))
-                }
+                };
             }
+            self.cap = new_capacity;
         }
     }
 }

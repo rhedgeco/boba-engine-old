@@ -13,14 +13,18 @@ pub struct Imposter {
     data: ptr::NonNull<u8>,
     typeid: TypeId,
     layout: Layout,
-    drop: ImposterDrop,
+    drop: Option<ImposterDrop>,
 }
 
 impl Drop for Imposter {
     #[inline]
     fn drop(&mut self) {
         unsafe {
-            (self.drop)(self.data.as_ptr());
+            let ptr = self.data.as_ptr();
+            if let Some(drop) = self.drop {
+                (drop)(ptr);
+            }
+            dealloc(ptr, self.layout);
         }
     }
 }
@@ -38,7 +42,10 @@ impl Imposter {
             data,
             typeid: TypeId::of::<T>(),
             layout: Layout::new::<T>(),
-            drop: Self::drop_impl::<T>,
+            drop: match mem::needs_drop::<T>() {
+                false => None,
+                true => Some(Self::drop_impl::<T>),
+            },
         }
     }
 
@@ -106,7 +113,7 @@ impl Imposter {
 
     /// Returns a reference to the internal drop function
     #[inline]
-    pub fn drop_fn(&self) -> ImposterDrop {
+    pub fn drop_fn(&self) -> Option<ImposterDrop> {
         self.drop
     }
 
@@ -114,7 +121,6 @@ impl Imposter {
     #[inline]
     pub unsafe fn drop_impl<T>(ptr: *mut u8) {
         ptr::drop_in_place(ptr as *mut T);
-        dealloc(ptr, Layout::new::<T>());
     }
 }
 
