@@ -1,4 +1,4 @@
-use std::{any::TypeId, hash::Hash};
+use std::{any::TypeId, hash::Hash, mem::replace};
 
 use imposters::{collections::ImposterVec, Imposter};
 use indexmap::{IndexMap, IndexSet};
@@ -38,12 +38,34 @@ impl Hash for PearlTypes {
 }
 
 impl PearlTypes {
+    pub fn new_single<T: 'static>() -> Self {
+        let mut types = IndexSet::new();
+        types.insert(TypeId::of::<T>());
+        Self { types }
+    }
+
     pub fn len(&self) -> usize {
         self.types.len()
     }
 
     pub fn is_empty(&self) -> bool {
         self.types.is_empty()
+    }
+
+    pub fn contains<T: 'static>(&self) -> bool {
+        let typeid = TypeId::of::<T>();
+
+        for t in self.types.iter() {
+            if t == &typeid {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn remove(&mut self, type_id: &TypeId) -> bool {
+        self.types.shift_remove(type_id)
     }
 
     pub fn is_subset_of(&self, other: &PearlTypes) -> bool {
@@ -113,41 +135,62 @@ pub struct PearlSet {
 }
 
 impl PearlSet {
+    pub fn new_single<T: 'static>(pearl: T) -> Self {
+        let types = PearlTypes::new_single::<T>();
+        let mut pearls = IndexMap::new();
+        pearls.insert(TypeId::of::<T>(), Imposter::new(pearl));
+        Self { types, pearls }
+    }
+
     pub fn types(&self) -> &PearlTypes {
         &self.types
     }
 
-    pub fn combine(self, other: PearlSet) -> PearlSet {
-        if self.pearls.is_empty() {
-            return other;
+    pub fn drop(&mut self, type_id: &TypeId) -> bool {
+        self.types.remove(type_id);
+        self.pearls.remove(type_id).is_some()
+    }
+
+    pub fn remove<T: 'static>(&mut self) -> Option<T> {
+        let type_id = &TypeId::of::<T>();
+        self.types.remove(type_id);
+        let imposter = self.pearls.shift_remove(type_id)?;
+        imposter.downcast::<T>()
+    }
+
+    /// Combined two pearl sets together.
+    ///
+    /// Any overlapping items will be taken from the original set
+    pub fn combine(&mut self, other: PearlSet) {
+        if other.pearls.is_empty() {
+            return;
         }
 
-        if other.pearls.is_empty() {
-            return self;
+        if self.pearls.is_empty() {
+            self.types = other.types;
+            self.pearls = other.pearls;
+            return;
         }
 
         let mut new_types = IndexSet::new();
-        let mut new_pearls = IndexMap::new();
         let mut other_iter = other.pearls.into_iter().peekable();
-        for (self_id, self_imp) in self.pearls.into_iter() {
+        let old_pearls = replace(&mut self.pearls, IndexMap::new());
+        for (self_id, self_imp) in old_pearls.into_iter() {
             while let Some((peek_id, _)) = other_iter.peek() {
-                if peek_id > &self_id {
+                if peek_id >= &self_id {
                     break;
                 }
 
                 let (other_id, other_imp) = other_iter.next().unwrap();
                 new_types.insert(other_id);
-                new_pearls.insert(other_id, other_imp);
+                self.pearls.insert(other_id, other_imp);
             }
 
             new_types.insert(self_id);
-            new_pearls.insert(self_id, self_imp);
+            self.pearls.insert(self_id, self_imp);
         }
 
-        PearlSet {
-            types: PearlTypes { types: new_types },
-            pearls: new_pearls,
-        }
+        self.types = PearlTypes { types: new_types };
     }
 }
 
@@ -189,7 +232,25 @@ pub struct Archetype {
 }
 
 impl Archetype {
-    pub fn new(entity: EntityId, set: PearlSet) -> Self {
+    pub fn with_pearl<T: 'static>(entity: EntityId, pearl: T) -> Self {
+        let mut entities = IndexSet::new();
+        entities.insert(entity);
+
+        let types = PearlTypes::new_single::<T>();
+        let mut pearls = IndexMap::new();
+        pearls.insert(
+            TypeId::of::<T>(),
+            ImposterVec::from_imposter(Imposter::new(pearl)),
+        );
+
+        Self {
+            entities,
+            types,
+            pearls,
+        }
+    }
+
+    pub fn with_pearl_set(entity: EntityId, set: PearlSet) -> Self {
         let mut entities = IndexSet::new();
         entities.insert(entity);
 
@@ -205,6 +266,14 @@ impl Archetype {
             types,
             pearls,
         }
+    }
+
+    pub fn len(&self) -> usize {
+        self.entities.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entities.is_empty()
     }
 
     pub fn insert(&mut self, entity: EntityId, set: PearlSet) -> Option<(EntityId, PearlSet)> {
@@ -253,7 +322,7 @@ impl Archetype {
 
 #[cfg(test)]
 mod tests {
-    use crate::Entities;
+    use crate::World;
 
     use super::*;
 
@@ -339,8 +408,8 @@ mod tests {
 
     #[test]
     fn new_archetype() {
-        let mut entities = Entities::new();
-        let entity = entities.create();
+        let mut entities = World::new();
+        let entity = entities.new_entity();
 
         let set = PearlSetBuilder::new()
             .add(Type1(1))
@@ -349,7 +418,7 @@ mod tests {
             .build();
 
         let types = set.types().clone();
-        let archetype = Archetype::new(entity, set);
+        let archetype = Archetype::with_pearl_set(entity, set);
         assert!(archetype.entities.len() == 1);
         assert!(archetype.pearls.len() == 3);
         assert!(types == archetype.types);
@@ -357,9 +426,9 @@ mod tests {
 
     #[test]
     fn insert_archetype() {
-        let mut entities = Entities::new();
-        let entity1 = entities.create();
-        let entity2 = entities.create();
+        let mut entities = World::new();
+        let entity1 = entities.new_entity();
+        let entity2 = entities.new_entity();
         let set1 = PearlSetBuilder::new()
             .add(Type1(1))
             .add(Type2(2))
@@ -371,7 +440,7 @@ mod tests {
             .add(Type3(3))
             .build();
 
-        let mut archetype = Archetype::new(entity1, set1);
+        let mut archetype = Archetype::with_pearl_set(entity1, set1);
         archetype.insert(entity2, set2);
         assert!(archetype.entities.len() == 2);
         assert!(archetype.pearls.len() == 3);
@@ -382,9 +451,9 @@ mod tests {
 
     #[test]
     fn delete_from_archetype() {
-        let mut entities = Entities::new();
-        let entity1 = entities.create();
-        let entity2 = entities.create();
+        let mut entities = World::new();
+        let entity1 = entities.new_entity();
+        let entity2 = entities.new_entity();
         let set1 = PearlSetBuilder::new()
             .add(Type1(1))
             .add(Type2(2))
@@ -396,7 +465,7 @@ mod tests {
             .add(Type3(6))
             .build();
 
-        let mut archetype = Archetype::new(entity1, set1);
+        let mut archetype = Archetype::with_pearl_set(entity1, set1);
         archetype.insert(entity2, set2);
         archetype.destroy(&entity1);
         assert!(archetype.entities.len() == 1);
@@ -417,9 +486,9 @@ mod tests {
 
     #[test]
     fn remove_from_archetype() {
-        let mut entities = Entities::new();
-        let entity1 = entities.create();
-        let entity2 = entities.create();
+        let mut entities = World::new();
+        let entity1 = entities.new_entity();
+        let entity2 = entities.new_entity();
         let set1 = PearlSetBuilder::new()
             .add(Type1(1))
             .add(Type2(2))
@@ -432,7 +501,7 @@ mod tests {
             .build();
 
         let set2_types = set2.types().clone();
-        let mut archetype = Archetype::new(entity1, set1);
+        let mut archetype = Archetype::with_pearl_set(entity1, set1);
         archetype.insert(entity2, set2);
 
         let set2 = archetype.remove(&entity2).unwrap();
