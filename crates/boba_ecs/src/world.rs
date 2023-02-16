@@ -74,22 +74,39 @@ impl World {
         }
     }
 
-    pub fn modify_pearl_set(
+    pub fn change_archetype(
         &mut self,
         entity: &EntityId,
-        f: impl FnOnce(PearlSet) -> PearlSet,
+        f: impl FnOnce(Option<PearlSet>) -> PearlSet,
     ) -> bool {
-        let Some(arch_index) = self.entity_arch.get(entity) else { return false };
-        let (_, archetype) = self.archetypes.get_index_mut(*arch_index).unwrap();
-        let old_pearl_set = archetype.remove(entity).unwrap();
-        let pearl_set = f(old_pearl_set);
-        match self.archetypes.entry(pearl_set.types().clone()) {
-            Entry::Occupied(e) => e.into_mut().insert(*entity, pearl_set).is_none(),
+        // if entity doesnt exist, return false
+        if !entity.is_alive(self) {
+            return false;
+        }
+
+        let new_pearl_set = match self.entity_arch.get(entity) {
+            None => f(None),
+            Some(arch_index) => {
+                let (_, archetype) = self.archetypes.get_index_mut(*arch_index).unwrap();
+                let old_pearl_set = archetype.remove(entity).unwrap();
+                f(Some(old_pearl_set))
+            }
+        };
+
+        if new_pearl_set.is_empty() {
+            return true;
+        }
+
+        match self.archetypes.entry(new_pearl_set.types().clone()) {
+            Entry::Occupied(e) => {
+                e.into_mut().insert(*entity, new_pearl_set);
+            }
             Entry::Vacant(e) => {
-                e.insert(Archetype::with_pearl_set(*entity, pearl_set));
-                true
+                e.insert(Archetype::with_pearl_set(*entity, new_pearl_set));
             }
         }
+
+        true
     }
 
     pub fn add_pearl<T: 'static>(&mut self, entity: &EntityId, pearl: T) -> bool {
@@ -97,16 +114,22 @@ impl World {
     }
 
     pub fn add_pearl_set(&mut self, entity: &EntityId, mut pearl_set: PearlSet) -> bool {
-        self.modify_pearl_set(entity, |set| {
-            pearl_set.combine(set);
-            pearl_set
+        self.change_archetype(entity, |set| match set {
+            None => pearl_set,
+            Some(set) => {
+                pearl_set.combine(set);
+                pearl_set
+            }
         })
     }
 
     pub fn remove_pearl<T: 'static>(&mut self, entity: &EntityId) -> bool {
-        self.modify_pearl_set(entity, |mut set| {
-            set.drop(&TypeId::of::<T>());
-            set
+        self.change_archetype(entity, |set| match set {
+            None => PearlSet::empty(),
+            Some(mut set) => {
+                set.drop(&TypeId::of::<T>());
+                set
+            }
         })
     }
 

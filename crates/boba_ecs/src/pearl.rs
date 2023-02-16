@@ -38,6 +38,12 @@ impl Hash for PearlTypes {
 }
 
 impl PearlTypes {
+    pub fn empty() -> Self {
+        Self {
+            types: IndexSet::new(),
+        }
+    }
+
     pub fn new_single<T: 'static>() -> Self {
         let mut types = IndexSet::new();
         types.insert(TypeId::of::<T>());
@@ -135,11 +141,26 @@ pub struct PearlSet {
 }
 
 impl PearlSet {
+    pub fn empty() -> Self {
+        Self {
+            types: PearlTypes::empty(),
+            pearls: IndexMap::new(),
+        }
+    }
+
     pub fn new_single<T: 'static>(pearl: T) -> Self {
         let types = PearlTypes::new_single::<T>();
         let mut pearls = IndexMap::new();
         pearls.insert(TypeId::of::<T>(), Imposter::new(pearl));
         Self { types, pearls }
+    }
+
+    pub fn len(&self) -> usize {
+        self.pearls.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.pearls.is_empty()
     }
 
     pub fn types(&self) -> &PearlTypes {
