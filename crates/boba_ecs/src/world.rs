@@ -77,7 +77,7 @@ impl World {
     pub fn change_archetype(
         &mut self,
         entity: &EntityId,
-        f: impl FnOnce(Option<PearlSet>) -> PearlSet,
+        f: impl FnOnce(PearlSet) -> PearlSet,
     ) -> bool {
         // if entity doesnt exist, return false
         if !entity.is_alive(self) {
@@ -85,11 +85,11 @@ impl World {
         }
 
         let new_pearl_set = match self.entity_arch.get(entity) {
-            None => f(None),
+            None => f(PearlSet::new()),
             Some(arch_index) => {
                 let (_, archetype) = self.archetypes.get_index_mut(*arch_index).unwrap();
                 let old_pearl_set = archetype.remove(entity).unwrap();
-                f(Some(old_pearl_set))
+                f(old_pearl_set)
             }
         };
 
@@ -99,7 +99,7 @@ impl World {
 
         match self.archetypes.entry(new_pearl_set.types().clone()) {
             Entry::Occupied(e) => {
-                e.into_mut().insert(*entity, new_pearl_set);
+                assert!(e.into_mut().insert(*entity, new_pearl_set).is_none());
             }
             Entry::Vacant(e) => {
                 e.insert(Archetype::new(*entity, new_pearl_set));
@@ -110,32 +110,29 @@ impl World {
     }
 
     pub fn add_pearl<T: 'static>(&mut self, entity: &EntityId, pearl: T) -> bool {
-        self.add_pearl_set(entity, PearlSet::new_single(pearl))
+        self.change_archetype(entity, |mut set| {
+            set.insert(pearl);
+            set
+        })
     }
 
     pub fn add_pearl_set(&mut self, entity: &EntityId, mut pearl_set: PearlSet) -> bool {
-        self.change_archetype(entity, |set| match set {
-            None => pearl_set,
-            Some(set) => {
-                pearl_set.insert_set(set);
-                pearl_set
-            }
+        self.change_archetype(entity, |set| {
+            pearl_set.insert_set(set);
+            pearl_set
         })
     }
 
     pub fn remove_pearl<T: 'static>(&mut self, entity: &EntityId) -> bool {
-        self.change_archetype(entity, |set| match set {
-            None => PearlSet::new(),
-            Some(mut set) => {
-                set.drop_type(&TypeId::of::<T>());
-                set
-            }
+        self.change_archetype(entity, |mut set| {
+            set.drop_type(&TypeId::of::<T>());
+            set
         })
     }
 
     pub fn destroy(&mut self, entity: &EntityId) {
         let index = entity.uindex();
-        // if the entity is in the list and matches
+        // check if the entity is in the list and matches id
         let Some(self_entity) = self.entities.get_mut(index) else { return };
         if self_entity != entity {
             return;
@@ -150,7 +147,7 @@ impl World {
         // if the entity has an archetype, destory the pearls in it too
         if let Some(arch_index) = self.entity_arch.remove(entity) {
             let (_, arch) = self.archetypes.get_index_mut(arch_index).unwrap();
-            arch.destroy(entity);
+            assert!(arch.destroy(entity));
         }
     }
 }
