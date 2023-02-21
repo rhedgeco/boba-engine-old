@@ -102,7 +102,7 @@ impl World {
                 e.into_mut().insert(*entity, new_pearl_set);
             }
             Entry::Vacant(e) => {
-                e.insert(Archetype::with_pearl_set(*entity, new_pearl_set));
+                e.insert(Archetype::new(*entity, new_pearl_set));
             }
         }
 
@@ -117,7 +117,7 @@ impl World {
         self.change_archetype(entity, |set| match set {
             None => pearl_set,
             Some(set) => {
-                pearl_set.combine(set);
+                pearl_set.insert_set(set);
                 pearl_set
             }
         })
@@ -125,9 +125,9 @@ impl World {
 
     pub fn remove_pearl<T: 'static>(&mut self, entity: &EntityId) -> bool {
         self.change_archetype(entity, |set| match set {
-            None => PearlSet::empty(),
+            None => PearlSet::new(),
             Some(mut set) => {
-                set.drop(&TypeId::of::<T>());
+                set.drop_type(&TypeId::of::<T>());
                 set
             }
         })

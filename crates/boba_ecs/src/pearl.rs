@@ -1,107 +1,168 @@
-use std::{any::TypeId, hash::Hash, mem::replace};
-
 use imposters::{collections::ImposterVec, Imposter};
 use indexmap::{IndexMap, IndexSet};
+use std::{any::TypeId, hash::Hash, mem::replace};
 
 use crate::EntityId;
 
-#[derive(Eq, Clone)]
+/// A collection of pearl types
+///
+/// Used for identification of what kinds of pearls are stored in an [`Archetype`]
+#[derive(Eq, Clone, Default)]
 pub struct PearlTypes {
-    types: IndexSet<TypeId>,
-}
-
-impl PartialEq for PearlTypes {
-    fn eq(&self, other: &Self) -> bool {
-        if self.types.len() != other.types.len() {
-            return false;
-        }
-        // we can do this in O(n) because the types set is always sorted
-        for i in 0..self.types.len() {
-            let self_type = self.types.get_index(i).unwrap();
-            let other_type = other.types.get_index(i).unwrap();
-            if self_type != other_type {
-                return false;
-            }
-        }
-
-        true
-    }
+    type_vec: Vec<TypeId>,
 }
 
 impl Hash for PearlTypes {
+    #[inline]
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        // This is consistent because the type set is always sorted
-        for t in self.types.iter() {
-            t.hash(state);
+        for t in self.type_vec.iter() {
+            t.hash(state)
         }
+    }
+}
+
+impl PartialEq for PearlTypes {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.type_vec == other.type_vec
     }
 }
 
 impl PearlTypes {
-    pub fn empty() -> Self {
-        Self {
-            types: IndexSet::new(),
-        }
+    /// Creates a new `PearlTypes` struct
+    #[inline]
+    pub fn new() -> Self {
+        Self::default()
     }
 
+    /// Creates a new `PearlTypes` struct initialized with a single type `T`
+    #[inline]
     pub fn new_single<T: 'static>() -> Self {
-        let mut types = IndexSet::new();
-        types.insert(TypeId::of::<T>());
-        Self { types }
+        Self::new_single_id(TypeId::of::<T>())
     }
 
+    /// Creates a new `PearlTypes` struct initialized with `id`
+    #[inline]
+    pub fn new_single_id(id: TypeId) -> Self {
+        let mut new = Self::new();
+        new.type_vec.push(id);
+        new
+    }
+
+    /// Returns the length of the types set
+    #[inline]
     pub fn len(&self) -> usize {
-        self.types.len()
+        self.type_vec.len()
     }
 
+    /// Returns `true` if this set is empty
+    #[inline]
     pub fn is_empty(&self) -> bool {
-        self.types.is_empty()
+        self.type_vec.is_empty()
     }
 
-    pub fn contains<T: 'static>(&self) -> bool {
-        let typeid = TypeId::of::<T>();
+    /// Returns the index of a specified `id`
+    ///
+    /// If the id exists, returns `Ok(usize)` with the index.
+    /// If it does not exist, returns Err(usize) with the index where it would be inserted.
+    #[inline]
+    fn index_of_id(&self, id: &TypeId) -> Result<usize, usize> {
+        self.type_vec.binary_search(id)
+    }
 
-        for t in self.types.iter() {
-            if t == &typeid {
-                return true;
-            }
+    /// Returns `true` if the set contains the type `T`
+    #[inline]
+    pub fn contains<T: 'static>(&self) -> bool {
+        self.contains_id(&TypeId::of::<T>())
+    }
+
+    /// Returns `true` if the set contains `id`
+    #[inline]
+    pub fn contains_id(&self, id: &TypeId) -> bool {
+        self.index_of_id(id).is_ok()
+    }
+
+    /// Removes type `T` from the set and returns `true`
+    ///
+    /// If the item is not in the set, returns `false`
+    #[inline]
+    pub fn remove<T: 'static>(&mut self) -> bool {
+        self.remove_id(&TypeId::of::<T>())
+    }
+
+    /// Removes `id` from the set and returns `true`
+    ///
+    /// If the item is not in the set, returns `false`
+    #[inline]
+    pub fn remove_id(&mut self, id: &TypeId) -> bool {
+        self.remove_id_get_index(id).is_some()
+    }
+
+    /// Removes `id` from the set and returns `Ok(usize)` with the index that it was removed from
+    ///
+    /// If the item is not in the set, returns `None`
+    #[inline]
+    fn remove_id_get_index(&mut self, id: &TypeId) -> Option<usize> {
+        let Ok(index) = self.index_of_id(id) else { return None };
+        self.type_vec.remove(index);
+        Some(index)
+    }
+
+    /// Inserts type `T` into this set and returns `true`
+    ///
+    /// If the type already existed, returns `false`
+    #[inline]
+    pub fn insert<T: 'static>(&mut self) -> bool {
+        self.insert_id(TypeId::of::<T>())
+    }
+
+    /// Inserts `id` into this set and returns `true`
+    ///
+    /// If the id already existed, returns `false`
+    #[inline]
+    pub fn insert_id(&mut self, id: TypeId) -> bool {
+        if let Err(index) = self.index_of_id(&id) {
+            self.type_vec.insert(index, id);
+            return true;
         }
 
         false
     }
 
-    pub fn remove(&mut self, type_id: &TypeId) -> bool {
-        self.types.shift_remove(type_id)
-    }
-
-    pub fn is_subset_of(&self, other: &PearlTypes) -> bool {
-        other.is_superset_of(self)
-    }
-
+    /// Returns true if this set is a superset of `other`
+    #[inline]
     pub fn is_superset_of(&self, other: &PearlTypes) -> bool {
-        // if this set has less elements that the other set
-        // it could not possibly be a subset
-        if self.types.len() < other.types.len() {
+        other.is_subset_of(self)
+    }
+
+    /// Returns true if this set is a subset of `other`
+    pub fn is_subset_of(&self, other: &PearlTypes) -> bool {
+        // if they both have no items, then other is technically a superset
+        if self.len() == 0 && other.len() == 0 {
+            return true;
+        }
+
+        // if this vec has more elements that the other vec
+        // then other could not possibly be superset
+        if self.len() > other.len() {
             return false;
         }
 
-        // get an iterator for the other pearl types
-        let mut other_iter = other.types.iter();
-        // if it doesnt have an initial `next`, it is empty. return false.
-        let Some(mut find_type) = other_iter.next() else {
-            return false;
-        };
+        // get an iterator for self pearl types
+        let mut self_iter = self.type_vec.iter();
+        // get the first item to search for
+        let mut find_type = self_iter.next().unwrap();
 
         // iterate over all of self types and match them
-        for t in self.types.iter() {
+        for t in other.type_vec.iter() {
             // if they dont match, continue to the next item in self types
             if t != find_type {
                 continue;
             }
 
-            // if they do match, set find_type to the next item to search for
+            // if they do match, get the next item we need to search for
             // if it is none, that means we found all the items and return true
-            let Some(next) = other_iter.next() else {
+            let Some(next) = self_iter.next() else {
                 return true;
             };
 
@@ -109,232 +170,216 @@ impl PearlTypes {
             find_type = next;
         }
 
-        // not all items were found, so it is not a subset
+        // not all items were found, so this is not a subset
         false
     }
 }
 
+/// A collection of pearls
 #[derive(Default)]
-pub struct PearlTypesBuilder {
-    types: IndexSet<TypeId>,
+pub struct PearlSet {
+    type_link: PearlTypes,
+    pearl_vec: Vec<Imposter>,
 }
 
-impl PearlTypesBuilder {
+impl PearlSet {
+    /// Creates a new pearl set
+    #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn add_type<T: 'static>(mut self) -> Self {
-        self.types.insert(TypeId::of::<T>());
-        self
-    }
-
-    pub fn build(mut self) -> PearlTypes {
-        self.types.sort();
-        PearlTypes { types: self.types }
-    }
-}
-
-pub struct PearlSet {
-    types: PearlTypes,
-    pearls: IndexMap<TypeId, Imposter>,
-}
-
-impl PearlSet {
-    pub fn empty() -> Self {
+    /// Creates a new pearl set initilized with `item`
+    #[inline]
+    pub fn new_single<T: 'static>(item: T) -> Self {
+        let mut pearl_vec = Vec::new();
+        pearl_vec.push(Imposter::new(item));
         Self {
-            types: PearlTypes::empty(),
-            pearls: IndexMap::new(),
+            type_link: PearlTypes::new_single::<T>(),
+            pearl_vec,
         }
     }
 
-    pub fn new_single<T: 'static>(pearl: T) -> Self {
-        let types = PearlTypes::new_single::<T>();
-        let mut pearls = IndexMap::new();
-        pearls.insert(TypeId::of::<T>(), Imposter::new(pearl));
-        Self { types, pearls }
+    /// Returns the length of this set
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.pearl_vec.len()
+    }
+
+    /// Returns `true` if this set is empty
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.pearl_vec.is_empty()
+    }
+
+    /// Returns a reference to the [`PearlTypes`] for this set
+    #[inline]
+    pub fn types(&self) -> &PearlTypes {
+        &self.type_link
+    }
+
+    /// Removes the pearl of type `T` from this set
+    ///
+    /// Returns `None` if the pearl does not exist
+    #[inline]
+    pub fn remove<T: 'static>(&mut self) -> Option<T> {
+        self.remove_imposter(&TypeId::of::<T>())?.downcast::<T>()
+    }
+
+    /// Removes and drops the pearl with `id` and returns `true`
+    ///
+    /// Returns `false` if the pearl does not exist
+    #[inline]
+    pub fn drop_type(&mut self, id: &TypeId) -> bool {
+        // dropped implicitly
+        self.remove_imposter(id).is_some()
+    }
+
+    /// Removes the pearl with `id` and returns an untyped [`Imposter`] that contains the pearl data
+    ///
+    /// Returns `None` if the pearl does not exist
+    #[inline]
+    pub fn remove_imposter(&mut self, id: &TypeId) -> Option<Imposter> {
+        let index = self.type_link.remove_id_get_index(id)?;
+        Some(self.pearl_vec.remove(index))
+    }
+
+    /// Inserts `item` into the set, replacing it if necessary
+    ///
+    /// If there was an existing pearl of type `T`,
+    /// then it will be replaced and this method will return it as `Some(T)`
+    #[inline]
+    pub fn insert<T: 'static>(&mut self, item: T) -> Option<T> {
+        self.insert_imposter(Imposter::new(item))?.downcast::<T>()
+    }
+
+    /// Inserts `imposter` into the set, replacing it if necessary
+    ///
+    /// If there was an existing [`Imposter`] with the same [`TypeId`],
+    /// then it will be replaced and this method will return it as `Some(Imposter)`
+    pub fn insert_imposter(&mut self, imposter: Imposter) -> Option<Imposter> {
+        let typeid = imposter.type_id();
+        match self.type_link.index_of_id(&typeid) {
+            Ok(index) => {
+                let old = replace(&mut self.pearl_vec[index], imposter);
+                return Some(old);
+            }
+            Err(index) => {
+                self.type_link.type_vec.insert(index, typeid);
+                self.pearl_vec.insert(index, imposter);
+                return None;
+            }
+        }
+    }
+
+    /// Inserts an entire set `other` into this set.
+    ///
+    /// All duplicate pearls in this set will be replaced by the pearls in `other`
+    pub fn insert_set(&mut self, other: PearlSet) {
+        if other.pearl_vec.is_empty() {
+            return;
+        }
+
+        if self.pearl_vec.is_empty() {
+            self.type_link = other.type_link;
+            self.pearl_vec = other.pearl_vec;
+            return;
+        }
+
+        // TODO: this can be optimized.
+        // each insert does a new binary search on the array
+        // since they are already in order, they can be interleaved in a faster way
+        for imposter in other.pearl_vec.into_iter() {
+            self.insert_imposter(imposter);
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct Archetype {
+    types: PearlTypes,
+    entity_link: IndexSet<EntityId>,
+    pearl_vecs: IndexMap<TypeId, ImposterVec>,
+}
+
+impl Archetype {
+    pub fn new(entity: EntityId, pearl_set: PearlSet) -> Self {
+        let types = pearl_set.types().clone();
+        let mut entity_link = IndexSet::new();
+        let mut pearl_vecs = IndexMap::new();
+
+        entity_link.insert(entity);
+        for imposter in pearl_set.pearl_vec.into_iter() {
+            let typeid = imposter.type_id().clone();
+            let vec = ImposterVec::from_imposter(imposter);
+            pearl_vecs.insert(typeid, vec);
+        }
+
+        Self {
+            types,
+            entity_link,
+            pearl_vecs,
+        }
     }
 
     pub fn len(&self) -> usize {
-        self.pearls.len()
+        self.entity_link.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.pearls.is_empty()
+        self.entity_link.is_empty()
     }
 
     pub fn types(&self) -> &PearlTypes {
         &self.types
     }
 
-    pub fn drop(&mut self, type_id: &TypeId) -> bool {
-        self.types.remove(type_id);
-        self.pearls.remove(type_id).is_some()
-    }
-
-    pub fn remove<T: 'static>(&mut self) -> Option<T> {
-        let type_id = &TypeId::of::<T>();
-        self.types.remove(type_id);
-        let imposter = self.pearls.shift_remove(type_id)?;
-        imposter.downcast::<T>()
-    }
-
-    /// Combined two pearl sets together.
-    ///
-    /// Any overlapping items will be taken from the original set
-    pub fn combine(&mut self, other: PearlSet) {
-        if other.pearls.is_empty() {
-            return;
+    pub fn insert(&mut self, entity: EntityId, pearls: PearlSet) -> Option<PearlSet> {
+        if pearls.types() != &self.types {
+            panic!("PearlTypes mismatch");
         }
 
-        if self.pearls.is_empty() {
-            self.types = other.types;
-            self.pearls = other.pearls;
-            return;
-        }
-
-        let mut new_types = IndexSet::new();
-        let mut other_iter = other.pearls.into_iter().peekable();
-        let old_pearls = replace(&mut self.pearls, IndexMap::new());
-        for (self_id, self_imp) in old_pearls.into_iter() {
-            while let Some((peek_id, _)) = other_iter.peek() {
-                if peek_id >= &self_id {
-                    break;
+        match self.entity_link.insert_full(entity) {
+            (_, true) => {
+                for (i, imposter) in pearls.pearl_vec.into_iter().enumerate() {
+                    let returned = self.pearl_vecs[i].push_imposter(imposter);
+                    assert!(returned.is_none())
                 }
 
-                let (other_id, other_imp) = other_iter.next().unwrap();
-                new_types.insert(other_id);
-                self.pearls.insert(other_id, other_imp);
+                None
             }
+            (index, false) => {
+                let mut pearl_set = PearlSet::new();
+                for (i, imposter) in pearls.pearl_vec.into_iter().enumerate() {
+                    let returned = self.pearl_vecs[i].push_imposter(imposter);
+                    assert!(returned.is_none());
+                    let old_imposter = self.pearl_vecs[i].swap_remove(index).unwrap();
+                    pearl_set.insert_imposter(old_imposter);
+                }
 
-            new_types.insert(self_id);
-            self.pearls.insert(self_id, self_imp);
+                Some(pearl_set)
+            }
         }
-
-        self.types = PearlTypes { types: new_types };
-    }
-}
-
-#[derive(Default)]
-pub struct PearlSetBuilder {
-    pearls: IndexMap<TypeId, Imposter>,
-}
-
-impl PearlSetBuilder {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    #[inline]
-    pub fn add<T: 'static>(mut self, pearl: T) -> Self {
-        self.pearls.insert(TypeId::of::<T>(), Imposter::new(pearl));
-        self
-    }
-
-    pub fn build(mut self) -> PearlSet {
-        self.pearls.sort_keys();
-
-        let mut types = IndexSet::new();
-        for typeid in self.pearls.keys() {
-            types.insert(*typeid);
-        }
-
-        PearlSet {
-            types: PearlTypes { types },
-            pearls: self.pearls,
-        }
-    }
-}
-
-pub struct Archetype {
-    types: PearlTypes,
-    entities: IndexSet<EntityId>,
-    pearls: IndexMap<TypeId, ImposterVec>,
-}
-
-impl Archetype {
-    pub fn with_pearl<T: 'static>(entity: EntityId, pearl: T) -> Self {
-        let mut entities = IndexSet::new();
-        entities.insert(entity);
-
-        let types = PearlTypes::new_single::<T>();
-        let mut pearls = IndexMap::new();
-        pearls.insert(
-            TypeId::of::<T>(),
-            ImposterVec::from_imposter(Imposter::new(pearl)),
-        );
-
-        Self {
-            entities,
-            types,
-            pearls,
-        }
-    }
-
-    pub fn with_pearl_set(entity: EntityId, set: PearlSet) -> Self {
-        let mut entities = IndexSet::new();
-        entities.insert(entity);
-
-        let types = set.types;
-        let mut pearls = IndexMap::new();
-        for (typeid, imposter) in set.pearls.into_iter() {
-            let vec = ImposterVec::from_imposter(imposter);
-            pearls.insert(typeid, vec);
-        }
-
-        Self {
-            entities,
-            types,
-            pearls,
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        self.entities.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.entities.is_empty()
-    }
-
-    pub fn insert(&mut self, entity: EntityId, set: PearlSet) -> Option<(EntityId, PearlSet)> {
-        if set.types() != &self.types || !self.entities.insert(entity) {
-            return Some((entity, set));
-        }
-
-        for (index, (_, imposter)) in set.pearls.into_iter().enumerate() {
-            self.pearls[index].push_imposter(imposter);
-        }
-
-        None
     }
 
     pub fn remove(&mut self, entity: &EntityId) -> Option<PearlSet> {
-        let Some((index, _)) = self.entities.swap_remove_full(entity) else {
-            return None;
-        };
+        let Some((entity_index, _)) = self.entity_link.swap_remove_full(entity) else { return None };
 
-        let mut new_types = IndexSet::new();
-        let mut new_pearls = IndexMap::new();
-        for vec in self.pearls.values_mut() {
-            let imposter = unsafe { vec.swap_remove_unchecked(index) };
-            new_types.insert(imposter.type_id());
-            new_pearls.insert(imposter.type_id(), imposter);
+        let mut pearl_set = PearlSet::new();
+        for vec in self.pearl_vecs.values_mut() {
+            let imposter = vec.swap_remove(entity_index).unwrap();
+            let returned = pearl_set.insert_imposter(imposter);
+            assert!(returned.is_none())
         }
 
-        Some(PearlSet {
-            types: PearlTypes { types: new_types },
-            pearls: new_pearls,
-        })
+        Some(pearl_set)
     }
 
     pub fn destroy(&mut self, entity: &EntityId) -> bool {
-        let Some((index, _)) = self.entities.swap_remove_full(entity) else {
-            return false;
-        };
+        let Some((entity_index, _)) = self.entity_link.swap_remove_full(entity) else { return false };
 
-        for vec in self.pearls.values_mut() {
-            vec.swap_drop(index);
+        for vec in self.pearl_vecs.values_mut() {
+            assert!(vec.swap_drop(entity_index));
         }
 
         return true;
@@ -354,71 +399,64 @@ mod tests {
 
     #[test]
     fn pearl_types_sorted() {
-        let types1 = PearlTypesBuilder::new()
-            .add_type::<Type1>()
-            .add_type::<Type2>()
-            .add_type::<Type3>()
-            .build();
+        let mut types1 = PearlTypes::new();
+        types1.insert::<Type1>();
+        types1.insert::<Type2>();
+        types1.insert::<Type3>();
 
-        let types2 = PearlTypesBuilder::new()
-            .add_type::<Type2>()
-            .add_type::<Type3>()
-            .add_type::<Type1>()
-            .build();
+        let mut types2 = PearlTypes::new();
+        types2.insert::<Type1>();
+        types2.insert::<Type2>();
+        types2.insert::<Type3>();
 
         for i in 0..3 {
-            let type1 = types1.types.get_index(i).unwrap();
-            let type2 = types2.types.get_index(i).unwrap();
+            let type1 = types1.type_vec[i];
+            let type2 = types2.type_vec[i];
             assert!(type1 == type2);
         }
     }
 
     #[test]
     fn pearl_set_sorted() {
-        let set1 = PearlSetBuilder::new()
-            .add(Type1(1))
-            .add(Type2(2))
-            .add(Type3(3))
-            .build();
+        let mut set1 = PearlSet::new();
+        set1.insert(Type1(1));
+        set1.insert(Type2(2));
+        set1.insert(Type3(3));
 
-        let set2 = PearlSetBuilder::new()
-            .add(Type2(1))
-            .add(Type3(2))
-            .add(Type1(3))
-            .build();
+        let mut set2 = PearlSet::new();
+        set2.insert(Type1(1));
+        set2.insert(Type2(2));
+        set2.insert(Type3(3));
 
         assert!(set2.types() == set1.types());
 
         for i in 0..3 {
-            let type1 = set1.types.types.get_index(i).unwrap();
-            let (pearltype1, data1) = set1.pearls.get_index(i).unwrap();
-            let type2 = set2.types.types.get_index(i).unwrap();
-            let (pearltype2, data2) = set2.pearls.get_index(i).unwrap();
-            assert!(&data1.type_id() == type1);
-            assert!(&data2.type_id() == type2);
+            let type1 = set1.type_link.type_vec[i];
+            let imposter1 = &set1.pearl_vec[i];
+            let type2 = set2.type_link.type_vec[i];
+            let imposter2 = &set2.pearl_vec[i];
+            assert!(imposter1.type_id() == type1);
+            assert!(imposter2.type_id() == type2);
             assert!(type1 == type2);
-            assert!(pearltype1 == pearltype2);
+            assert!(imposter1.type_id() == imposter2.type_id())
         }
     }
 
     #[test]
     fn types_subset() {
-        let types1 = PearlTypesBuilder::new()
-            .add_type::<Type1>()
-            .add_type::<Type2>()
-            .add_type::<Type3>()
-            .build();
+        let mut types1 = PearlTypes::new();
+        types1.insert::<Type1>();
+        types1.insert::<Type2>();
+        types1.insert::<Type3>();
 
-        let types2 = PearlTypesBuilder::new()
-            .add_type::<Type2>()
-            .add_type::<Type1>()
-            .build();
+        let mut types2 = PearlTypes::new();
+        types2.insert::<Type2>();
+        types2.insert::<Type1>();
 
-        let types3 = PearlTypesBuilder::new()
-            .add_type::<Type2>()
-            .add_type::<Type1>()
-            .add_type::<Type4>()
-            .build();
+        let mut types3 = PearlTypes::new();
+        types3.insert::<Type2>();
+        types3.insert::<Type1>();
+        types3.insert::<Type4>();
 
         assert!(types2.is_subset_of(&types1));
         assert!(types1.is_superset_of(&types2));
@@ -432,16 +470,15 @@ mod tests {
         let mut entities = World::new();
         let entity = entities.new_entity();
 
-        let set = PearlSetBuilder::new()
-            .add(Type1(1))
-            .add(Type2(2))
-            .add(Type3(3))
-            .build();
+        let mut set = PearlSet::new();
+        set.insert(Type1(1));
+        set.insert(Type2(2));
+        set.insert(Type3(3));
 
         let types = set.types().clone();
-        let archetype = Archetype::with_pearl_set(entity, set);
-        assert!(archetype.entities.len() == 1);
-        assert!(archetype.pearls.len() == 3);
+        let archetype = Archetype::new(entity, set);
+        assert!(archetype.entity_link.len() == 1);
+        assert!(archetype.pearl_vecs.len() == 3);
         assert!(types == archetype.types);
     }
 
@@ -450,24 +487,23 @@ mod tests {
         let mut entities = World::new();
         let entity1 = entities.new_entity();
         let entity2 = entities.new_entity();
-        let set1 = PearlSetBuilder::new()
-            .add(Type1(1))
-            .add(Type2(2))
-            .add(Type3(3))
-            .build();
-        let set2 = PearlSetBuilder::new()
-            .add(Type1(1))
-            .add(Type2(2))
-            .add(Type3(3))
-            .build();
+        let mut set1 = PearlSet::new();
+        set1.insert(Type1(1));
+        set1.insert(Type2(2));
+        set1.insert(Type3(3));
 
-        let mut archetype = Archetype::with_pearl_set(entity1, set1);
+        let mut set2 = PearlSet::new();
+        set2.insert(Type1(1));
+        set2.insert(Type2(2));
+        set2.insert(Type3(3));
+
+        let mut archetype = Archetype::new(entity1, set1);
         archetype.insert(entity2, set2);
-        assert!(archetype.entities.len() == 2);
-        assert!(archetype.pearls.len() == 3);
-        assert!(archetype.pearls.get_index(0).unwrap().1.len() == 2);
-        assert!(archetype.pearls.get_index(1).unwrap().1.len() == 2);
-        assert!(archetype.pearls.get_index(2).unwrap().1.len() == 2);
+        assert!(archetype.entity_link.len() == 2);
+        assert!(archetype.pearl_vecs.len() == 3);
+        assert!(archetype.pearl_vecs[0].len() == 2);
+        assert!(archetype.pearl_vecs[1].len() == 2);
+        assert!(archetype.pearl_vecs[2].len() == 2);
     }
 
     #[test]
@@ -475,33 +511,32 @@ mod tests {
         let mut entities = World::new();
         let entity1 = entities.new_entity();
         let entity2 = entities.new_entity();
-        let set1 = PearlSetBuilder::new()
-            .add(Type1(1))
-            .add(Type2(2))
-            .add(Type3(3))
-            .build();
-        let set2 = PearlSetBuilder::new()
-            .add(Type1(4))
-            .add(Type2(5))
-            .add(Type3(6))
-            .build();
+        let mut set1 = PearlSet::new();
+        set1.insert(Type1(1));
+        set1.insert(Type2(2));
+        set1.insert(Type3(3));
 
-        let mut archetype = Archetype::with_pearl_set(entity1, set1);
+        let mut set2 = PearlSet::new();
+        set2.insert(Type1(4));
+        set2.insert(Type2(5));
+        set2.insert(Type3(6));
+
+        let mut archetype = Archetype::new(entity1, set1);
         archetype.insert(entity2, set2);
         archetype.destroy(&entity1);
-        assert!(archetype.entities.len() == 1);
-        assert!(archetype.pearls.len() == 3);
-        assert!(archetype.pearls.get_index(0).unwrap().1.len() == 1);
-        assert!(archetype.pearls.get_index(1).unwrap().1.len() == 1);
-        assert!(archetype.pearls.get_index(2).unwrap().1.len() == 1);
+        assert!(archetype.entity_link.len() == 1);
+        assert!(archetype.pearl_vecs.len() == 3);
+        assert!(archetype.pearl_vecs[0].len() == 1);
+        assert!(archetype.pearl_vecs[1].len() == 1);
+        assert!(archetype.pearl_vecs[2].len() == 1);
 
-        let type1_vec = archetype.pearls.get(&TypeId::of::<Type1>()).unwrap();
+        let type1_vec = archetype.pearl_vecs.get(&TypeId::of::<Type1>()).unwrap();
         assert!(type1_vec.get::<Type1>(0).unwrap().0 == 4);
 
-        let type2_vec = archetype.pearls.get(&TypeId::of::<Type2>()).unwrap();
+        let type2_vec = archetype.pearl_vecs.get(&TypeId::of::<Type2>()).unwrap();
         assert!(type2_vec.get::<Type2>(0).unwrap().0 == 5);
 
-        let type3_vec = archetype.pearls.get(&TypeId::of::<Type3>()).unwrap();
+        let type3_vec = archetype.pearl_vecs.get(&TypeId::of::<Type3>()).unwrap();
         assert!(type3_vec.get::<Type3>(0).unwrap().0 == 6);
     }
 
@@ -510,37 +545,39 @@ mod tests {
         let mut entities = World::new();
         let entity1 = entities.new_entity();
         let entity2 = entities.new_entity();
-        let set1 = PearlSetBuilder::new()
-            .add(Type1(1))
-            .add(Type2(2))
-            .add(Type3(3))
-            .build();
-        let set2 = PearlSetBuilder::new()
-            .add(Type1(4))
-            .add(Type2(5))
-            .add(Type3(6))
-            .build();
+        let mut set1 = PearlSet::new();
+        set1.insert(Type1(1));
+        set1.insert(Type2(2));
+        set1.insert(Type3(3));
+
+        let mut set2 = PearlSet::new();
+        set2.insert(Type1(4));
+        set2.insert(Type2(5));
+        set2.insert(Type3(6));
 
         let set2_types = set2.types().clone();
-        let mut archetype = Archetype::with_pearl_set(entity1, set1);
+        let mut archetype = Archetype::new(entity1, set1);
         archetype.insert(entity2, set2);
 
         let set2 = archetype.remove(&entity2).unwrap();
         assert!(set2.types() == &set2_types);
 
-        assert!(archetype.entities.len() == 1);
-        assert!(archetype.pearls.len() == 3);
-        assert!(archetype.pearls.get_index(0).unwrap().1.len() == 1);
-        assert!(archetype.pearls.get_index(1).unwrap().1.len() == 1);
-        assert!(archetype.pearls.get_index(2).unwrap().1.len() == 1);
+        assert!(archetype.entity_link.len() == 1);
+        assert!(archetype.pearl_vecs.len() == 3);
+        assert!(archetype.pearl_vecs[0].len() == 1);
+        assert!(archetype.pearl_vecs[1].len() == 1);
+        assert!(archetype.pearl_vecs[2].len() == 1);
 
-        let type1_imp = set2.pearls.get(&TypeId::of::<Type1>()).unwrap();
+        let type1_imp =
+            &set2.pearl_vec[set2.type_link.index_of_id(&TypeId::of::<Type1>()).unwrap()];
         assert!(type1_imp.downcast_ref::<Type1>().unwrap().0 == 4);
 
-        let type2_imp = set2.pearls.get(&TypeId::of::<Type2>()).unwrap();
+        let type2_imp =
+            &set2.pearl_vec[set2.type_link.index_of_id(&TypeId::of::<Type2>()).unwrap()];
         assert!(type2_imp.downcast_ref::<Type2>().unwrap().0 == 5);
 
-        let type3_imp = set2.pearls.get(&TypeId::of::<Type3>()).unwrap();
+        let type3_imp =
+            &set2.pearl_vec[set2.type_link.index_of_id(&TypeId::of::<Type3>()).unwrap()];
         assert!(type3_imp.downcast_ref::<Type3>().unwrap().0 == 6);
     }
 }
