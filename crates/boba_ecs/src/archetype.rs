@@ -52,6 +52,9 @@ impl Archetype {
     /// Inserts `entity` into this archetype with the provided `pearl_set`
     ///
     /// Returns the old set as `Some(PearlSet)` if the entity already was already present in this archetype
+    ///
+    /// # Panics
+    /// Panics if `pearls` does not match this archetype
     pub fn insert(&mut self, entity: EntityId, pearls: PearlSet) -> Option<PearlSet> {
         if pearls.types() != &self.types {
             panic!("PearlTypes mismatch");
