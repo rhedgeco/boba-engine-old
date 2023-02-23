@@ -115,17 +115,13 @@ impl Archetype {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Pearl, World};
+    use crate::World;
 
     use super::*;
 
     struct Type1(u16);
     struct Type2(u32);
     struct Type3(u64);
-
-    impl Pearl for Type1 {}
-    impl Pearl for Type2 {}
-    impl Pearl for Type3 {}
 
     #[test]
     fn new_archetype() {

@@ -4,6 +4,8 @@ use std::{any::TypeId, hash::Hash, mem::replace, vec::IntoIter};
 
 pub trait Pearl: Send + Sync + 'static {}
 
+impl<T: Send + Sync + 'static> Pearl for T {}
+
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct PearlId(TypeId);
 
@@ -359,11 +361,6 @@ mod tests {
     struct Type2(u32);
     struct Type3(u64);
     struct Type4(u128);
-
-    impl Pearl for Type1 {}
-    impl Pearl for Type2 {}
-    impl Pearl for Type3 {}
-    impl Pearl for Type4 {}
 
     #[test]
     fn pearl_types_sorted() {
