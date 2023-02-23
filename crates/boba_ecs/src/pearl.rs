@@ -364,10 +364,10 @@ impl PearlSet {
 mod tests {
     use super::*;
 
-    struct Type1(u16);
-    struct Type2(u32);
-    struct Type3(u64);
-    struct Type4(u128);
+    struct Type1(u16, u32);
+    struct Type2(u32, u64);
+    struct Type3(u64, u128);
+    struct Type4(u128, u64);
 
     #[test]
     fn pearl_types_sorted() {
@@ -391,14 +391,14 @@ mod tests {
     #[test]
     fn pearl_set_sorted() {
         let mut set1 = PearlSet::new();
-        set1.insert(Type1(1));
-        set1.insert(Type2(2));
-        set1.insert(Type3(3));
+        set1.insert(Type1(1, 42));
+        set1.insert(Type2(2, 42));
+        set1.insert(Type3(3, 42));
 
         let mut set2 = PearlSet::new();
-        set2.insert(Type1(1));
-        set2.insert(Type2(2));
-        set2.insert(Type3(3));
+        set2.insert(Type1(1, 42));
+        set2.insert(Type2(2, 42));
+        set2.insert(Type3(3, 42));
 
         assert!(set2.types() == set1.types());
 

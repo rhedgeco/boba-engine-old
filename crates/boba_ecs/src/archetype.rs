@@ -119,9 +119,9 @@ mod tests {
 
     use super::*;
 
-    struct Type1(u16);
-    struct Type2(u32);
-    struct Type3(u64);
+    struct Type1(u16, u32);
+    struct Type2(u32, u64);
+    struct Type3(u64, u128);
 
     #[test]
     fn new_archetype() {
@@ -129,9 +129,9 @@ mod tests {
         let entity = entities.new_entity();
 
         let mut set = PearlSet::new();
-        set.insert(Type1(1));
-        set.insert(Type2(2));
-        set.insert(Type3(3));
+        set.insert(Type1(1, 42));
+        set.insert(Type2(2, 42));
+        set.insert(Type3(3, 42));
 
         let types = set.types().clone();
         let archetype = Archetype::new(entity, set);
@@ -146,14 +146,14 @@ mod tests {
         let entity1 = entities.new_entity();
         let entity2 = entities.new_entity();
         let mut set1 = PearlSet::new();
-        set1.insert(Type1(1));
-        set1.insert(Type2(2));
-        set1.insert(Type3(3));
+        set1.insert(Type1(1, 42));
+        set1.insert(Type2(2, 42));
+        set1.insert(Type3(3, 42));
 
         let mut set2 = PearlSet::new();
-        set2.insert(Type1(1));
-        set2.insert(Type2(2));
-        set2.insert(Type3(3));
+        set2.insert(Type1(1, 42));
+        set2.insert(Type2(2, 42));
+        set2.insert(Type3(3, 42));
 
         let mut archetype = Archetype::new(entity1, set1);
         archetype.insert(entity2, set2);
@@ -170,14 +170,14 @@ mod tests {
         let entity1 = entities.new_entity();
         let entity2 = entities.new_entity();
         let mut set1 = PearlSet::new();
-        set1.insert(Type1(1));
-        set1.insert(Type2(2));
-        set1.insert(Type3(3));
+        set1.insert(Type1(1, 42));
+        set1.insert(Type2(2, 42));
+        set1.insert(Type3(3, 42));
 
         let mut set2 = PearlSet::new();
-        set2.insert(Type1(4));
-        set2.insert(Type2(5));
-        set2.insert(Type3(6));
+        set2.insert(Type1(4, 42));
+        set2.insert(Type2(5, 42));
+        set2.insert(Type3(6, 42));
 
         let mut archetype = Archetype::new(entity1, set1);
         archetype.insert(entity2, set2);
@@ -204,14 +204,14 @@ mod tests {
         let entity1 = entities.new_entity();
         let entity2 = entities.new_entity();
         let mut set1 = PearlSet::new();
-        set1.insert(Type1(1));
-        set1.insert(Type2(2));
-        set1.insert(Type3(3));
+        set1.insert(Type1(1, 42));
+        set1.insert(Type2(2, 42));
+        set1.insert(Type3(3, 42));
 
         let mut set2 = PearlSet::new();
-        set2.insert(Type1(4));
-        set2.insert(Type2(5));
-        set2.insert(Type3(6));
+        set2.insert(Type1(4, 42));
+        set2.insert(Type2(5, 42));
+        set2.insert(Type3(6, 42));
 
         let set2_types = set2.types().clone();
         let mut archetype = Archetype::new(entity1, set1);
