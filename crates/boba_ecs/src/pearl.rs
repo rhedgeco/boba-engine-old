@@ -156,9 +156,19 @@ impl PearlTypes {
         }
     }
 
+    pub fn has_intersection(&self, other: &PearlTypes) -> bool {
+        for t in self.type_vec.iter() {
+            if other.contains_id(t) {
+                return false;
+            }
+        }
+
+        true
+    }
+
     /// Returns true if this set is a superset of `other`
     #[inline]
-    pub fn contains_types(&self, other: &PearlTypes) -> bool {
+    pub fn contains_set(&self, other: &PearlTypes) -> bool {
         // if this vec has less elements that the other vec
         // then this vec could not possibly contain the other
         if self.len() < other.len() {
@@ -430,9 +440,9 @@ mod tests {
         types3.insert::<Type1>().unwrap();
         types3.insert::<Type4>().unwrap();
 
-        assert!(types1.contains_types(&types2));
-        assert!(!types2.contains_types(&types1));
-        assert!(!types1.contains_types(&types3));
-        assert!(types3.contains_types(&types2));
+        assert!(types1.contains_set(&types2));
+        assert!(!types2.contains_set(&types1));
+        assert!(!types1.contains_set(&types3));
+        assert!(types3.contains_set(&types2));
     }
 }
