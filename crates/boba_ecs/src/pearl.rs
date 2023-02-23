@@ -2,13 +2,30 @@ use hashbrown::HashMap;
 use imposters::Imposter;
 use std::{any::TypeId, hash::Hash, mem::replace, vec::IntoIter};
 
-/// A collection of [`TypeId`] structs stored in sorted order
+pub trait Pearl: Send + Sync + 'static {}
+
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+pub struct PearlId(TypeId);
+
+impl PearlId {
+    #[inline]
+    pub fn of<T: Pearl>() -> Self {
+        PearlId(TypeId::of::<T>())
+    }
+
+    #[inline]
+    pub fn type_id(&self) -> TypeId {
+        self.0
+    }
+}
+
+/// A collection of [`PearlId`] structs stored in sorted order
 ///
 /// Useful for identification of what kinds of "pearls" are stored in an [`Archetype`]
 #[derive(Eq, Clone, Default)]
 pub struct PearlTypes {
-    type_set: HashMap<TypeId, usize>,
-    type_vec: Vec<TypeId>,
+    type_set: HashMap<PearlId, usize>,
+    type_vec: Vec<PearlId>,
 }
 
 impl Hash for PearlTypes {
@@ -36,13 +53,13 @@ impl PearlTypes {
 
     /// Creates a new `PearlTypes` struct initialized with a single type `T`
     #[inline]
-    pub fn new_single<T: 'static>() -> Self {
-        Self::new_single_id(TypeId::of::<T>())
+    pub fn new_single<T: Pearl>() -> Self {
+        Self::new_single_id(PearlId::of::<T>())
     }
 
     /// Creates a new `PearlTypes` struct initialized with `id`
     #[inline]
-    pub fn new_single_id(id: TypeId) -> Self {
+    pub fn new_single_id(id: PearlId) -> Self {
         let mut new = Self::new();
         new.type_set.insert(id, 0);
         new.type_vec.push(id);
@@ -63,13 +80,13 @@ impl PearlTypes {
 
     /// Returns `true` if the set contains the type `T`
     #[inline]
-    pub fn contains<T: 'static>(&self) -> bool {
-        self.contains_id(&TypeId::of::<T>())
+    pub fn contains<T: Pearl>(&self) -> bool {
+        self.contains_id(&PearlId::of::<T>())
     }
 
     /// Returns `true` if the set contains `id`
     #[inline]
-    pub fn contains_id(&self, id: &TypeId) -> bool {
+    pub fn contains_id(&self, id: &PearlId) -> bool {
         self.type_set.contains_key(id)
     }
 
@@ -77,15 +94,15 @@ impl PearlTypes {
     ///
     /// Returns `None` if type `T` does not exist
     #[inline]
-    pub fn index_of<T: 'static>(&self) -> Option<usize> {
-        self.index_of_id(&TypeId::of::<T>())
+    pub fn index_of<T: Pearl>(&self) -> Option<usize> {
+        self.index_of_id(&PearlId::of::<T>())
     }
 
     /// Returns `Some(usize)` with the index of `id`
     ///
     /// Returns `None` if `id` does not exist
     #[inline]
-    pub fn index_of_id(&self, id: &TypeId) -> Option<usize> {
+    pub fn index_of_id(&self, id: &PearlId) -> Option<usize> {
         Some(*self.type_set.get(id)?)
     }
 
@@ -93,15 +110,15 @@ impl PearlTypes {
     ///
     /// If the item is not in the set, returns `None`
     #[inline]
-    pub fn remove<T: 'static>(&mut self) -> Option<usize> {
-        self.remove_id(&TypeId::of::<T>())
+    pub fn remove<T: Pearl>(&mut self) -> Option<usize> {
+        self.remove_id(&PearlId::of::<T>())
     }
 
     /// Removes `id` from the set and returns `Some(usize)` with the index that it was removed from
     ///
     /// If the item is not in the set, returns `None`
     #[inline]
-    pub fn remove_id(&mut self, id: &TypeId) -> Option<usize> {
+    pub fn remove_id(&mut self, id: &PearlId) -> Option<usize> {
         let Some(index) = self.type_set.get(id) else { return None };
         self.type_vec.remove(*index);
         Some(*index)
@@ -111,15 +128,15 @@ impl PearlTypes {
     ///
     /// If the id already existed, returns `Err(usize)` with the index that it already exists at
     #[inline]
-    pub fn insert<T: 'static>(&mut self) -> Result<usize, usize> {
-        self.insert_id(TypeId::of::<T>())
+    pub fn insert<T: Pearl>(&mut self) -> Result<usize, usize> {
+        self.insert_id(PearlId::of::<T>())
     }
 
     /// Inserts `id` into this set and returns `Ok(usize)` with the index it was inserted to
     ///
     /// If the id already existed, returns `Err(usize)` with the index that it already exists at
     #[inline]
-    pub fn insert_id(&mut self, id: TypeId) -> Result<usize, usize> {
+    pub fn insert_id(&mut self, id: PearlId) -> Result<usize, usize> {
         match self.type_vec.binary_search(&id) {
             Ok(index) => Err(index),
             Err(index) => {
@@ -172,7 +189,7 @@ impl PearlTypes {
     }
 }
 
-/// A collection of pearls held in sorted order based on their [`TypeId`]
+/// A collection of pearls held in sorted order based on their [`PearlId`]
 ///
 /// Useful for moving pearls out of and into [`Archetype`] objects
 #[derive(Default)]
@@ -190,7 +207,7 @@ impl PearlSet {
 
     /// Creates a new pearl set initilized with `item`
     #[inline]
-    pub fn new_single<T: 'static>(item: T) -> Self {
+    pub fn new_single<T: Pearl>(item: T) -> Self {
         let mut pearl_vec = Vec::new();
         pearl_vec.push(Imposter::new(item));
         Self {
@@ -221,16 +238,16 @@ impl PearlSet {
     ///
     /// Returns `None` if the pearl does not exist
     #[inline]
-    pub fn get<T: 'static>(&self) -> Option<&T> {
-        self.get_imposter(&TypeId::of::<T>())?.downcast_ref::<T>()
+    pub fn get<T: Pearl>(&self) -> Option<&T> {
+        self.get_imposter(&PearlId::of::<T>())?.downcast_ref::<T>()
     }
 
     /// Returns a mutable reference to the pearl of type `T`
     ///
     /// Returns `None` if the pearl does not exist
     #[inline]
-    pub fn get_mut<T: 'static>(&mut self) -> Option<&mut T> {
-        self.get_imposter_mut(&TypeId::of::<T>())?
+    pub fn get_mut<T: Pearl>(&mut self) -> Option<&mut T> {
+        self.get_imposter_mut(&PearlId::of::<T>())?
             .downcast_mut::<T>()
     }
 
@@ -238,7 +255,7 @@ impl PearlSet {
     ///
     /// Returns `None` if the pearl does not exist
     #[inline]
-    pub fn get_imposter(&self, id: &TypeId) -> Option<&Imposter> {
+    pub fn get_imposter(&self, id: &PearlId) -> Option<&Imposter> {
         let Some(index) = self.type_link.index_of_id(id) else { return None };
         Some(&self.pearl_vec[index])
     }
@@ -247,7 +264,7 @@ impl PearlSet {
     ///
     /// Returns `None` if the pearl does not exist
     #[inline]
-    pub fn get_imposter_mut(&mut self, id: &TypeId) -> Option<&mut Imposter> {
+    pub fn get_imposter_mut(&mut self, id: &PearlId) -> Option<&mut Imposter> {
         let Some(index) = self.type_link.index_of_id(id) else { return None };
         Some(&mut self.pearl_vec[index])
     }
@@ -256,15 +273,15 @@ impl PearlSet {
     ///
     /// Returns `None` if the pearl does not exist
     #[inline]
-    pub fn remove<T: 'static>(&mut self) -> Option<T> {
-        self.remove_imposter(&TypeId::of::<T>())?.downcast::<T>()
+    pub fn remove<T: Pearl>(&mut self) -> Option<T> {
+        self.remove_imposter(&PearlId::of::<T>())?.downcast::<T>()
     }
 
     /// Removes and drops the pearl with `id` and returns `true`
     ///
     /// Returns `false` if the pearl does not exist
     #[inline]
-    pub fn drop_type(&mut self, id: &TypeId) -> bool {
+    pub fn drop_type(&mut self, id: &PearlId) -> bool {
         // dropped implicitly
         self.remove_imposter(id).is_some()
     }
@@ -273,7 +290,7 @@ impl PearlSet {
     ///
     /// Returns `None` if the pearl does not exist
     #[inline]
-    pub fn remove_imposter(&mut self, id: &TypeId) -> Option<Imposter> {
+    pub fn remove_imposter(&mut self, id: &PearlId) -> Option<Imposter> {
         let index = self.type_link.remove_id(id)?;
         Some(self.pearl_vec.remove(index))
     }
@@ -283,17 +300,17 @@ impl PearlSet {
     /// If there was an existing pearl of type `T`,
     /// then it will be replaced and this method will return it as `Some(T)`
     #[inline]
-    pub fn insert<T: 'static>(&mut self, item: T) -> Option<T> {
+    pub fn insert<T: Pearl>(&mut self, item: T) -> Option<T> {
         self.insert_imposter(Imposter::new(item))?.downcast::<T>()
     }
 
     /// Inserts `imposter` into the set, replacing it if necessary
     ///
-    /// If there was an existing [`Imposter`] with the same [`TypeId`],
+    /// If there was an existing [`Imposter`] with the same [`PearlId`],
     /// then it will be replaced and this method will return it as `Some(Imposter)`
     #[inline]
     pub fn insert_imposter(&mut self, imposter: Imposter) -> Option<Imposter> {
-        match self.type_link.insert_id(imposter.type_id()) {
+        match self.type_link.insert_id(PearlId(imposter.type_id())) {
             Ok(index) => {
                 self.pearl_vec.insert(index, imposter);
                 return None;
@@ -343,6 +360,11 @@ mod tests {
     struct Type3(u64);
     struct Type4(u128);
 
+    impl Pearl for Type1 {}
+    impl Pearl for Type2 {}
+    impl Pearl for Type3 {}
+    impl Pearl for Type4 {}
+
     #[test]
     fn pearl_types_sorted() {
         let mut types1 = PearlTypes::new();
@@ -381,8 +403,8 @@ mod tests {
             let imposter1 = &set1.pearl_vec[i];
             let type2 = set2.type_link.type_vec[i];
             let imposter2 = &set2.pearl_vec[i];
-            assert!(imposter1.type_id() == type1);
-            assert!(imposter2.type_id() == type2);
+            assert!(imposter1.type_id() == type1.type_id());
+            assert!(imposter2.type_id() == type2.type_id());
             assert!(type1 == type2);
             assert!(imposter1.type_id() == imposter2.type_id())
         }

@@ -1,8 +1,8 @@
-use std::{any::TypeId, collections::VecDeque};
+use std::collections::VecDeque;
 
 use indexmap::{map::Entry, IndexMap};
 
-use crate::{Archetype, PearlSet, PearlTypes};
+use crate::{Archetype, Pearl, PearlId, PearlSet, PearlTypes};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct EntityId(u64);
@@ -109,7 +109,7 @@ impl World {
         true
     }
 
-    pub fn add_pearl<T: 'static>(&mut self, entity: &EntityId, pearl: T) -> bool {
+    pub fn add_pearl<T: Pearl>(&mut self, entity: &EntityId, pearl: T) -> bool {
         self.change_archetype(entity, |mut set| {
             set.insert(pearl);
             set
@@ -123,9 +123,9 @@ impl World {
         })
     }
 
-    pub fn remove_pearl<T: 'static>(&mut self, entity: &EntityId) -> bool {
+    pub fn remove_pearl<T: Pearl>(&mut self, entity: &EntityId) -> bool {
         self.change_archetype(entity, |mut set| {
-            set.drop_type(&TypeId::of::<T>());
+            set.drop_type(&PearlId::of::<T>());
             set
         })
     }
