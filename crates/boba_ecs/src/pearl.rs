@@ -156,7 +156,7 @@ impl PearlTypes {
         }
     }
 
-    pub fn has_intersection(&self, other: &PearlTypes) -> bool {
+    pub fn intersects(&self, other: &PearlTypes) -> bool {
         for t in self.type_vec.iter() {
             if other.contains_id(t) {
                 return false;
