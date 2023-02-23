@@ -2,19 +2,26 @@ use hashbrown::HashMap;
 use imposters::Imposter;
 use std::{any::TypeId, hash::Hash, mem::replace, vec::IntoIter};
 
+/// An empty trait that covers types that are `Send + Sync + 'static`
+///
+/// This is automatically implemented for all types that meet the requirements
+/// and allows automatic integration with the [`PearlId`] api.
 pub trait Pearl: Send + Sync + 'static {}
 
 impl<T: Send + Sync + 'static> Pearl for T {}
 
+/// A lightweight wrapper around [`TypeId`] that is restricted to types that implement [`Pearl`]
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct PearlId(TypeId);
 
 impl PearlId {
+    /// Returns the pearl id for type `T`
     #[inline]
     pub fn of<T: Pearl>() -> Self {
         PearlId(TypeId::of::<T>())
     }
 
+    /// Returns the underlying [`TypeId`]
     #[inline]
     pub fn type_id(&self) -> TypeId {
         self.0
