@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use indexmap::{map::Entry, IndexMap};
 
-use crate::{Archetype, Pearl, PearlId, PearlSet, PearlTypes};
+use crate::{Archetype, Pearl, PearlId, PearlSet, PearlTypes, QueryItem};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct EntityId(u64);
@@ -52,6 +52,7 @@ pub struct World {
 }
 
 impl World {
+    /// Returns a new empty world
     pub fn new() -> Self {
         Self {
             entities: Vec::new(),
@@ -61,6 +62,7 @@ impl World {
         }
     }
 
+    /// Creates a new [`EntityId`] in this world
     pub fn new_entity(&mut self) -> EntityId {
         match self.dead.pop_front() {
             // if there is a dead entity in the queue, then we reuse it
@@ -74,14 +76,11 @@ impl World {
         }
     }
 
-    pub fn change_archetype(
-        &mut self,
-        entity: &EntityId,
-        f: impl FnOnce(PearlSet) -> PearlSet,
-    ) -> bool {
-        // if entity doesnt exist, return false
+    /// Modifies the pearl set of `entity` using the provided `f` if the entity exists
+    pub fn modify_pearls(&mut self, entity: &EntityId, f: impl FnOnce(PearlSet) -> PearlSet) {
+        // if entity doesnt exist, early return
         if !entity.is_alive(self) {
-            return false;
+            return;
         }
 
         let new_pearl_set = match self.entity_arch.get(entity) {
@@ -94,7 +93,7 @@ impl World {
         };
 
         if new_pearl_set.is_empty() {
-            return true;
+            return;
         }
 
         match self.archetypes.entry(new_pearl_set.types().clone()) {
@@ -105,31 +104,33 @@ impl World {
                 e.insert(Archetype::new(*entity, new_pearl_set));
             }
         }
-
-        true
     }
 
-    pub fn add_pearl<T: Pearl>(&mut self, entity: &EntityId, pearl: T) -> bool {
-        self.change_archetype(entity, |mut set| {
+    /// Adds a pearl of type `T` to `entity` if it exists
+    pub fn add_pearl<T: Pearl>(&mut self, entity: &EntityId, pearl: T) {
+        self.modify_pearls(entity, |mut set| {
             set.insert(pearl);
             set
         })
     }
 
-    pub fn add_pearl_set(&mut self, entity: &EntityId, mut pearl_set: PearlSet) -> bool {
-        self.change_archetype(entity, |set| {
+    /// Adds `pearl_set` to `entity` if it exists
+    pub fn add_pearl_set(&mut self, entity: &EntityId, mut pearl_set: PearlSet) {
+        self.modify_pearls(entity, |set| {
             pearl_set.insert_set(set);
             pearl_set
         })
     }
 
-    pub fn remove_pearl<T: Pearl>(&mut self, entity: &EntityId) -> bool {
-        self.change_archetype(entity, |mut set| {
+    /// Destroys a pearl of type `T` from `entity` if it exists
+    pub fn destroy_pearl<T: Pearl>(&mut self, entity: &EntityId) {
+        self.modify_pearls(entity, |mut set| {
             set.drop_type(&PearlId::of::<T>());
             set
         })
     }
 
+    /// Destroys the given `entity` if it exists in this world
     pub fn destroy(&mut self, entity: &EntityId) {
         let index = entity.uindex();
         // check if the entity is in the list and matches id
@@ -148,6 +149,35 @@ impl World {
         if let Some(arch_index) = self.entity_arch.remove(entity) {
             let (_, arch) = self.archetypes.get_index_mut(arch_index).unwrap();
             assert!(arch.destroy(entity));
+        }
+    }
+
+    /// Executes a raw query on this world, modifying the provided `query`
+    ///
+    /// # Panics
+    /// This function will panic if the `query` contains duplicate [`QueryItem`] requests
+    pub fn raw_query<'a, const SIZE: usize>(&'a self, query: &mut [QueryItem<'a>; SIZE]) {
+        if SIZE == 0 {
+            return;
+        }
+
+        let mut pearl_types = PearlTypes::new_single_id(query[0].id());
+        for i in 1..SIZE {
+            pearl_types
+                .insert_id(query[i].id())
+                .expect("Duplicate pearl types in raw query");
+        }
+
+        for arch in self.archetypes.values() {
+            if !arch.types().contains_set(&pearl_types) {
+                continue;
+            }
+
+            for i in 0..SIZE {
+                let query_item = &mut query[i];
+                let vec = arch.get_pearls(&query_item.id()).unwrap();
+                query_item.add_vec(vec);
+            }
         }
     }
 }
