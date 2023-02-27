@@ -1,9 +1,9 @@
 use std::any::TypeId;
 
-use imposters::collections::ImposterVec;
+use imposters::collections::vec::ImposterVec;
 use indexmap::{IndexMap, IndexSet};
 
-use crate::{EntityId, PearlSet, PearlTypes};
+use crate::{EntityId, PearlId, PearlSet, PearlTypes};
 
 /// A structure containing the data for all [`EntityId`] objects that share the same pearl structure
 #[derive(Default)]
@@ -47,6 +47,10 @@ impl Archetype {
     /// Returns the [`PearlTypes`] for this archetype
     pub fn types(&self) -> &PearlTypes {
         &self.types
+    }
+
+    pub fn get_pearls(&self, id: &PearlId) -> Option<&ImposterVec> {
+        self.pearl_vecs.get(&id.type_id())
     }
 
     /// Inserts `entity` into this archetype with the provided `pearl_set`
