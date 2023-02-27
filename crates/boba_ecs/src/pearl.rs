@@ -159,11 +159,11 @@ impl PearlTypes {
     pub fn intersects(&self, other: &PearlTypes) -> bool {
         for t in self.type_vec.iter() {
             if other.contains_id(t) {
-                return false;
+                return true;
             }
         }
 
-        true
+        false
     }
 
     /// Returns true if this set is a superset of `other`
