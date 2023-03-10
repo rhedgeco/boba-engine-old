@@ -152,11 +152,14 @@ impl World {
         }
     }
 
-    /// Executes a raw query on this world, modifying the provided `query`
+    /// Executes a raw query on this world, modifying the provided `query` items
+    ///
+    /// Only archetypes that contain all the pearls in the requested query will be returned.
+    /// This should generally be abstracted over to perform more idiomatic query operations.
     ///
     /// # Panics
     /// This function will panic if the `query` contains duplicate [`QueryItem`] requests
-    pub fn raw_query<'a, const SIZE: usize>(&'a self, query: &mut [QueryItem<'a>; SIZE]) {
+    pub fn raw_query<'a, const SIZE: usize>(&'a self, query: &'a mut [QueryItem<'a>; SIZE]) {
         if SIZE == 0 {
             return;
         }
