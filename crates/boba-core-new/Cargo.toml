@@ -1,0 +1,9 @@
+[package]
+name = "boba-core-new"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+hashbrown = "0.13"
+
+handle_map = { path = "../handle_map" }
