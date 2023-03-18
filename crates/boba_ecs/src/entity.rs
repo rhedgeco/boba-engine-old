@@ -1,3 +1,10 @@
+use std::{
+    collections::VecDeque,
+    sync::atomic::{AtomicU16, Ordering},
+};
+
+use reterse::return_if;
+
 /// An entity is a link into specific components of a [`World`][crate::World]
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct Entity(u64);
@@ -72,5 +79,92 @@ impl Entity {
     #[inline]
     pub fn metadata(self) -> u16 {
         (self.0 >> Self::META_BITS) as u16
+    }
+}
+
+struct EntityEntry<T> {
+    entity: Entity,
+    data: T, // to be used later
+}
+
+impl<T> EntityEntry<T> {
+    pub fn new(entity: Entity, data: T) -> Self {
+        Self { entity, data }
+    }
+}
+
+pub struct EntityManager<T> {
+    id: u16,
+    entities: Vec<EntityEntry<T>>,
+    open_entities: VecDeque<usize>,
+}
+
+impl<T> Default for EntityManager<T> {
+    #[inline]
+    fn default() -> Self {
+        static ID_GEN: AtomicU16 = AtomicU16::new(0);
+
+        Self {
+            id: ID_GEN.fetch_add(1, Ordering::Relaxed),
+            entities: Default::default(),
+            open_entities: Default::default(),
+        }
+    }
+}
+
+impl<T> EntityManager<T> {
+    #[inline]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn create(&mut self, data: T) -> Entity {
+        match self.open_entities.pop_front() {
+            Some(index) => {
+                let entry = &self.entities[index];
+                entry.entity
+            }
+            None => {
+                let index = self.entities.len() as u32;
+                if index > u32::MAX {
+                    panic!("Entity Capacity Overflow");
+                }
+
+                let entity = unsafe { Entity::from_raw_parts(index, 0, self.id) };
+                self.entities.push(EntityEntry::new(entity, data));
+                entity
+            }
+        }
+    }
+
+    pub fn contains(&self, entity: &Entity) -> bool {
+        match self.entities.get(entity.uindex()) {
+            Some(other) => other.entity.into_raw() == entity.into_raw(),
+            None => false,
+        }
+    }
+
+    pub fn get_data(&self, entity: &Entity) -> Option<&T> {
+        let entry = self.entities.get(entity.uindex())?;
+        return_if!(&entry.entity != entity => None);
+        Some(&entry.data)
+    }
+
+    pub fn get_data_mut(&mut self, entity: &Entity) -> Option<&mut T> {
+        let entry = self.entities.get_mut(entity.uindex())?;
+        return_if!(&entry.entity != entity => None);
+        Some(&mut entry.data)
+    }
+
+    pub fn destroy(&mut self, entity: &Entity) -> bool {
+        match self.entities.get_mut(entity.uindex()) {
+            Some(other) if &other.entity == entity => {
+                let (index, gen, meta) = other.entity.into_raw_parts();
+                other.entity = unsafe { Entity::from_raw_parts(index, gen.wrapping_add(1), meta) };
+                self.open_entities.push_back(entity.uindex());
+                return true;
+            }
+            _ => return false,
+        }
     }
 }
