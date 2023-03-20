@@ -28,7 +28,7 @@ impl PearlId {
 pub trait Pearl: Send + Sync + 'static {}
 impl<T: Send + Sync + 'static> Pearl for T {}
 
-#[derive(Default)]
+#[derive(Default, Clone, Debug, Eq)]
 pub struct PearlIdSet {
     ids: Vec<PearlId>,
 }
