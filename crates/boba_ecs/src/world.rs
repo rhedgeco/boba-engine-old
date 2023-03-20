@@ -50,13 +50,19 @@ impl Archetype {
         index
     }
 
-    pub fn swap_destroy(&mut self, index: usize) -> Entity {
+    pub fn swap_destroy(&mut self, index: usize) -> Option<Entity> {
         assert!(index < self.len);
         for vec in self.pearls.iter_mut() {
             vec.swap_drop(index);
         }
         self.len -= 1;
-        self.entities.swap_remove(index)
+        self.entities.swap_remove(index);
+
+        if self.entities.len() == 0 {
+            return None;
+        }
+
+        Some(self.entities[index])
     }
 }
 
@@ -108,11 +114,89 @@ impl World {
         let Some(link_data) = self.entities.destroy(entity) else { return false };
 
         if link_data.active {
-            let swapped_entity = self.archetypes[link_data.archetype].swap_destroy(link_data.pearl);
+            let Some(swapped_entity) =
+                self.archetypes[link_data.archetype].swap_destroy(link_data.pearl) else { return true };
             let swapped_data = self.entities.get_data_mut(&swapped_entity).unwrap();
             swapped_data.pearl = link_data.pearl;
         }
 
         true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug)]
+    struct Struct0(u32);
+
+    #[derive(Debug)]
+    struct Struct1(u32);
+
+    #[derive(Debug)]
+    struct Struct2(u32);
+
+    #[derive(Debug)]
+    struct Struct3(u32);
+
+    #[test]
+    fn create_entity() {
+        let mut world = World::new();
+        let entity = world.create_entity();
+        assert!(world.has_entity(&entity));
+    }
+
+    #[test]
+    fn create_entity_with_pearls() {
+        let mut pearl_set = PearlSet::new_with(Struct0(42));
+        pearl_set.insert(Struct1(43)).unwrap();
+        pearl_set.insert(Struct2(44)).unwrap();
+        pearl_set.insert(Struct3(45)).unwrap();
+        let id_set = pearl_set.id_set().clone();
+
+        let mut world = World::new();
+        let entity = world.create_entity_with_pearls(pearl_set);
+        assert!(world.has_entity(&entity));
+
+        assert!(world.archetypes.contains_key(&id_set));
+        let pearl_link = world.entities.get_data(&entity).unwrap();
+        assert!(pearl_link.active);
+        assert!(world.archetypes[pearl_link.archetype].len == 1);
+    }
+
+    #[test]
+    fn destroy_entities() {
+        let mut world = World::new();
+        let entity0 = world.create_entity();
+        let entity1 = world.create_entity();
+        let entity2 = world.create_entity();
+
+        assert!(world.destroy_entity(&entity1));
+        let entity3 = world.create_entity();
+
+        assert!(world.has_entity(&entity0));
+        assert!(!world.has_entity(&entity1));
+        assert!(world.has_entity(&entity2));
+        assert!(world.has_entity(&entity3));
+    }
+
+    #[test]
+    fn destroy_entity_with_pearls() {
+        let mut pearl_set = PearlSet::new_with(Struct0(42));
+        pearl_set.insert(Struct1(43)).unwrap();
+        pearl_set.insert(Struct2(44)).unwrap();
+        pearl_set.insert(Struct3(45)).unwrap();
+        let id_set = pearl_set.id_set().clone();
+
+        let mut world = World::new();
+        let entity = world.create_entity_with_pearls(pearl_set);
+        assert!(world.has_entity(&entity));
+
+        world.destroy_entity(&entity);
+        assert!(!world.has_entity(&entity));
+
+        let archetype = world.archetypes.get(&id_set).unwrap();
+        assert!(archetype.len == 0);
     }
 }
