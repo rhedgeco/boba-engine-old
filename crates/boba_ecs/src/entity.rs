@@ -93,13 +93,13 @@ impl<T> EntityEntry<T> {
     }
 }
 
-pub struct EntityManager<T> {
+pub struct EntityManager<T: Copy> {
     id: u16,
     entities: Vec<EntityEntry<T>>,
     open_entities: VecDeque<usize>,
 }
 
-impl<T> Default for EntityManager<T> {
+impl<T: Copy> Default for EntityManager<T> {
     #[inline]
     fn default() -> Self {
         static ID_GEN: AtomicU16 = AtomicU16::new(0);
@@ -112,7 +112,7 @@ impl<T> Default for EntityManager<T> {
     }
 }
 
-impl<T> EntityManager<T> {
+impl<T: Copy> EntityManager<T> {
     #[inline]
     pub fn new() -> Self {
         Self::default()
@@ -144,6 +144,12 @@ impl<T> EntityManager<T> {
         }
     }
 
+    pub fn swap_data(&mut self, entity: &Entity, new_data: T) -> Option<T> {
+        let entry = self.entities.get_mut(entity.uindex())?;
+        return_if!(&entry.entity != entity => None);
+        Some(std::mem::replace(&mut entry.data, new_data))
+    }
+
     pub fn get_data(&self, entity: &Entity) -> Option<&T> {
         let entry = self.entities.get(entity.uindex())?;
         return_if!(&entry.entity != entity => None);
@@ -156,15 +162,15 @@ impl<T> EntityManager<T> {
         Some(&mut entry.data)
     }
 
-    pub fn destroy(&mut self, entity: &Entity) -> bool {
+    pub fn destroy(&mut self, entity: &Entity) -> Option<T> {
         match self.entities.get_mut(entity.uindex()) {
             Some(other) if &other.entity == entity => {
                 let (index, gen, meta) = other.entity.into_raw_parts();
                 other.entity = unsafe { Entity::from_raw_parts(index, gen.wrapping_add(1), meta) };
                 self.open_entities.push_back(entity.uindex());
-                return true;
+                return Some(other.data);
             }
-            _ => return false,
+            _ => return None,
         }
     }
 }
