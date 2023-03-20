@@ -49,7 +49,7 @@ impl Archetype {
         let index = self.len;
         self.entities.push(entity);
         for (i, imposter) in set.into_vec().into_iter().enumerate() {
-            self.pearls[i].push_imposter(imposter).unwrap();
+            self.pearls[i].push_imposter(imposter).ok().unwrap();
         }
         self.len += 1;
         index
