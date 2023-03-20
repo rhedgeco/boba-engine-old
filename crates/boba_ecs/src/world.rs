@@ -40,9 +40,14 @@ impl Archetype {
         }
     }
 
-    pub fn insert(&mut self, set: PearlSet) -> usize {
+    /// Inserts a pearl set into the archetype and associates it with an `entity`
+    ///
+    /// # Panics
+    /// Will panic if the pearl set does not match this archetypes pearl set, leaving the archetype in an undefined state.
+    pub fn insert(&mut self, entity: Entity, set: PearlSet) -> usize {
         assert!(self.pearls.len() == set.id_set().len());
         let index = self.len;
+        self.entities.push(entity);
         for (i, imposter) in set.into_vec().into_iter().enumerate() {
             self.pearls[i].push_imposter(imposter).unwrap();
         }
@@ -50,6 +55,12 @@ impl Archetype {
         index
     }
 
+    /// Destroys the entity at a given index and swaps it with the last entity.
+    ///
+    /// A copy of the swapped entity is returned.
+    ///
+    /// # Panics
+    /// Panics if `index` is out of bounds
     pub fn swap_destroy(&mut self, index: usize) -> Option<Entity> {
         assert!(index < self.len);
         for vec in self.pearls.iter_mut() {
@@ -94,7 +105,7 @@ impl World {
             Entry::Occupied(e) => {
                 let archetype_index = e.index();
                 let archetype = e.into_mut();
-                let pearl_index = archetype.insert(set);
+                let pearl_index = archetype.insert(entity, set);
                 (archetype_index, pearl_index)
             }
             Entry::Vacant(e) => {
