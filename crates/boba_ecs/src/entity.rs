@@ -84,7 +84,7 @@ impl Entity {
 
 struct EntityEntry<T> {
     entity: Entity,
-    data: T, // to be used later
+    data: T,
 }
 
 impl<T> EntityEntry<T> {
@@ -93,6 +93,7 @@ impl<T> EntityEntry<T> {
     }
 }
 
+/// A collection of [`Entity`] objects stored for fast lookup times
 pub struct EntityManager<T: Copy> {
     id: u16,
     entities: Vec<EntityEntry<T>>,
@@ -100,6 +101,7 @@ pub struct EntityManager<T: Copy> {
 }
 
 impl<T: Copy> Default for EntityManager<T> {
+    /// Creates a new entity manager with a unique id
     #[inline]
     fn default() -> Self {
         static ID_GEN: AtomicU16 = AtomicU16::new(0);
@@ -113,11 +115,18 @@ impl<T: Copy> Default for EntityManager<T> {
 }
 
 impl<T: Copy> EntityManager<T> {
+    /// Creates a new entity manager with a unique id
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns the id for this manager
+    pub fn id(&self) -> u16 {
+        self.id
+    }
+
+    /// Returns a new unique entity associated this manager
     pub fn create(&mut self, data: T) -> Entity {
         match self.open_entities.pop_front() {
             Some(index) => {
@@ -137,6 +146,7 @@ impl<T: Copy> EntityManager<T> {
         }
     }
 
+    /// Returns true if `entity` is valid for this manager
     pub fn contains(&self, entity: &Entity) -> bool {
         match self.entities.get(entity.uindex()) {
             Some(other) => other.entity.into_raw() == entity.into_raw(),
@@ -144,24 +154,36 @@ impl<T: Copy> EntityManager<T> {
         }
     }
 
-    pub fn swap_data(&mut self, entity: &Entity, new_data: T) -> Option<T> {
+    /// Replaces the data stored at `entity`, returning the old data as `Some(T)`.
+    ///
+    /// If `entity` is invalid for this manager then nothing is changed and `None` is returned.
+    pub fn replace_data(&mut self, entity: &Entity, new_data: T) -> Option<T> {
         let entry = self.entities.get_mut(entity.uindex())?;
         return_if!(&entry.entity != entity => None);
         Some(std::mem::replace(&mut entry.data, new_data))
     }
 
+    /// Returns a reference to the data associated with `entity`.
+    ///
+    /// Returns `None` if `entity` is invalid for this manager.
     pub fn get_data(&self, entity: &Entity) -> Option<&T> {
         let entry = self.entities.get(entity.uindex())?;
         return_if!(&entry.entity != entity => None);
         Some(&entry.data)
     }
 
+    /// Returns a mutable reference to the data associated with `entity`.
+    ///
+    /// Returns `None` if `entity` is invalid for this manager.
     pub fn get_data_mut(&mut self, entity: &Entity) -> Option<&mut T> {
         let entry = self.entities.get_mut(entity.uindex())?;
         return_if!(&entry.entity != entity => None);
         Some(&mut entry.data)
     }
 
+    /// Destroys `entity`, returning its data as `Some(T)`.
+    ///
+    /// Returns `None` if `entity` is invalid for this manager.
     pub fn destroy(&mut self, entity: &Entity) -> Option<T> {
         match self.entities.get_mut(entity.uindex()) {
             Some(other) if &other.entity == entity => {

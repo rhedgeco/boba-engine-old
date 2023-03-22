@@ -1,7 +1,6 @@
-use imposters::collections::vec::ImposterVec;
 use indexmap::{map::Entry, IndexMap};
 
-use crate::{Entity, EntityManager, PearlIdSet, PearlSet};
+use crate::{Archetype, Entity, EntityManager, PearlIdSet, PearlSet};
 
 #[derive(Default, Clone, Copy)]
 struct PearlLink {
@@ -20,63 +19,6 @@ impl PearlLink {
     }
 }
 
-struct Archetype {
-    len: usize,
-    entities: Vec<Entity>,
-    pearls: Vec<ImposterVec>,
-}
-
-impl Archetype {
-    pub fn new(entity: Entity, set: PearlSet) -> Self {
-        let mut pearls = Vec::new();
-        for imposter in set.into_vec().into_iter() {
-            pearls.push(ImposterVec::from_imposter(imposter));
-        }
-
-        Self {
-            len: 1,
-            entities: vec![entity],
-            pearls,
-        }
-    }
-
-    /// Inserts a pearl set into the archetype and associates it with an `entity`
-    ///
-    /// # Panics
-    /// Will panic if the pearl set does not match this archetypes pearl set, leaving the archetype in an undefined state.
-    pub fn insert(&mut self, entity: Entity, set: PearlSet) -> usize {
-        assert!(self.pearls.len() == set.id_set().len());
-        let index = self.len;
-        self.entities.push(entity);
-        for (i, imposter) in set.into_vec().into_iter().enumerate() {
-            self.pearls[i].push_imposter(imposter).ok().unwrap();
-        }
-        self.len += 1;
-        index
-    }
-
-    /// Destroys the entity at a given index and swaps it with the last entity.
-    ///
-    /// A copy of the swapped entity is returned.
-    ///
-    /// # Panics
-    /// Panics if `index` is out of bounds
-    pub fn swap_destroy(&mut self, index: usize) -> Option<Entity> {
-        assert!(index < self.len);
-        for vec in self.pearls.iter_mut() {
-            vec.swap_drop(index);
-        }
-        self.len -= 1;
-        self.entities.swap_remove(index);
-
-        if self.entities.len() == 0 {
-            return None;
-        }
-
-        Some(self.entities[index])
-    }
-}
-
 #[derive(Default)]
 pub struct World {
     entities: EntityManager<PearlLink>,
@@ -84,54 +26,61 @@ pub struct World {
 }
 
 impl World {
+    /// Creates a new world
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Creates and returns a new unique [`Entity`] for this world.
     #[inline]
     pub fn create_entity(&mut self) -> Entity {
         self.entities.create(Default::default())
     }
 
+    /// Returns `true` if `entity` is valid and alive in this world
     #[inline]
     pub fn has_entity(&self, entity: &Entity) -> bool {
         self.entities.contains(entity)
     }
 
+    /// Creates and returns a new unique [`Entity`] in this world with an associated [`PearlSet`]
     pub fn create_entity_with_pearls(&mut self, set: PearlSet) -> Entity {
         let entity = self.entities.create(Default::default());
-        let (archetype, pearl) = match self.archetypes.entry(set.id_set().clone()) {
+        let link = match self.archetypes.entry(set.id_set().clone()) {
             Entry::Occupied(e) => {
                 let archetype_index = e.index();
                 let archetype = e.into_mut();
                 let pearl_index = archetype.insert(entity, set);
-                (archetype_index, pearl_index)
+                PearlLink::new(archetype_index, pearl_index)
             }
             Entry::Vacant(e) => {
                 let archetype = Archetype::new(entity, set);
                 let archetype_index = e.index();
                 e.insert(archetype);
-                (archetype_index, 0)
+                PearlLink::new(archetype_index, 0)
             }
         };
 
-        self.entities
-            .swap_data(&entity, PearlLink::new(archetype, pearl));
+        self.entities.replace_data(&entity, link);
         entity
     }
 
+    /// Destroys the `entity` in this world, returning `true`.
+    ///
+    /// Returns `false` if `entity` was already invalid for this world.
     pub fn destroy_entity(&mut self, entity: &Entity) -> bool {
-        let Some(link_data) = self.entities.destroy(entity) else { return false };
-
-        if link_data.active {
-            let Some(swapped_entity) =
-                self.archetypes[link_data.archetype].swap_destroy(link_data.pearl) else { return true };
-            let swapped_data = self.entities.get_data_mut(&swapped_entity).unwrap();
-            swapped_data.pearl = link_data.pearl;
+        match self.entities.destroy(entity) {
+            None => false,
+            Some(link) if link.active => {
+                let archetype = &mut self.archetypes[link.archetype];
+                let Some(swapped_entity) = archetype.swap_destroy(link.pearl) else { return true };
+                let swapped_data = self.entities.get_data_mut(&swapped_entity).unwrap();
+                swapped_data.pearl = link.pearl;
+                true
+            }
+            _ => true,
         }
-
-        true
     }
 }
 
@@ -173,7 +122,7 @@ mod tests {
         assert!(world.archetypes.contains_key(&id_set));
         let pearl_link = world.entities.get_data(&entity).unwrap();
         assert!(pearl_link.active);
-        assert!(world.archetypes[pearl_link.archetype].len == 1);
+        assert!(world.archetypes[pearl_link.archetype].len() == 1);
     }
 
     #[test]
@@ -208,6 +157,6 @@ mod tests {
         assert!(!world.has_entity(&entity));
 
         let archetype = world.archetypes.get(&id_set).unwrap();
-        assert!(archetype.len == 0);
+        assert!(archetype.len() == 0);
     }
 }
