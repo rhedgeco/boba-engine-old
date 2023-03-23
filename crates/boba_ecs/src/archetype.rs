@@ -75,7 +75,9 @@ impl Archetype {
     }
 
     /// Removes an entity and its pearls at a given index, swapping them for the last entity in the layout.
-    /// The pearls and the swapped entity will be returned as `Removed { set, swapped }`
+    /// The pearls and the swapped entity will be returned as `( set, swapped )`
+    ///
+    /// See `swap_destroy` for reference on entity swapping.
     pub fn swap_remove(&mut self, index: usize) -> (PearlSet, Option<Entity>) {
         assert!(index < self.len());
 
