@@ -1,7 +1,6 @@
 use std::{any::TypeId, hash::Hash, mem::replace};
 
 use imposters::Imposter;
-use reterse::{continue_if, return_if, return_if_err, return_if_none};
 
 /// A lightweight wrapper around [`TypeId`] that is restricted to types that implement [`Pearl`]
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
@@ -146,7 +145,7 @@ impl PearlIdSet {
     /// Returns `None` if `id` does not exist in this set
     #[inline]
     pub fn remove_id(&mut self, id: &PearlId) -> Option<usize> {
-        let index = return_if_err!(self.index_of_id(id), _ => None);
+        let index = self.index_of_id(id).ok()?;
         self.ids.remove(index);
         Some(index)
     }
@@ -161,26 +160,33 @@ impl PearlIdSet {
     pub fn contains_set(&self, other: &PearlIdSet) -> bool {
         // if the other set is larger than this one
         // then this set could not possibly contain the other
-        return_if!(self.len() < other.len() => false);
+        if self.len() < other.len() {
+            return false;
+        }
 
         // get an iterator over the other set and get its first id
         // if there are no ids in the other set, then it is automatically a subset
         let mut other_iter = other.as_slice().iter();
-        let mut find_type = return_if_none!(other_iter.next() => true);
+        let Some(mut find_type) = other_iter.next() else { return true };
 
         // iterate over all of self ids to search for ids in other
         // since all ids are always sorted, we can do this in O(n) time
         for t in self.as_slice().iter() {
             // if we find a type that is greater than the one we are searching for
             // we can assume that it is not in this vec because the vec is in sorted order
-            return_if!(t > find_type => false);
+            if t > find_type {
+                return false;
+            }
 
             // if the ids dont match, continue to the next item in self types
-            continue_if!(t != find_type);
+            if t != find_type {
+                continue;
+            }
 
             // if the ids do match, retrieve the next id we need to search for
             // if it is None, that means we found all the items and return true
-            find_type = return_if_none!(other_iter.next() => true);
+            let Some(new_find_type) = other_iter.next() else { return true };
+            find_type = new_find_type;
         }
 
         // false is only returned here when we have exhausted all self ids

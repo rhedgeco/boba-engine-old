@@ -1,5 +1,4 @@
 use indexmap::{map::Entry, IndexMap};
-use reterse::return_if;
 
 use crate::{
     archetype::{ArchRemoved, Archetype},
@@ -59,7 +58,10 @@ impl World {
     pub fn modify_entity(&mut self, entity: &Entity, f: impl FnOnce(&mut PearlSet)) {
         // check if the entity is valid while getting the indexer
         let Some(indexer) = self.entities.get_data(entity) else { return };
-        return_if!(!indexer.active => ());
+        if indexer.active {
+            return;
+        }
+
         let archetype_index = indexer.archetype;
         let pearl_index = indexer.pearl;
 
@@ -85,7 +87,9 @@ impl World {
     pub fn destroy_entity(&mut self, entity: &Entity) {
         // check if the entity is valid while getting the indexer
         let Some(indexer) = self.entities.destroy(entity) else { return };
-        return_if!(!indexer.active => ());
+        if indexer.active {
+            return;
+        }
 
         // get the archetype and swap destroy the entity, fixing the swapped index after
         let archetype = &mut self.archetypes[indexer.archetype];

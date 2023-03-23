@@ -3,8 +3,6 @@ use std::{
     sync::atomic::{AtomicU16, Ordering},
 };
 
-use reterse::return_if;
-
 /// An entity is a link into specific components of a [`World`][crate::World]
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
 pub struct Entity(u64);
@@ -159,7 +157,10 @@ impl<T: Copy> EntityManager<T> {
     /// If `entity` is invalid for this manager then nothing is changed and `None` is returned.
     pub fn replace_data(&mut self, entity: &Entity, new_data: T) -> Option<T> {
         let entry = self.entities.get_mut(entity.uindex())?;
-        return_if!(&entry.entity != entity => None);
+        if &entry.entity != entity {
+            return None;
+        }
+
         Some(std::mem::replace(&mut entry.data, new_data))
     }
 
@@ -168,7 +169,10 @@ impl<T: Copy> EntityManager<T> {
     /// Returns `None` if `entity` is invalid for this manager.
     pub fn get_data(&self, entity: &Entity) -> Option<&T> {
         let entry = self.entities.get(entity.uindex())?;
-        return_if!(&entry.entity != entity => None);
+        if &entry.entity != entity {
+            return None;
+        }
+
         Some(&entry.data)
     }
 
@@ -177,7 +181,10 @@ impl<T: Copy> EntityManager<T> {
     /// Returns `None` if `entity` is invalid for this manager.
     pub fn get_data_mut(&mut self, entity: &Entity) -> Option<&mut T> {
         let entry = self.entities.get_mut(entity.uindex())?;
-        return_if!(&entry.entity != entity => None);
+        if &entry.entity != entity {
+            return None;
+        }
+
         Some(&mut entry.data)
     }
 
