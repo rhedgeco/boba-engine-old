@@ -1,6 +1,6 @@
 use indexmap::{map::Entry, IndexMap};
 
-use crate::{archetype::Archetype, Entity, EntityManager, PearlIdSet, PearlSet};
+use crate::{archetype::Archetype, Entity, EntityManager, Pearl, PearlIdSet, PearlSet};
 
 #[derive(Default, Clone, Copy)]
 struct ArchLink {
@@ -19,7 +19,7 @@ impl ArchLink {
     }
 }
 
-/// The central storage point for [`Entity`] and [`Pearl`][crate::Pearl] structs.
+/// The central storage point for [`Entity`] and [`Pearl`] structs.
 /// This is the point where all ECS operations will be performed.
 #[derive(Default)]
 pub struct World {
@@ -53,6 +53,9 @@ impl World {
         entity
     }
 
+    /// Modifies the pearls in `entity` using the provided `f`.
+    ///
+    /// If `entity` is not valid for this world, nothing will happen and `f` will not execute.
     pub fn modify_entity(&mut self, entity: &Entity, f: impl FnOnce(&mut PearlSet)) {
         // check if the entity is valid while getting the indexer
         let Some(indexer) = self.entities.get_data(entity) else { return };
@@ -77,6 +80,30 @@ impl World {
         let Some(swapped_entity) = swapped else { return };
         let swapped_data = self.entities.get_data_mut(&swapped_entity).unwrap();
         swapped_data.pearl = pearl_index;
+    }
+
+    /// Inserts or replaces a pearl in a given entity.
+    ///
+    /// This is a simple wrapper for `modify_entity` under the hood.
+    #[inline]
+    pub fn insert_or_replace_pearl<T: Pearl>(&mut self, entity: &Entity, pearl: T) -> Option<T> {
+        let mut replaced = None;
+        self.modify_entity(entity, |set| {
+            replaced = set.insert_or_replace(pearl);
+        });
+        replaced
+    }
+
+    /// Removes a pearl in a given entity.
+    ///
+    /// This is a simple wrapper for `modify_entity` under the hood.
+    #[inline]
+    pub fn remove_pearl<T: Pearl>(&mut self, entity: &Entity) -> Option<T> {
+        let mut removed = None;
+        self.modify_entity(entity, |set| {
+            removed = set.remove::<T>();
+        });
+        removed
     }
 
     /// Destroys the `entity` in this world, returning `true`.
