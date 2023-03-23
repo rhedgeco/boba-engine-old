@@ -1,10 +1,6 @@
 use indexmap::{map::Entry, IndexMap};
 
-use crate::{
-    archetype::{ArchRemoved, Archetype},
-    pearls::{PearlIdSet, PearlSet},
-    Entity, EntityManager,
-};
+use crate::{archetype::Archetype, Entity, EntityManager, PearlIdSet, PearlSet};
 
 #[derive(Default, Clone, Copy)]
 struct ArchLink {
@@ -67,7 +63,7 @@ impl World {
 
         // get the archetype and swap remove the entities data
         let archetype = &mut self.archetypes[archetype_index];
-        let ArchRemoved { mut set, swapped } = archetype.swap_remove(pearl_index);
+        let (mut set, swapped) = archetype.swap_remove(pearl_index);
 
         // execute the modify method
         f(&mut set);

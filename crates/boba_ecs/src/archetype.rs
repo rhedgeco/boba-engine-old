@@ -1,15 +1,6 @@
 use imposters::collections::vec::ImposterVec;
 
-use crate::{
-    pearls::{PearlIdSet, PearlSet},
-    Entity,
-};
-
-/// Holds all the data relevant to an entity being removed from an archetype
-pub struct ArchRemoved {
-    pub set: PearlSet,
-    pub swapped: Option<Entity>,
-}
+use crate::{Entity, PearlIdSet, PearlSet};
 
 /// A collection of entities that share a common pearl set
 pub struct Archetype {
@@ -84,8 +75,8 @@ impl Archetype {
     }
 
     /// Removes an entity and its pearls at a given index, swapping them for the last entity in the layout.
-    /// The pearls and the swapped entity will be returned as `ArchRemoved { set, swapped }`
-    pub fn swap_remove(&mut self, index: usize) -> ArchRemoved {
+    /// The pearls and the swapped entity will be returned as `Removed { set, swapped }`
+    pub fn swap_remove(&mut self, index: usize) -> (PearlSet, Option<Entity>) {
         assert!(index < self.len());
 
         // remove the entity
@@ -104,6 +95,6 @@ impl Archetype {
         // get the swapped entity id if there is one
         let swapped = self.entities.get(index).copied();
 
-        ArchRemoved { set, swapped }
+        (set, swapped)
     }
 }
