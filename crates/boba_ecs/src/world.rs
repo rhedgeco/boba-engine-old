@@ -19,6 +19,8 @@ impl ArchLink {
     }
 }
 
+/// The central storage point for [`Entity`] and [`Pearl`][crate::Pearl] structs.
+/// This is the point where all ECS operations will be performed.
 #[derive(Default)]
 pub struct World {
     entities: EntityManager<ArchLink>,
