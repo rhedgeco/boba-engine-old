@@ -143,6 +143,37 @@ impl World {
     }
 }
 
+/// A container struct to provide information on shared and exclusive pearls in a [`WorldView`]
+pub struct WorldAlias {
+    pub shared: PearlIdSet,
+    pub exclusive: PearlIdSet,
+}
+
+pub trait WorldView {
+    /// The type of item to be returned from the `Self::Iter`
+    type Item;
+
+    /// The type of iterator to be returned from `Self::fetch`
+    type Iter: Iterator<Item = Option<Self::Item>>;
+
+    /// Builds an aliaser to identify what other views it may be compatible to run alongside with it
+    fn build_alias() -> WorldAlias;
+
+    /// Used to fetch data from the provided archetypes
+    ///
+    /// # Implementing
+    /// When implementing this function, it is vitally important that aliasing rules are followed manually.
+    /// The `build_alias` method will be called once for this view, and should be used to define what types
+    /// of aliasing are allowed. If *shared* access is specified for an item, it must not be accessed mutably.
+    /// Mutable access should only be done if it is specified in the *exclusive* section of the world alias.
+    ///
+    /// # Safety
+    /// This method may return mutable references to data in the shared archetype slice.
+    /// The caller must ensure that the rules specified in the `build_alias` method are followed
+    /// as to avoid multiple mutable aliasing over the same data.
+    unsafe fn fetch(archetypes: &[Archetype]) -> Self::Iter;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
