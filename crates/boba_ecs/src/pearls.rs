@@ -1,4 +1,4 @@
-use std::{any::TypeId, hash::Hash};
+use std::{any::TypeId, hash::Hash, mem::replace};
 
 use imposters::Imposter;
 use reterse::{continue_if, return_if, return_if_err, return_if_none};
@@ -28,6 +28,7 @@ impl PearlId {
 pub trait Pearl: Send + Sync + 'static {}
 impl<T: Send + Sync + 'static> Pearl for T {}
 
+/// A collection of [`PearlId`] structs stored for quick access
 #[derive(Default, Clone, Debug, Eq)]
 pub struct PearlIdSet {
     ids: Vec<PearlId>,
@@ -50,16 +51,19 @@ impl PartialEq for PearlIdSet {
 }
 
 impl PearlIdSet {
+    /// Returns a new empty set
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns a new set containing type `T`
     #[inline]
     pub fn new_with<T: Pearl>() -> Self {
         Self::new_with_id(PearlId::of::<T>())
     }
 
+    /// Returns a new set containing `id`
     #[inline]
     pub fn new_with_id(id: PearlId) -> Self {
         let mut ids = Vec::new();
@@ -67,44 +71,57 @@ impl PearlIdSet {
         Self { ids }
     }
 
+    /// Returns the length of the set
     #[inline]
     pub fn len(&self) -> usize {
         self.ids.len()
     }
 
+    /// Returns `true` if the set is empty
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.ids.is_empty()
     }
 
+    /// Returns the index of type `T` in this set as `Ok(usize)`.
+    ///
+    /// Returns `Err(usize)` if the id doesnt exist, where usize is where the index *would* be
     #[inline]
     pub fn index_of<T: Pearl>(&self) -> Result<usize, usize> {
         self.index_of_id(&PearlId::of::<T>())
     }
 
+    /// Returns the index of `id` in this set as `Ok(usize)`.
+    ///
+    /// Returns `Err(usize)` if the id doesnt exist, where usize is where the index *would* be
     #[inline]
     pub fn index_of_id(&self, id: &PearlId) -> Result<usize, usize> {
         self.ids.binary_search(&id)
     }
 
+    /// Returns `true` if type `T` is in this set
     #[inline]
     pub fn contains<T: Pearl>(&self) -> bool {
         self.contains_id(&PearlId::of::<T>())
     }
 
+    /// Returns `true` if `id` is in this set
     #[inline]
     pub fn contains_id(&self, id: &PearlId) -> bool {
         self.index_of_id(id).is_ok()
     }
 
+    /// Inserts type `T` into this set, returning its index as `Ok(usize)`
+    ///
+    /// If type `T` already exists in this set, returns `Err(usize)` with its current index.
     #[inline]
     pub fn insert<T: Pearl>(&mut self) -> Result<usize, usize> {
         self.insert_id(PearlId::of::<T>())
     }
 
-    /// Inserts a [`PearlId`] into the set, returning its index as `Ok(usize)`
+    /// Inserts `id` into the set, returning its index as `Ok(usize)`
     ///
-    /// If the id already exists in the set, the index of the existing item will be returned as `Err(usize)`
+    /// If `id` already exists in the set, returns `Err(usize)` with its current index.
     #[inline]
     pub fn insert_id(&mut self, id: PearlId) -> Result<usize, usize> {
         match self.index_of_id(&id) {
@@ -116,11 +133,17 @@ impl PearlIdSet {
         }
     }
 
+    /// Removes type `T` from this set, returning its old index as `Some(usize)`
+    ///
+    /// Returns `None` if type `T` does not exist in this set
     #[inline]
     pub fn remove<T: Pearl>(&mut self) -> Option<usize> {
         self.remove_id(&PearlId::of::<T>())
     }
 
+    /// Removes `id` from this set, returning its old index as `Some(usize)`
+    ///
+    /// Returns `None` if `id` does not exist in this set
     #[inline]
     pub fn remove_id(&mut self, id: &PearlId) -> Option<usize> {
         let index = return_if_err!(self.index_of_id(id), _ => None);
@@ -128,11 +151,13 @@ impl PearlIdSet {
         Some(index)
     }
 
+    /// Returns a reference to the [`PearlId`] objects in this set as a slice reference
     #[inline]
     pub fn as_slice(&self) -> &[PearlId] {
         &self.ids
     }
 
+    /// Returns `true` if `other` shares all its items with this set
     pub fn contains_set(&self, other: &PearlIdSet) -> bool {
         // if the other set is larger than this one
         // then this set could not possibly contain the other
@@ -164,6 +189,7 @@ impl PearlIdSet {
     }
 }
 
+/// A collection of [`Pearl`] objects stored for quick access
 #[derive(Default)]
 pub struct PearlSet {
     ids: PearlIdSet,
@@ -171,11 +197,13 @@ pub struct PearlSet {
 }
 
 impl PearlSet {
+    /// Returns a new set
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns a new set containing `pearl`
     #[inline]
     pub fn new_with<T: Pearl>(pearl: T) -> Self {
         let ids = PearlIdSet::new_with::<T>();
@@ -184,36 +212,82 @@ impl PearlSet {
         Self { ids, pearls }
     }
 
+    /// Returns the underlying [`PearlIdSet`] for this collection
     #[inline]
     pub fn id_set(&self) -> &PearlIdSet {
         &self.ids
     }
 
+    /// Inserts or replaces `pearl` of type `T` in this set.
+    ///
+    /// If an item is replaced, it is returned as `Some(T)`
     #[inline]
-    pub fn insert<T: Pearl>(&mut self, pearl: T) -> Result<(), T> {
-        let index = return_if_err!(self.ids.insert::<T>(), _ => Err(pearl));
-        self.pearls.insert(index, Imposter::new(pearl));
-        Ok(())
+    pub fn insert_or_replace<T: Pearl>(&mut self, pearl: T) -> Option<T> {
+        match self.ids.insert::<T>() {
+            Ok(index) => {
+                self.pearls.insert(index, Imposter::new(pearl));
+                None
+            }
+            Err(index) => {
+                let replaced = replace(self.pearls.get_mut(index).unwrap(), Imposter::new(pearl));
+                Some(replaced.downcast::<T>().unwrap())
+            }
+        }
     }
 
+    /// Inserts or replaces an `imposter` in this set.
+    ///
+    /// If an [`Imposter`] is replaced, it is returned as `Some(Imposter)`
+    ///
+    /// # Warning ⚠️
+    /// You should not insert any items that are not valid for [`Pearl`].
+    /// But it is impossible for this function to check if the imposter is valid for [`Pearl`].
+    /// This will not produce undefined behaviour, as there are no ways to operate on any items that arent pearls.
+    /// But it will still be stored in the set and produce its own unique [`Archetype`][crate::Archetype],
+    /// so making this mistake does not have zero cost.
+    #[inline]
+    pub fn insert_or_replace_imposter(&mut self, imposter: Imposter) -> Option<Imposter> {
+        let pearl_id = PearlId(imposter.type_id());
+        match self.ids.insert_id(pearl_id) {
+            Ok(index) => {
+                self.pearls.insert(index, imposter);
+                None
+            }
+            Err(index) => {
+                let replaced = replace(self.pearls.get_mut(index).unwrap(), imposter);
+                Some(replaced)
+            }
+        }
+    }
+
+    /// Returns a reference to the item of type `T` in this set.
+    ///
+    /// Returns `None` if type `T` does not exist
     #[inline]
     pub fn get<T: Pearl>(&self) -> Option<&T> {
         let index = self.ids.index_of::<T>().ok()?;
         Some(self.pearls[index].downcast_ref::<T>().unwrap())
     }
 
+    /// Returns a mutable reference to the item of type `T` in this set.
+    ///
+    /// Returns `None` if type `T` does not exist
     #[inline]
     pub fn get_mut<T: Pearl>(&mut self) -> Option<&mut T> {
         let index = self.ids.index_of::<T>().ok()?;
         Some(self.pearls[index].downcast_mut::<T>().unwrap())
     }
 
+    /// Removes an item of type `T` from this set, returning it as `Some(T)`
+    ///
+    /// Returns `None` if type `T` does not exist.
     #[inline]
     pub fn remove<T: Pearl>(&mut self) -> Option<T> {
         let index = self.ids.remove::<T>()?;
         Some(self.pearls.remove(index).downcast::<T>().unwrap())
     }
 
+    /// Consumes this set and returns an owned [`Vec`] of [`Imposter`] objects
     #[inline]
     pub fn into_vec(self) -> Vec<Imposter> {
         self.pearls

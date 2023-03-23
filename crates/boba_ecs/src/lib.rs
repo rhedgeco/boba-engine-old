@@ -1,9 +1,8 @@
-mod archetype;
 mod entity;
-mod pearl;
 mod world;
 
-pub use archetype::*;
+pub mod archetype;
+pub mod pearls;
+
 pub use entity::*;
-pub use pearl::*;
 pub use world::*;
