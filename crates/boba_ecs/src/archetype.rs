@@ -1,4 +1,5 @@
 use imposters::collections::vec::ImposterVec;
+use indexmap::{map::Entry, IndexMap};
 
 use crate::{Entity, PearlIdSet, PearlSet};
 
@@ -98,5 +99,86 @@ impl Archetype {
         let swapped = self.entities.get(index).copied();
 
         (set, swapped)
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy)]
+pub struct ArchetypeIndexer {
+    pub archetype: usize,
+    pub pearl_offset: usize,
+}
+
+#[derive(Default)]
+pub struct ArchetypeManager {
+    archetypes: IndexMap<PearlIdSet, Archetype>,
+}
+
+impl ArchetypeManager {
+    /// Returns a new empty archetype manager
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Inserts `entity` into the archetype that corresponds to `set`
+    ///
+    /// Returns an [`ArchetypeIndexer`] with the locations of the inserted data
+    pub fn insert(&mut self, entity: Entity, set: PearlSet) -> ArchetypeIndexer {
+        match self.archetypes.entry(set.id_set().clone()) {
+            Entry::Occupied(e) => {
+                let archetype_index = e.index();
+                let archetype = e.into_mut();
+                let pearl_index = archetype.insert(entity, set);
+                ArchetypeIndexer {
+                    archetype: archetype_index,
+                    pearl_offset: pearl_index,
+                }
+            }
+            Entry::Vacant(e) => {
+                let archetype = Archetype::new(entity, set);
+                let archetype_index = e.index();
+                e.insert(archetype);
+                ArchetypeIndexer {
+                    archetype: archetype_index,
+                    pearl_offset: 0,
+                }
+            }
+        }
+    }
+
+    #[inline]
+    pub fn contains_archetype(&self, ids: &PearlIdSet) -> bool {
+        self.archetypes.contains_key(ids)
+    }
+
+    #[inline]
+    pub fn get(&self, ids: &PearlIdSet) -> Option<&Archetype> {
+        self.archetypes.get(ids)
+    }
+
+    #[inline]
+    pub fn get_mut(&mut self, ids: &PearlIdSet) -> Option<&mut Archetype> {
+        self.archetypes.get_mut(ids)
+    }
+
+    #[inline]
+    pub fn get_index(&self, index: usize) -> Option<&Archetype> {
+        Some(self.archetypes.get_index(index)?.1)
+    }
+
+    #[inline]
+    pub fn get_index_mut(&mut self, index: usize) -> Option<&mut Archetype> {
+        Some(self.archetypes.get_index_mut(index)?.1)
+    }
+
+    #[inline]
+    pub fn swap_remove(&mut self, indexer: &ArchetypeIndexer) -> (PearlSet, Option<Entity>) {
+        let archetype = &mut self.archetypes[indexer.archetype];
+        archetype.swap_remove(indexer.pearl_offset)
+    }
+
+    #[inline]
+    pub fn swap_destroy(&mut self, indexer: &ArchetypeIndexer) -> Option<Entity> {
+        let archetype = &mut self.archetypes[indexer.archetype];
+        archetype.swap_destroy(indexer.pearl_offset)
     }
 }

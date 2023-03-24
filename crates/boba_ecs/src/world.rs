@@ -1,20 +1,19 @@
-use indexmap::{map::Entry, IndexMap};
-
-use crate::{archetype::Archetype, Entity, EntityManager, Pearl, PearlIdSet, PearlSet};
+use crate::{
+    archetype::Archetype, ArchetypeIndexer, ArchetypeManager, Entity, EntityManager, Pearl,
+    PearlIdSet, PearlSet,
+};
 
 #[derive(Default, Clone, Copy)]
 struct ArchLink {
     active: bool,
-    archetype: usize,
-    pearl: usize,
+    indexer: ArchetypeIndexer,
 }
 
 impl ArchLink {
-    pub fn new(archetype: usize, pearl: usize) -> Self {
+    pub fn new(indexer: ArchetypeIndexer) -> Self {
         Self {
             active: true,
-            archetype,
-            pearl,
+            indexer,
         }
     }
 }
@@ -24,7 +23,7 @@ impl ArchLink {
 #[derive(Default)]
 pub struct World {
     entities: EntityManager<ArchLink>,
-    archetypes: IndexMap<PearlIdSet, Archetype>,
+    archetypes: ArchetypeManager,
 }
 
 impl World {
@@ -49,7 +48,8 @@ impl World {
     /// Creates and returns a new unique [`Entity`] in this world with an associated [`PearlSet`]
     pub fn create_entity_with_pearls(&mut self, set: PearlSet) -> Entity {
         let entity = self.entities.create(Default::default());
-        self.insert_entity_with_set(entity, set);
+        let indexer = self.archetypes.insert(entity, set);
+        self.entities.replace_data(&entity, ArchLink::new(indexer));
         entity
     }
 
@@ -58,28 +58,26 @@ impl World {
     /// If `entity` is not valid for this world, nothing will happen and `f` will not execute.
     pub fn modify_entity(&mut self, entity: &Entity, f: impl FnOnce(&mut PearlSet)) {
         // check if the entity is valid while getting the indexer
-        let Some(indexer) = self.entities.get_data(entity) else { return };
-        if indexer.active {
+        let Some(link) = self.entities.get_data(entity) else { return };
+        if link.active {
             return;
         }
 
-        let archetype_index = indexer.archetype;
-        let pearl_index = indexer.pearl;
-
         // get the archetype and swap remove the entities data
-        let archetype = &mut self.archetypes[archetype_index];
-        let (mut set, swapped) = archetype.swap_remove(pearl_index);
+        let indexer = link.indexer;
+        let (mut set, swapped) = self.archetypes.swap_remove(&indexer);
 
         // execute the modify method
         f(&mut set);
 
         // insert the entity into its new archetype
-        self.insert_entity_with_set(entity.clone(), set);
+        self.archetypes.insert(entity.clone(), set);
+        self.entities.replace_data(&entity, ArchLink::new(indexer));
 
         // fix the swapped entity if necessary
         let Some(swapped_entity) = swapped else { return };
         let swapped_data = self.entities.get_data_mut(&swapped_entity).unwrap();
-        swapped_data.pearl = pearl_index;
+        swapped_data.indexer = indexer;
     }
 
     /// Inserts or replaces a pearl in a given entity.
@@ -111,35 +109,15 @@ impl World {
     /// Returns `false` if `entity` was already invalid for this world.
     pub fn destroy_entity(&mut self, entity: &Entity) {
         // check if the entity is valid while getting the indexer
-        let Some(indexer) = self.entities.destroy(entity) else { return };
-        if indexer.active {
+        let Some(link) = self.entities.destroy(entity) else { return };
+        if !link.active {
             return;
         }
 
         // get the archetype and swap destroy the entity, fixing the swapped index after
-        let archetype = &mut self.archetypes[indexer.archetype];
-        let Some(swapped_entity) = archetype.swap_destroy(indexer.pearl) else { return };
+        let Some(swapped_entity) = self.archetypes.swap_destroy(&link.indexer) else { return };
         let swapped_data = self.entities.get_data_mut(&swapped_entity).unwrap();
-        swapped_data.pearl = indexer.pearl;
-    }
-
-    fn insert_entity_with_set(&mut self, entity: Entity, set: PearlSet) {
-        let indexer = match self.archetypes.entry(set.id_set().clone()) {
-            Entry::Occupied(e) => {
-                let archetype_index = e.index();
-                let archetype = e.into_mut();
-                let pearl_index = archetype.insert(entity, set);
-                ArchLink::new(archetype_index, pearl_index)
-            }
-            Entry::Vacant(e) => {
-                let archetype = Archetype::new(entity, set);
-                let archetype_index = e.index();
-                e.insert(archetype);
-                ArchLink::new(archetype_index, 0)
-            }
-        };
-
-        self.entities.replace_data(&entity, indexer);
+        swapped_data.indexer = link.indexer;
     }
 }
 
@@ -176,6 +154,8 @@ pub trait WorldView {
 
 #[cfg(test)]
 mod tests {
+    use crate::archetype;
+
     use super::*;
 
     #[derive(Debug)]
@@ -200,19 +180,22 @@ mod tests {
     #[test]
     fn create_entity_with_pearls() {
         let mut pearl_set = PearlSet::new_with(Struct0(42));
-        pearl_set.insert_or_replace(Struct1(43)).unwrap();
-        pearl_set.insert_or_replace(Struct2(44)).unwrap();
-        pearl_set.insert_or_replace(Struct3(45)).unwrap();
+        pearl_set.insert_or_replace(Struct1(43));
+        pearl_set.insert_or_replace(Struct2(44));
+        pearl_set.insert_or_replace(Struct3(45));
         let id_set = pearl_set.id_set().clone();
 
         let mut world = World::new();
         let entity = world.create_entity_with_pearls(pearl_set);
         assert!(world.has_entity(&entity));
 
-        assert!(world.archetypes.contains_key(&id_set));
+        assert!(world.archetypes.contains_archetype(&id_set));
         let pearl_link = world.entities.get_data(&entity).unwrap();
         assert!(pearl_link.active);
-        assert!(world.archetypes[pearl_link.archetype].len() == 1);
+
+        let arch_index = pearl_link.indexer.archetype;
+        let archetype = world.archetypes.get_index(arch_index).unwrap();
+        assert!(archetype.len() == 1);
     }
 
     #[test]
@@ -234,9 +217,9 @@ mod tests {
     #[test]
     fn destroy_entity_with_pearls() {
         let mut pearl_set = PearlSet::new_with(Struct0(42));
-        pearl_set.insert_or_replace(Struct1(43)).unwrap();
-        pearl_set.insert_or_replace(Struct2(44)).unwrap();
-        pearl_set.insert_or_replace(Struct3(45)).unwrap();
+        pearl_set.insert_or_replace(Struct1(43));
+        pearl_set.insert_or_replace(Struct2(44));
+        pearl_set.insert_or_replace(Struct3(45));
         let id_set = pearl_set.id_set().clone();
 
         let mut world = World::new();
