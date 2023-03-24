@@ -154,8 +154,6 @@ pub trait WorldView {
 
 #[cfg(test)]
 mod tests {
-    use crate::archetype;
-
     use super::*;
 
     #[derive(Debug)]
