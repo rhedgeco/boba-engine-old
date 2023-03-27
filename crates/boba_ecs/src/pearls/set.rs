@@ -1,31 +1,6 @@
-use std::{any::TypeId, hash::Hash, mem::replace};
+use std::{hash::Hash, mem::replace};
 
-use imposters::Imposter;
-
-/// A lightweight wrapper around [`TypeId`] that is restricted to types that implement [`Pearl`]
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
-pub struct PearlId(TypeId);
-
-impl PearlId {
-    /// Returns the pearl id for type `T`
-    #[inline]
-    pub fn of<T: Pearl>() -> Self {
-        PearlId(TypeId::of::<T>())
-    }
-
-    /// Returns the underlying [`TypeId`]
-    #[inline]
-    pub fn raw_type_id(&self) -> TypeId {
-        self.0
-    }
-}
-
-/// An trait that covers types that are `Send + Sync + 'static`
-///
-/// This is automatically implemented for all types that meet the requirements
-/// and allows automatic integration with the [`PearlId`] api.
-pub trait Pearl: Send + Sync + 'static {}
-impl<T: Send + Sync + 'static> Pearl for T {}
+use super::{AnyPearl, Pearl, PearlId};
 
 /// A collection of [`PearlId`] structs stored for quick access
 #[derive(Default, Clone, Debug, Eq)]
@@ -199,7 +174,7 @@ impl PearlIdSet {
 #[derive(Default)]
 pub struct PearlSet {
     ids: PearlIdSet,
-    pearls: Vec<Imposter>,
+    pearls: Vec<AnyPearl>,
 }
 
 impl PearlSet {
@@ -214,7 +189,7 @@ impl PearlSet {
     pub fn new_with<T: Pearl>(pearl: T) -> Self {
         let ids = PearlIdSet::new_with::<T>();
         let mut pearls = Vec::new();
-        pearls.push(Imposter::new(pearl));
+        pearls.push(AnyPearl::new(pearl));
         Self { ids, pearls }
     }
 
@@ -231,36 +206,26 @@ impl PearlSet {
     pub fn insert_or_replace<T: Pearl>(&mut self, pearl: T) -> Option<T> {
         match self.ids.insert::<T>() {
             Ok(index) => {
-                self.pearls.insert(index, Imposter::new(pearl));
+                self.pearls.insert(index, AnyPearl::new(pearl));
                 None
             }
             Err(index) => {
-                let replaced = replace(self.pearls.get_mut(index).unwrap(), Imposter::new(pearl));
+                let replaced = replace(self.pearls.get_mut(index).unwrap(), AnyPearl::new(pearl));
                 Some(replaced.downcast::<T>().unwrap())
             }
         }
     }
 
-    /// Inserts or replaces an `imposter` in this set.
-    ///
-    /// If an [`Imposter`] is replaced, it is returned as `Some(Imposter)`
-    ///
-    /// # Warning ⚠️
-    /// You should not insert any items that are not valid for [`Pearl`].
-    /// But it is impossible for this function to check if the imposter is valid for [`Pearl`].
-    /// This will not produce undefined behaviour, as there are no ways to operate on any items that arent pearls.
-    /// But it will still be stored in the set and produce its own unique [`Archetype`][crate::Archetype],
-    /// so making this mistake does not have zero cost.
+    /// Inserts or replaces an [`AnyPearl`] in this set.
     #[inline]
-    pub fn insert_or_replace_imposter(&mut self, imposter: Imposter) -> Option<Imposter> {
-        let pearl_id = PearlId(imposter.type_id());
-        match self.ids.insert_id(pearl_id) {
+    pub fn insert_or_replace_any_pearl(&mut self, pearl: AnyPearl) -> Option<AnyPearl> {
+        match self.ids.insert_id(pearl.id()) {
             Ok(index) => {
-                self.pearls.insert(index, imposter);
+                self.pearls.insert(index, pearl);
                 None
             }
             Err(index) => {
-                let replaced = replace(self.pearls.get_mut(index).unwrap(), imposter);
+                let replaced = replace(self.pearls.get_mut(index).unwrap(), pearl);
                 Some(replaced)
             }
         }
@@ -293,9 +258,9 @@ impl PearlSet {
         Some(self.pearls.remove(index).downcast::<T>().unwrap())
     }
 
-    /// Consumes this set and returns an owned [`Vec`] of [`Imposter`] objects
+    /// Consumes this set and returns an owned [`Vec`] of [`AnyPearl`] objects
     #[inline]
-    pub fn into_vec(self) -> Vec<Imposter> {
+    pub fn into_vec(self) -> Vec<AnyPearl> {
         self.pearls
     }
 }

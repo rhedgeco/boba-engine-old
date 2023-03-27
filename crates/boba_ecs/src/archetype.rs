@@ -1,13 +1,15 @@
-use imposters::collections::vec::ImposterVec;
 use indexmap::{map::Entry, IndexMap};
 
-use crate::{Entity, PearlIdSet, PearlSet};
+use crate::{
+    pearls::{AnyPearlVec, PearlIdSet, PearlSet},
+    Entity,
+};
 
 /// A collection of entities that share a common pearl set
 pub struct Archetype {
     ids: PearlIdSet,
     entities: Vec<Entity>,
-    pearls: Vec<ImposterVec>,
+    pearls: Vec<AnyPearlVec>,
 }
 
 impl Archetype {
@@ -16,8 +18,8 @@ impl Archetype {
         let ids = set.id_set().clone();
         let entities = vec![entity];
         let mut pearls = Vec::new();
-        for imposter in set.into_vec().into_iter() {
-            pearls.push(ImposterVec::from_imposter(imposter));
+        for any in set.into_vec().into_iter() {
+            pearls.push(AnyPearlVec::from_any(any));
         }
 
         Self {
@@ -50,9 +52,9 @@ impl Archetype {
         assert!(&self.ids == set.id_set());
         let new_index = self.len();
         self.entities.push(entity);
-        for (i, imposter) in set.into_vec().into_iter().enumerate() {
-            let push_result = self.pearls[i].push_imposter(imposter);
-            push_result.ok().expect("Invalid imposter insert");
+        for (i, any) in set.into_vec().into_iter().enumerate() {
+            let push_result = self.pearls[i].push_any(any);
+            push_result.ok().expect("Invalid AnyPearl insert");
         }
         new_index
     }
@@ -92,7 +94,7 @@ impl Archetype {
         // then insert that pearl into the pearl set
         for vec in self.pearls.iter_mut() {
             let imposter = vec.swap_remove(index).unwrap();
-            set.insert_or_replace_imposter(imposter);
+            set.insert_or_replace_any_pearl(imposter);
         }
 
         // get the swapped entity id if there is one
