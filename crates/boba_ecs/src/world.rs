@@ -3,26 +3,11 @@ use crate::{
     ArchetypeIndexer, ArchetypeManager, Entity, EntityManager,
 };
 
-#[derive(Default, Clone, Copy)]
-struct ArchLink {
-    active: bool,
-    indexer: ArchetypeIndexer,
-}
-
-impl ArchLink {
-    pub fn new(indexer: ArchetypeIndexer) -> Self {
-        Self {
-            active: true,
-            indexer,
-        }
-    }
-}
-
 /// The central storage point for [`Entity`] and [`Pearl`] structs.
 /// This is the point where all ECS operations will be performed.
 #[derive(Default)]
 pub struct World {
-    entities: EntityManager<ArchLink>,
+    entities: EntityManager<Option<ArchetypeIndexer>>,
     archetypes: ArchetypeManager,
 }
 
@@ -49,7 +34,7 @@ impl World {
     pub fn create_entity_with_pearls(&mut self, set: PearlSet) -> Entity {
         let entity = self.entities.create(Default::default());
         let indexer = self.archetypes.insert(entity, set);
-        self.entities.replace_data(&entity, ArchLink::new(indexer));
+        *self.entities.get_data_mut(&entity).unwrap() = Some(indexer);
         entity
     }
 
@@ -59,12 +44,7 @@ impl World {
     pub fn modify_entity(&mut self, entity: &Entity, f: impl FnOnce(&mut PearlSet)) {
         // check if the entity is valid while getting the indexer
         let Some(link) = self.entities.get_data(entity) else { return };
-        if link.active {
-            return;
-        }
-
-        // get the archetype and swap remove the entities data
-        let indexer = link.indexer;
+        let Some(indexer) = link.as_ref().cloned() else { return };
         let (mut set, swapped) = self.archetypes.swap_remove(&indexer);
 
         // execute the modify method
@@ -72,12 +52,12 @@ impl World {
 
         // insert the entity into its new archetype
         self.archetypes.insert(entity.clone(), set);
-        self.entities.replace_data(&entity, ArchLink::new(indexer));
+        *self.entities.get_data_mut(&entity).unwrap() = Some(indexer);
 
         // fix the swapped entity if necessary
         let Some(swapped_entity) = swapped else { return };
         let swapped_data = self.entities.get_data_mut(&swapped_entity).unwrap();
-        swapped_data.indexer = indexer;
+        *swapped_data = Some(indexer);
     }
 
     /// Inserts or replaces a pearl in a given entity.
@@ -110,14 +90,12 @@ impl World {
     pub fn destroy_entity(&mut self, entity: &Entity) {
         // check if the entity is valid while getting the indexer
         let Some(link) = self.entities.destroy(entity) else { return };
-        if !link.active {
-            return;
-        }
+        let Some(indexer) = link else { return };
 
         // get the archetype and swap destroy the entity, fixing the swapped index after
-        let Some(swapped_entity) = self.archetypes.swap_destroy(&link.indexer) else { return };
+        let Some(swapped_entity) = self.archetypes.swap_destroy(&indexer) else { return };
         let swapped_data = self.entities.get_data_mut(&swapped_entity).unwrap();
-        swapped_data.indexer = link.indexer;
+        *swapped_data = Some(indexer);
     }
 }
 
@@ -158,9 +136,9 @@ mod tests {
 
         assert!(world.archetypes.contains_archetype(&id_set));
         let pearl_link = world.entities.get_data(&entity).unwrap();
-        assert!(pearl_link.active);
+        assert!(pearl_link.is_some());
 
-        let arch_index = pearl_link.indexer.archetype;
+        let arch_index = pearl_link.unwrap().archetype;
         let archetype = world.archetypes.get_index(arch_index).unwrap();
         assert!(archetype.len() == 1);
     }

@@ -152,18 +152,6 @@ impl<T: Copy> EntityManager<T> {
         }
     }
 
-    /// Replaces the data stored at `entity`, returning the old data as `Some(T)`.
-    ///
-    /// If `entity` is invalid for this manager then nothing is changed and `None` is returned.
-    pub fn replace_data(&mut self, entity: &Entity, new_data: T) -> Option<T> {
-        let entry = self.entities.get_mut(entity.uindex())?;
-        if &entry.entity != entity {
-            return None;
-        }
-
-        Some(std::mem::replace(&mut entry.data, new_data))
-    }
-
     /// Returns a reference to the data associated with `entity`.
     ///
     /// Returns `None` if `entity` is invalid for this manager.
