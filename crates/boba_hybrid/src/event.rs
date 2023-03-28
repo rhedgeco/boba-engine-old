@@ -14,7 +14,7 @@ pub trait EventListener<E: Event>: Pearl {
 }
 
 pub trait EventRegistrar<T: Pearl> {
-    fn push_listener<E: Event>(&mut self)
+    fn listen_for<E: Event>(&mut self)
     where
         T: EventListener<E>;
 }
@@ -40,7 +40,7 @@ impl EventRegistry {
 }
 
 impl<T: Pearl> EventRegistrar<T> for EventRegistry {
-    fn push_listener<E: Event>(&mut self)
+    fn listen_for<E: Event>(&mut self)
     where
         T: EventListener<E>,
     {
