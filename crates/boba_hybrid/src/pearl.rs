@@ -26,7 +26,10 @@ impl PearlId {
     }
 }
 
-pub struct PearlProvider {}
+pub trait PearlAccess {
+    fn get<T: Pearl>(&self, handle: &Handle<T>) -> Option<&T>;
+    fn get_mut<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<&mut T>;
+}
 
 #[derive(Default)]
 pub struct PearlCollection {
@@ -42,6 +45,18 @@ impl PearlCollection {
     fn get_map_mut<T: Pearl>(&mut self) -> Option<&mut DenseHandleMap<T>> {
         let map = self.pearls.get_mut(&PearlId::of::<T>())?;
         Some(map.downcast_mut::<DenseHandleMap<T>>().unwrap())
+    }
+}
+
+impl PearlAccess for PearlCollection {
+    fn get<T: Pearl>(&self, handle: &Handle<T>) -> Option<&T> {
+        let map = self.get_map::<T>()?;
+        map.get_data(handle)
+    }
+
+    fn get_mut<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<&mut T> {
+        let map = self.get_map_mut::<T>()?;
+        map.get_data_mut(handle)
     }
 }
 
@@ -64,16 +79,6 @@ impl PearlCollection {
         };
 
         map.insert(pearl)
-    }
-
-    pub fn get<T: Pearl>(&self, handle: &Handle<T>) -> Option<&T> {
-        let map = self.get_map::<T>()?;
-        map.get_data(handle)
-    }
-
-    pub fn get_mut<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<&mut T> {
-        let map = self.get_map_mut::<T>()?;
-        map.get_data_mut(handle)
     }
 
     pub fn remove<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<T> {

@@ -4,13 +4,13 @@ use handle_map::Handle;
 use hashbrown::{hash_map, HashMap};
 use indexmap::{map, IndexMap};
 
-use crate::pearl::{Pearl, PearlCollection, PearlId};
+use crate::pearl::{Pearl, PearlAccess, PearlCollection, PearlId};
 
 pub trait Event: Sized + 'static {}
 impl<T: Sized + 'static> Event for T {}
 
 pub trait EventListener<E: Event>: Pearl {
-    fn callback(handle: &Handle<Self>, data: &E, pearls: &mut PearlCollection);
+    fn callback(handle: &Handle<Self>, data: &E, pearls: &mut impl PearlAccess);
 }
 
 pub trait EventRegistrar<T: Pearl> {

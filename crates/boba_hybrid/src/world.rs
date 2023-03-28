@@ -2,7 +2,7 @@ use handle_map::Handle;
 
 use crate::{
     event::{Event, EventRegistry},
-    pearl::{Pearl, PearlCollection},
+    pearl::{Pearl, PearlAccess, PearlCollection},
 };
 
 #[derive(Default)]
