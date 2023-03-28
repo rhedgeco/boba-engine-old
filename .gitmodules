@@ -1,6 +1,3 @@
 [submodule "crates/imposters"]
 	path = crates/imposters
 	url = https://github.com/rhedgeco/imposters.git
-[submodule "crates/reterse"]
-	path = crates/reterse
-	url = https://github.com/rhedgeco/reterse.git
