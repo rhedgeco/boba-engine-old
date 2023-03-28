@@ -1,3 +1,6 @@
-mod sparse;
+mod id;
 
-pub use sparse::*;
+pub mod dense;
+pub mod sparse;
+
+pub use id::*;

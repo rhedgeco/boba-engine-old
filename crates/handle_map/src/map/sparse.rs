@@ -1,16 +1,14 @@
-use std::{
-    collections::VecDeque,
-    sync::atomic::{AtomicU16, Ordering},
-};
+use std::collections::VecDeque;
 
-use crate::Handle;
+use crate::{map::HandleMapId, Handle};
 
-struct HandleEntry<T> {
+struct SparseEntry<T> {
     handle: Handle<T>,
     data: Option<T>,
 }
 
-impl<T> HandleEntry<T> {
+impl<T> SparseEntry<T> {
+    #[inline]
     pub fn new(handle: Handle<T>, data: T) -> Self {
         Self {
             handle,
@@ -31,18 +29,16 @@ impl<T> HandleEntry<T> {
 /// Since the map uses a [`Handle`] for indexing, the max length of the map is limited to `u32::MAX`.
 pub struct SparseHandleMap<T> {
     id: u16,
-    data: Vec<HandleEntry<T>>,
+    data: Vec<SparseEntry<T>>,
     open_data: VecDeque<usize>,
 }
 
 impl<T> Default for SparseHandleMap<T> {
-    /// Returns a default handle map with a unique id
+    /// Returns a default handle map with a unique id.
     #[inline]
     fn default() -> Self {
-        static ID_GEN: AtomicU16 = AtomicU16::new(0);
-
         Self {
-            id: ID_GEN.fetch_add(1, Ordering::Relaxed),
+            id: HandleMapId::generate(),
             data: Default::default(),
             open_data: Default::default(),
         }
@@ -50,19 +46,32 @@ impl<T> Default for SparseHandleMap<T> {
 }
 
 impl<T> SparseHandleMap<T> {
-    /// Returns a default handle map with a unique id
+    /// Returns a default handle map with a unique id.
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Returns the id for this manager
+    /// Returns the id for this manager.
     #[inline]
     pub fn id(&self) -> u16 {
         self.id
     }
 
-    /// Inserts `data` into the map and returns a [`Handle`] to its location
+    /// Returns the length of the map.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.data.len() - self.open_data.len()
+    }
+
+    /// Returns `true` if the map is empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.data.len() == self.open_data.len()
+    }
+
+    /// Inserts `data` into the map and returns a [`Handle`] to its location.
+    #[inline]
     pub fn insert(&mut self, data: T) -> Handle<T> {
         match self.open_data.pop_front() {
             Some(index) => {
@@ -79,13 +88,13 @@ impl<T> SparseHandleMap<T> {
                 }
 
                 let handle = Handle::from_raw_parts(index as u32, 0, self.id);
-                self.data.push(HandleEntry::new(handle.clone(), data));
+                self.data.push(SparseEntry::new(handle.clone(), data));
                 handle
             }
         }
     }
 
-    /// Returns true if `handle` is valid for this map
+    /// Returns true if `handle` is valid for this map.
     #[inline]
     pub fn contains(&self, handle: &Handle<T>) -> bool {
         match self.data.get(handle.uindex()) {
@@ -119,6 +128,7 @@ impl<T> SparseHandleMap<T> {
     /// Removes and returns the data for `handle`.
     ///
     /// Returns `None` if `handle` is invalid for this map.
+    #[inline]
     pub fn remove(&mut self, handle: &Handle<T>) -> Option<T> {
         match self.data.get_mut(handle.uindex()) {
             Some(entry) if &entry.handle == handle => {
@@ -129,6 +139,78 @@ impl<T> SparseHandleMap<T> {
                 data
             }
             _ => None,
+        }
+    }
+
+    /// Returns an iterator over the map.
+    #[inline]
+    pub fn iter(&self) -> Iter<'_, T> {
+        Iter {
+            inner: self.data.iter(),
+        }
+    }
+
+    /// Returns an iterator that allows modifying each value.
+    #[inline]
+    pub fn iter_mut(&mut self) -> IterMut<'_, T> {
+        IterMut {
+            inner: self.data.iter_mut(),
+        }
+    }
+
+    /// Returns a consuming iterator over the map.
+    #[inline]
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter {
+            inner: self.data.into_iter(),
+        }
+    }
+}
+
+pub struct Iter<'a, T> {
+    inner: std::slice::Iter<'a, SparseEntry<T>>,
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(data) = &self.inner.next()?.data {
+                return Some(data);
+            }
+        }
+    }
+}
+
+pub struct IterMut<'a, T> {
+    inner: std::slice::IterMut<'a, SparseEntry<T>>,
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(data) = &mut self.inner.next()?.data {
+                return Some(data);
+            }
+        }
+    }
+}
+
+pub struct IntoIter<T> {
+    inner: std::vec::IntoIter<SparseEntry<T>>,
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(data) = self.inner.next()?.data {
+                return Some(data);
+            }
         }
     }
 }

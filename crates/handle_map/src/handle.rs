@@ -1,23 +1,30 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, mem::transmute};
 
-#[derive(Copy, Eq, Debug, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+pub struct RawHandle {
+    pub id: u64,
+}
+
+#[derive(Copy, Eq, Hash, Debug)]
 pub struct Handle<T> {
-    id: u64,
+    raw: RawHandle,
     _type: PhantomData<*const T>,
 }
 
 impl<T> Clone for Handle<T> {
+    #[inline]
     fn clone(&self) -> Self {
         Self {
-            id: self.id.clone(),
+            raw: self.raw.clone(),
             _type: PhantomData,
         }
     }
 }
 
 impl<T> PartialEq for Handle<T> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id
+        self.raw == other.raw
     }
 }
 
@@ -30,17 +37,17 @@ impl<T> Handle<T> {
 
     /// Returns a new handle with the raw `id`
     #[inline]
-    pub fn from_raw(id: u64) -> Self {
+    pub fn from_raw(raw: RawHandle) -> Self {
         Self {
-            id,
+            raw,
             _type: PhantomData,
         }
     }
 
     /// Returns the underlying `u64` used as an id for this handle
     #[inline]
-    pub fn into_raw(self) -> u64 {
-        self.id
+    pub fn into_raw(self) -> RawHandle {
+        self.raw
     }
 
     /// Returns a new handle containing the raw parts `index`, `gen`, and `meta`
@@ -50,7 +57,7 @@ impl<T> Handle<T> {
             + ((gen as u64) << Self::GEN_OFFSET)
             + ((meta as u64) << Self::META_OFFSET);
 
-        Self::from_raw(id)
+        Self::from_raw(RawHandle { id })
     }
 
     /// Decomposes this handle into its raw parts:
@@ -60,38 +67,59 @@ impl<T> Handle<T> {
     #[inline]
     pub fn into_raw_parts(self) -> (u32, u16, u16) {
         (
-            self.id as u32,
-            (self.id >> Self::GEN_BITS) as u16,
-            (self.id >> Self::META_BITS) as u16,
+            self.raw.id as u32,
+            (self.raw.id >> Self::GEN_BITS) as u16,
+            (self.raw.id >> Self::META_BITS) as u16,
         )
     }
 
+    /// Consumes self and transforms it into a handle for another type
+    ///
+    /// # Warning
+    /// While this is not unsafe and will not cause undefined behavior on its own,
+    /// it may not behave as expected. A handle should usually be used on the map it is associated with.
+    #[inline]
+    pub fn into_type<U>(self) -> Handle<U> {
+        unsafe { transmute(self) }
+    }
+
+    /// Transforms a handle reference into another types handle
+    ///
+    /// # Warning
+    /// While this is not unsafe and will not cause undefined behavior on its own,
+    /// it may not behave as expected. A handle should usually be used on the map it is associated with.
+    #[inline]
+    pub fn as_type<U>(&self) -> &Handle<U> {
+        unsafe { transmute(self) }
+    }
+
     // Returns the underlying `u64` used as an id for this handle
+    #[inline]
     pub fn id(&self) -> u64 {
-        self.id
+        self.raw.id
     }
 
     /// Returns the raw index value for this handle
     #[inline]
     pub fn index(&self) -> u32 {
-        self.id as u32
+        self.raw.id as u32
     }
 
     /// Returns the index value for this handle as a `usize`
     #[inline]
     pub fn uindex(&self) -> usize {
-        self.id as u32 as usize
+        self.raw.id as u32 as usize
     }
 
     /// Returns the raw generation value for this handle
     #[inline]
     pub fn generation(&self) -> u16 {
-        (self.id >> Self::GEN_BITS) as u16
+        (self.raw.id >> Self::GEN_BITS) as u16
     }
 
     /// Returns the raw metadata value for this handle
     #[inline]
     pub fn metadata(&self) -> u16 {
-        (self.id >> Self::META_BITS) as u16
+        (self.raw.id >> Self::META_BITS) as u16
     }
 }
