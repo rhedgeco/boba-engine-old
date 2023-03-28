@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+indexmap = "1.9"
 hashbrown = "0.13"
 
 handle_map = { path = "../handle_map" }

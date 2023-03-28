@@ -65,7 +65,7 @@ impl<T> DenseHandleMap<T> {
         let handle = self.link_map.insert(self.data.len());
         self.back_link.push(handle);
         self.data.push(data);
-        Handle::<T>::from_raw(handle.into_raw())
+        handle.into_type::<T>()
     }
 
     /// Returns true if `handle` is valid for this map.
@@ -118,6 +118,12 @@ impl<T> DenseHandleMap<T> {
     #[inline]
     pub fn as_slice(&self) -> &[T] {
         &self.data
+    }
+
+    /// Returns a reference to the underlying packed slice of data handles
+    #[inline]
+    pub fn as_slice_handles(&self) -> &[Handle<T>] {
+        unsafe { std::mem::transmute(self.back_link.as_slice()) }
     }
 
     /// Returns a mutable reference to the underlying packed slice of data

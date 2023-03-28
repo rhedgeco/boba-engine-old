@@ -26,6 +26,8 @@ impl PearlId {
     }
 }
 
+pub struct PearlProvider {}
+
 #[derive(Default)]
 pub struct PearlCollection {
     pearls: HashMap<PearlId, Box<dyn Any>>,
@@ -87,5 +89,10 @@ impl PearlCollection {
     pub fn as_slice_mut<T: Pearl>(&mut self) -> Option<&mut [T]> {
         let map = self.get_map_mut::<T>()?;
         Some(map.as_slice_mut())
+    }
+
+    pub fn as_slice_handles<T: Pearl>(&self) -> Option<&[Handle<T>]> {
+        let map = self.get_map::<T>()?;
+        Some(map.as_slice_handles())
     }
 }

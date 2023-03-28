@@ -1,15 +1,16 @@
 use std::any::{Any, TypeId};
 
+use handle_map::Handle;
 use hashbrown::{hash_map, HashMap};
+use indexmap::{map, IndexMap};
 
-use crate::pearl::{Pearl, PearlCollection};
+use crate::pearl::{Pearl, PearlCollection, PearlId};
 
-pub trait Event: Sized + 'static {
-    type EventData;
-}
+pub trait Event: Sized + 'static {}
+impl<T: Sized + 'static> Event for T {}
 
-pub trait EventListener<T: Event> {
-    fn callback(&mut self, data: &T::EventData);
+pub trait EventListener<E: Event>: Pearl {
+    fn callback(handle: &Handle<Self>, data: &E, pearls: &mut PearlCollection);
 }
 
 pub trait EventRegistrar<T: Pearl> {
@@ -20,7 +21,7 @@ pub trait EventRegistrar<T: Pearl> {
 
 #[derive(Default)]
 pub struct EventRegistry {
-    callbacks: HashMap<TypeId, Vec<Box<dyn Any>>>,
+    callbacks: HashMap<TypeId, IndexMap<PearlId, Box<dyn Any>>>,
 }
 
 impl EventRegistry {
@@ -28,16 +29,12 @@ impl EventRegistry {
         Self::default()
     }
 
-    pub fn trigger<E: Event>(&self, pearls: &mut PearlCollection, data: &E::EventData) {
+    pub fn trigger<E: Event>(&self, pearls: &mut PearlCollection, data: &E) {
         type Callback<Data> = Box<dyn Fn(&mut PearlCollection, &Data)>;
 
         let Some(map) = self.callbacks.get(&TypeId::of::<E>()) else { return };
-        for any_callback in map.iter() {
-            let callback = any_callback
-                .downcast_ref::<Callback<E::EventData>>()
-                .unwrap();
-
-            callback(pearls, data);
+        for any_callback in map.values() {
+            any_callback.downcast_ref::<Callback<E>>().unwrap()(pearls, data);
         }
     }
 }
@@ -50,17 +47,18 @@ impl<T: Pearl> EventRegistrar<T> for EventRegistry {
         // get or create callback map for event E
         let callback_map = match self.callbacks.entry(TypeId::of::<E>()) {
             hash_map::Entry::Occupied(e) => e.into_mut(),
-            hash_map::Entry::Vacant(e) => e.insert(Vec::new()),
+            hash_map::Entry::Vacant(e) => e.insert(IndexMap::new()),
         };
 
-        // add callback function runner for pearl T to the callback map
-        callback_map.push(Box::new(
-            |collection: &mut PearlCollection, data: &E::EventData| {
-                let Some(slice) = collection.as_slice_mut::<T>() else { return };
-                for pearl in slice.iter_mut() {
-                    pearl.callback(data);
+        // add event iterator callback to map if it is not already there
+        if let map::Entry::Vacant(entry) = callback_map.entry(PearlId::of::<T>()) {
+            entry.insert(Box::new(|collection: &mut PearlCollection, data: &E| {
+                let Some(handles) = collection.as_slice_handles::<T>() else { return };
+                let handles = handles.iter().copied().collect::<Vec<_>>();
+                for handle in handles.iter() {
+                    T::callback(&handle, data, collection);
                 }
-            },
-        ));
+            }));
+        }
     }
 }

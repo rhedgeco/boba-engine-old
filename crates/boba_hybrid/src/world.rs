@@ -42,7 +42,7 @@ impl World {
     }
 
     #[inline]
-    pub fn trigger_event<E: Event>(&mut self, data: &E::EventData) {
+    pub fn trigger_event<E: Event>(&mut self, data: &E) {
         self.event_registry.trigger::<E>(&mut self.pearls, data);
     }
 }

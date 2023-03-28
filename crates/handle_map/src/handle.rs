@@ -1,16 +1,23 @@
-use std::{marker::PhantomData, mem::transmute};
+use std::{hash::Hash, marker::PhantomData, mem::transmute};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct RawHandle {
     pub id: u64,
 }
 
-#[derive(Copy, Eq, Hash, Debug)]
 pub struct Handle<T> {
     raw: RawHandle,
     _type: PhantomData<*const T>,
 }
 
+impl<T> Hash for Handle<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.raw.hash(state);
+        self._type.hash(state);
+    }
+}
+
+impl<T> Copy for Handle<T> {}
 impl<T> Clone for Handle<T> {
     #[inline]
     fn clone(&self) -> Self {
@@ -21,6 +28,7 @@ impl<T> Clone for Handle<T> {
     }
 }
 
+impl<T> Eq for Handle<T> {}
 impl<T> PartialEq for Handle<T> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
