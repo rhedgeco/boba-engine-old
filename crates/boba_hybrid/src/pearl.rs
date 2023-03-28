@@ -29,11 +29,14 @@ impl PearlId {
 pub trait PearlAccess {
     fn get<T: Pearl>(&self, handle: &Handle<T>) -> Option<&T>;
     fn get_mut<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<&mut T>;
+    fn get_resource<T: 'static>(&self) -> Option<&T>;
+    fn get_resource_mut<T: 'static>(&mut self) -> Option<&mut T>;
 }
 
 #[derive(Default)]
 pub struct PearlCollection {
     pearls: HashMap<PearlId, Box<dyn Any>>,
+    resources: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl PearlCollection {
@@ -58,6 +61,16 @@ impl PearlAccess for PearlCollection {
         let map = self.get_map_mut::<T>()?;
         map.get_data_mut(handle)
     }
+
+    fn get_resource<T: 'static>(&self) -> Option<&T> {
+        let any = self.resources.get(&TypeId::of::<T>())?;
+        Some(any.downcast_ref::<T>().unwrap())
+    }
+
+    fn get_resource_mut<T: 'static>(&mut self) -> Option<&mut T> {
+        let any = self.resources.get_mut(&TypeId::of::<T>())?;
+        Some(any.downcast_mut::<T>().unwrap())
+    }
 }
 
 impl PearlCollection {
@@ -81,9 +94,18 @@ impl PearlCollection {
         map.insert(pearl)
     }
 
+    pub fn insert_resource<T: 'static>(&mut self, resource: T) {
+        self.resources.insert(TypeId::of::<T>(), Box::new(resource));
+    }
+
     pub fn remove<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<T> {
         let map = self.get_map_mut::<T>()?;
         map.remove(handle)
+    }
+
+    pub fn remove_resource<T: 'static>(&mut self) -> Option<T> {
+        let any = self.resources.remove(&TypeId::of::<T>())?;
+        Some(*any.downcast::<T>().unwrap())
     }
 
     pub fn as_slice<T: Pearl>(&self) -> Option<&[T]> {
