@@ -1,7 +1,6 @@
-mod event;
-mod pearl;
 mod world;
 
-pub use event::*;
-pub use pearl::*;
+pub mod event;
+pub mod pearl;
+
 pub use world::*;

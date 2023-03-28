@@ -1,6 +1,9 @@
 use handle_map::Handle;
 
-use crate::{Event, EventRegistry, Pearl, PearlCollection};
+use crate::{
+    event::{Event, EventRegistry},
+    pearl::{Pearl, PearlCollection},
+};
 
 #[derive(Default)]
 pub struct World {

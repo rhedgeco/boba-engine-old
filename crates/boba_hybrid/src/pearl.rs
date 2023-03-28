@@ -3,7 +3,7 @@ use std::any::{Any, TypeId};
 use handle_map::{map::dense::DenseHandleMap, Handle};
 use hashbrown::{hash_map::Entry, HashMap};
 
-use crate::EventRegistrar;
+use crate::event::EventRegistrar;
 
 pub trait Pearl: Sized + 'static {
     fn register(registrar: &mut impl EventRegistrar<Self>);

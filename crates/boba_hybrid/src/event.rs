@@ -2,7 +2,7 @@ use std::any::{Any, TypeId};
 
 use hashbrown::{hash_map, HashMap};
 
-use crate::{Pearl, PearlCollection};
+use crate::pearl::{Pearl, PearlCollection};
 
 pub trait Event: Sized + 'static {
     type EventData;
