@@ -1,32 +1,11 @@
-use std::any::{Any, TypeId};
+use std::any::Any;
 
 use handle_map::{map::dense::DenseHandleMap, Handle};
 use hashbrown::{hash_map::Entry, HashMap};
 
-use crate::event::EventRegistrar;
+use super::{Pearl, PearlId};
 
-pub trait Pearl: Sized + 'static {
-    fn register(registrar: &mut impl EventRegistrar<Self>);
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct PearlId(TypeId);
-
-impl PearlId {
-    /// Returns the id for pearl of type `T`
-    #[inline]
-    pub fn of<T: Pearl>() -> Self {
-        Self(TypeId::of::<T>())
-    }
-
-    /// Returns the underlying [`TypeId`]
-    #[inline]
-    pub fn into_raw(self) -> TypeId {
-        self.0
-    }
-}
-
-pub trait PearlAccess {
+pub trait PearlAccessor {
     fn get<T: Pearl>(&self, handle: &Handle<T>) -> Option<&T>;
     fn get_mut<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<&mut T>;
 }
@@ -48,7 +27,7 @@ impl PearlCollection {
     }
 }
 
-impl PearlAccess for PearlCollection {
+impl PearlAccessor for PearlCollection {
     fn get<T: Pearl>(&self, handle: &Handle<T>) -> Option<&T> {
         let map = self.get_map::<T>()?;
         map.get_data(handle)

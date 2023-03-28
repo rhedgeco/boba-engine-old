@@ -1,8 +1,8 @@
 use handle_map::Handle;
 
 use crate::{
-    event::{Event, EventRegistry},
-    pearl::{Pearl, PearlAccess, PearlCollection},
+    events::{Event, EventRegistry},
+    pearls::{Pearl, PearlAccessor, PearlCollection},
 };
 
 #[derive(Default)]

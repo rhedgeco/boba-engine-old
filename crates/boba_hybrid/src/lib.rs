@@ -1,6 +1,6 @@
 mod world;
 
-pub mod event;
-pub mod pearl;
+pub mod events;
+pub mod pearls;
 
 pub use world::*;

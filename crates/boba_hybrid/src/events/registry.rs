@@ -1,17 +1,11 @@
 use std::any::{Any, TypeId};
 
-use handle_map::Handle;
 use hashbrown::{hash_map, HashMap};
 use indexmap::{map, IndexMap};
 
-use crate::pearl::{Pearl, PearlAccess, PearlCollection, PearlId};
+use crate::pearls::{Pearl, PearlCollection, PearlId};
 
-pub trait Event: Sized + 'static {}
-impl<T: Sized + 'static> Event for T {}
-
-pub trait EventListener<E: Event>: Pearl {
-    fn callback(handle: &Handle<Self>, data: &E, pearls: &mut impl PearlAccess);
-}
+use super::{Event, EventListener};
 
 pub trait EventRegistrar<T: Pearl> {
     fn listen_for<E: Event>(&mut self)
@@ -56,7 +50,7 @@ impl<T: Pearl> EventRegistrar<T> for EventRegistry {
                 let Some(handles) = collection.as_slice_handles::<T>() else { return };
                 let handles = handles.iter().copied().collect::<Vec<_>>();
                 for handle in handles.iter() {
-                    T::callback(&handle, data, collection);
+                    T::callback(&handle, collection, data);
                 }
             }));
         }
