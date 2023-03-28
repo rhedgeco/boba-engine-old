@@ -1,5 +1,5 @@
 mod handle;
-mod map;
+
+pub mod map;
 
 pub use handle::*;
-pub use map::*;

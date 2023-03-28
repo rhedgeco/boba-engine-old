@@ -19,7 +19,7 @@ impl<T> HandleEntry<T> {
     }
 }
 
-/// A sparse storage solution that gives a [`Handle`] to the location of the data.
+/// A storage solution that gives a [`Handle`] to the location of the data.
 /// This is optimized for fast access, as the [`Handle`] ensures an array indexing operation.
 ///
 /// This map is ***Sparse*** because when an item is removed,
@@ -27,6 +27,8 @@ impl<T> HandleEntry<T> {
 /// That hole will then be filled again when new items are inserted into the map.
 /// However, if many items are removed and there are no inserts afterwards,
 /// the map will take up as much space as the max amount of items that used to be inside.
+///
+/// Since the map uses a [`Handle`] for indexing, the max length of the map is limited to `u32::MAX`.
 pub struct SparseHandleMap<T> {
     id: u16,
     data: Vec<HandleEntry<T>>,
