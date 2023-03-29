@@ -34,6 +34,10 @@ impl PearlCollection {
         }
     }
 
+    pub fn contains_type<T: Pearl>(&self) -> bool {
+        self.pearls.contains_key(&PearlId::of::<T>())
+    }
+
     pub fn get<T: Pearl>(&self, handle: &Handle<T>) -> Option<&T> {
         let map = self.get_map::<T>()?;
         map.get_data(handle)
