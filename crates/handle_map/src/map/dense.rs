@@ -122,7 +122,7 @@ impl<T> DenseHandleMap<T> {
 
     /// Returns a reference to the underlying packed slice of data handles
     #[inline]
-    pub fn as_slice_handles(&self) -> &[Handle<T>] {
+    pub fn as_handles_slice(&self) -> &[Handle<T>] {
         unsafe { std::mem::transmute(self.back_link.as_slice()) }
     }
 

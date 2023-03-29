@@ -1,6 +1,6 @@
-mod world;
+mod resources;
 
 pub mod events;
 pub mod pearls;
 
-pub use world::*;
+pub use resources::*;
