@@ -3,7 +3,10 @@ use std::any::{Any, TypeId};
 use hashbrown::{hash_map, HashMap};
 use indexmap::{map, IndexMap};
 
-use crate::pearls::{Pearl, PearlCollection, PearlId, PearlManager};
+use crate::{
+    pearls::{Pearl, PearlId},
+    World,
+};
 
 use super::{Event, EventListener, EventRegistrar};
 
@@ -17,12 +20,12 @@ impl EventRegistry {
         Self::default()
     }
 
-    pub fn trigger<E: Event>(&self, pearls: &mut PearlCollection, data: &E) {
-        type Callback<Data> = Box<dyn Fn(&mut PearlCollection, &Data)>;
+    pub fn trigger<E: Event>(&self, data: &E, world: &mut World) {
+        type Callback<Data> = Box<dyn Fn(&Data, &mut World)>;
 
         let Some(map) = self.callbacks.get(&TypeId::of::<E>()) else { return };
         for any_callback in map.values() {
-            any_callback.downcast_ref::<Callback<E>>().unwrap()(pearls, data);
+            any_callback.downcast_ref::<Callback<E>>().unwrap()(data, world);
         }
     }
 }
@@ -40,11 +43,11 @@ impl<T: Pearl> EventRegistrar<T> for EventRegistry {
 
         // add event iterator callback to map if it is not already there
         if let map::Entry::Vacant(entry) = callback_map.entry(PearlId::of::<T>()) {
-            entry.insert(Box::new(|collection: &mut PearlCollection, data: &E| {
-                let Some(handles) = collection.get_handles::<T>() else { return };
+            entry.insert(Box::new(|data: &E, world: &mut World| {
+                let Some(handles) = world.pearls.get_handles::<T>() else { return };
                 let handles = handles.iter().copied().collect::<Vec<_>>();
                 for handle in handles.iter() {
-                    T::callback(&handle, collection, data);
+                    T::callback(&handle, data, world);
                 }
             }));
         }

@@ -2,7 +2,7 @@ use std::any::{Any, TypeId};
 
 use hashbrown::HashMap;
 
-trait ResourceManager {
+pub trait ResourceManager {
     fn insert<T: 'static>(&mut self, resource: T);
     fn get<T: 'static>(&self) -> Option<&T>;
     fn get_mut<T: 'static>(&mut self) -> Option<&mut T>;
