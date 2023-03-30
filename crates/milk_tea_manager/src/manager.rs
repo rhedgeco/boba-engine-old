@@ -11,7 +11,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-use crate::events::MilkTeaUpdate;
+use crate::events::{MilkTeaEvent, Update};
 
 pub trait Renderer: Sized + 'static {
     fn build(window: Window) -> Self;
@@ -56,18 +56,27 @@ impl<R: Renderer> AppManager for MilkTea<R> {
 
         let mut timer = DeltaTimer::new();
         event_loop.run(move |event, _, control_flow| match event {
-            Event::WindowEvent { ref event, .. } => match event {
-                WindowEvent::CloseRequested => control_flow.set_exit(),
-                WindowEvent::Resized(_)
-                | WindowEvent::ScaleFactorChanged {
-                    scale_factor: _,
-                    new_inner_size: _,
-                } => renderer.update_size(),
-                _ => (),
-            },
+            Event::WindowEvent { ref event, .. } => {
+                match event {
+                    WindowEvent::CloseRequested => control_flow.set_exit(),
+                    WindowEvent::Resized(_)
+                    | WindowEvent::ScaleFactorChanged {
+                        scale_factor: _,
+                        new_inner_size: _,
+                    } => renderer.update_size(),
+                    _ => (),
+                }
+
+                match MilkTeaEvent::from_window_event(event) {
+                    Some(event) => {
+                        events.trigger(&event, &mut world);
+                    }
+                    _ => (),
+                }
+            }
             Event::MainEventsCleared => {
                 let delta_time = timer.measure().as_secs_f64();
-                events.trigger(&MilkTeaUpdate::new(delta_time), &mut world);
+                events.trigger(&Update::new(delta_time), &mut world);
                 renderer.render(&mut world, &mut events);
             }
             _ => (),

@@ -1,8 +1,8 @@
-pub struct MilkTeaUpdate {
+pub struct Update {
     pub delta_time: f64,
 }
 
-impl MilkTeaUpdate {
+impl Update {
     pub fn new(delta_time: f64) -> Self {
         Self { delta_time }
     }
