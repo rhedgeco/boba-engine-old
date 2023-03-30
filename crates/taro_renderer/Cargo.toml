@@ -7,4 +7,4 @@ edition = "2021"
 wgpu = "0.15"
 pollster = "0.3"
 
-milk_tea_manager = { path = "../milk_tea_manager" }
+milk_tea = { path = "../milk_tea" }

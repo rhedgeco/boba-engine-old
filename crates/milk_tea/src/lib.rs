@@ -1,8 +1,8 @@
-mod manager;
+mod milk_tea;
 
 pub mod events;
 
-pub use manager::*;
+pub use milk_tea::*;
 
 pub use boba_hybrid;
 pub use winit;

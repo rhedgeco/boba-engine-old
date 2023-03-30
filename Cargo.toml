@@ -12,6 +12,6 @@ members = [
 ]
 
 [dependencies]
+milk_tea = { path = "./crates/milk_tea" }
 boba_hybrid = { path = "./crates/boba_hybrid" }
-milk_tea_manager = { path = "./crates/milk_tea_manager" }
 taro_renderer = { path = "./crates/taro_renderer" }

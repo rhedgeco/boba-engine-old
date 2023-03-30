@@ -1,22 +1,27 @@
-use milk_tea_manager::{
+use milk_tea::{
     boba_hybrid::{events::EventRegistry, World},
     winit::window::Window,
-    Renderer,
+    Renderer, RendererBuilder,
 };
 use wgpu::{Backends, Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
 use crate::events::{TaroRenderFinish, TaroRenderStart};
 
-pub struct TaroRenderer {
-    window: Window,
-    config: SurfaceConfiguration,
-    surface: Surface,
-    device: Device,
-    queue: Queue,
+#[derive(Default)]
+pub struct Taro {
+    _private: (),
 }
 
-impl Renderer for TaroRenderer {
-    fn build(window: Window) -> Self {
+impl Taro {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl RendererBuilder for Taro {
+    type Renderer = TaroRenderer;
+
+    fn build(self, window: Window) -> Self::Renderer {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(InstanceDescriptor {
             backends: Backends::GL,
@@ -65,7 +70,7 @@ impl Renderer for TaroRenderer {
         };
         surface.configure(&device, &config);
 
-        Self {
+        TaroRenderer {
             window,
             config,
             surface,
@@ -73,13 +78,28 @@ impl Renderer for TaroRenderer {
             queue,
         }
     }
+}
 
+pub struct TaroRenderer {
+    window: Window,
+    config: SurfaceConfiguration,
+    surface: Surface,
+    device: Device,
+    queue: Queue,
+}
+
+impl Renderer for TaroRenderer {
     fn update_size(&mut self) {
         let new_size = self
             .window
             .inner_size()
             .to_logical(self.window.scale_factor());
-        if new_size.width > 0 && new_size.height > 0 {
+
+        if new_size.width > 0
+            && new_size.height > 0
+            && new_size.width != self.config.width
+            && new_size.height != self.config.height
+        {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
@@ -87,6 +107,7 @@ impl Renderer for TaroRenderer {
     }
 
     fn render(&mut self, world: &mut World, events: &mut EventRegistry) {
+        self.update_size();
         events.trigger(&TaroRenderStart, world);
 
         let output = self.surface.get_current_texture().unwrap();
