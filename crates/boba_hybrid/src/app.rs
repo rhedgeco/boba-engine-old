@@ -4,12 +4,12 @@ use crate::{events::EventRegistry, pearls::Pearl, World};
 
 /// A simple system for directing the flow of a boba application.
 #[derive(Default)]
-pub struct BobaAppBuilder {
+pub struct BobaApp {
     world: World,
     events: EventRegistry,
 }
 
-impl BobaAppBuilder {
+impl BobaApp {
     /// Returns a new app.
     #[inline]
     pub fn new() -> Self {

@@ -8,17 +8,17 @@ use wgpu::{Backends, Device, InstanceDescriptor, Queue, Surface, SurfaceConfigur
 use crate::events::{TaroRenderFinish, TaroRenderStart};
 
 #[derive(Default)]
-pub struct Taro {
+pub struct TaroBuilder {
     _private: (),
 }
 
-impl Taro {
+impl TaroBuilder {
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-impl RendererBuilder for Taro {
+impl RendererBuilder for TaroBuilder {
     type Renderer = TaroRenderer;
 
     fn build(self, window: Window) -> Self::Renderer {

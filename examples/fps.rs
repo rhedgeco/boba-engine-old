@@ -1,8 +1,6 @@
-use boba_hybrid::{
-    events::EventListener, handle_map::Handle, register_pearl, BobaAppBuilder, World,
-};
+use boba_hybrid::{events::EventListener, handle_map::Handle, register_pearl, BobaApp, World};
 use milk_tea::{events::Update, MilkTeaWindow};
-use taro_renderer::Taro;
+use taro_renderer::TaroBuilder;
 
 struct UpdatePrinter;
 
@@ -15,7 +13,7 @@ impl EventListener<Update> for UpdatePrinter {
 }
 
 fn main() {
-    let mut app = BobaAppBuilder::new();
+    let mut app = BobaApp::new();
     app.insert_pearl(UpdatePrinter);
-    MilkTeaWindow::new().run(app, Taro::new()).unwrap();
+    MilkTeaWindow::new().run(app, TaroBuilder::new()).unwrap();
 }
