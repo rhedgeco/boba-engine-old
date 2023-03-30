@@ -6,6 +6,7 @@ pub trait AppManager: 'static {
     fn run(&mut self, world: &mut World, events: &mut EventRegistry);
 }
 
+#[derive(Default)]
 pub struct BobaApp<A: AppManager> {
     world: World,
     events: EventRegistry,
