@@ -10,16 +10,19 @@ use crate::{
 
 use super::{Event, EventListener, EventRegistrar};
 
+/// A collection of event runners that can be used to operate on a [`World`].
 #[derive(Default)]
 pub struct EventRegistry {
     callbacks: HashMap<TypeId, IndexMap<PearlId, Box<dyn Any>>>,
 }
 
 impl EventRegistry {
+    /// Returns a new empty registry.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Triggers an event that runs the callback for all registered [`Pearl`] objects in `world`.
     pub fn trigger<E: Event>(&self, data: &E, world: &mut World) {
         type Callback<Data> = Box<dyn Fn(&Data, &mut World)>;
 
@@ -31,6 +34,7 @@ impl EventRegistry {
 }
 
 impl<T: Pearl> EventRegistrar<T> for EventRegistry {
+    /// Registers a pearl of type `T` to listen for events of type `E`.
     fn listen_for<E: Event>(&mut self)
     where
         T: EventListener<E>,

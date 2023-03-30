@@ -7,6 +7,7 @@ pub struct World {
 }
 
 impl World {
+    /// Returns a new world
     #[inline]
     pub fn new() -> Self {
         Self::default()
