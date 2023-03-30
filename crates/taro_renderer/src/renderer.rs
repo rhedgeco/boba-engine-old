@@ -1,5 +1,5 @@
 use milk_tea::{
-    boba_hybrid::{events::EventRegistry, World},
+    boba_core::{events::EventRegistry, World},
     winit::window::Window,
     Renderer, RendererBuilder,
 };

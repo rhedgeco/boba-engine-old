@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use boba_hybrid::{events::EventRegistry, BobaApp, World};
+use boba_core::{events::EventRegistry, BobaApp, World};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},

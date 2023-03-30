@@ -1,4 +1,4 @@
-use boba_hybrid::{events::EventListener, handle_map::Handle, register_pearl, BobaApp, World};
+use boba_core::{events::EventListener, handle_map::Handle, register_pearl, BobaApp, World};
 use milk_tea::{events::Update, MilkTeaWindow};
 use taro_renderer::TaroBuilder;
 
