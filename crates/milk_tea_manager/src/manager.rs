@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use boba_hybrid::{events::EventRegistry, AppManager, World};
 use winit::{
     dpi::PhysicalSize,
@@ -36,24 +38,34 @@ impl AppManager for MilkTea {
         env_logger::init();
 
         let event_loop = EventLoop::new();
-        let _window = WindowBuilder::new()
+        let window = WindowBuilder::new()
             .with_inner_size(PhysicalSize::new(self.size.0, self.size.1))
             .with_title(&self.title)
             .build(&event_loop)?;
 
-        event_loop.run(move |event, _, control_flow| {
-            control_flow.set_poll();
-
-            match event {
-                Event::WindowEvent { ref event, .. } => match event {
-                    WindowEvent::CloseRequested => control_flow.set_exit(),
-                    _ => (),
-                },
-                Event::MainEventsCleared => {
-                    events.trigger(&MilkTeaUpdate, &mut world);
-                }
+        let mut timer: Option<Instant> = None;
+        event_loop.run(move |event, _, control_flow| match event {
+            Event::WindowEvent { ref event, .. } => match event {
+                WindowEvent::CloseRequested => control_flow.set_exit(),
                 _ => (),
+            },
+            Event::MainEventsCleared => {
+                let delta_time = match timer {
+                    None => {
+                        timer = Some(Instant::now());
+                        0.
+                    }
+                    Some(time) => {
+                        let elapsed = time.elapsed().as_secs_f64();
+                        timer = Some(Instant::now());
+                        elapsed
+                    }
+                };
+
+                events.trigger(&MilkTeaUpdate::new(delta_time), &mut world);
+                window.request_redraw();
             }
+            _ => (),
         });
     }
 }

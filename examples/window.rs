@@ -5,8 +5,8 @@ use milk_tea_manager::{events::MilkTeaUpdate, MilkTea};
 struct UpdatePrinter;
 
 impl EventListener<MilkTeaUpdate> for UpdatePrinter {
-    fn callback(_: &Handle<Self>, _: &MilkTeaUpdate, _: &mut World) {
-        println!("UPDATE!");
+    fn callback(_: &Handle<Self>, update: &MilkTeaUpdate, _: &mut World) {
+        println!("FPS: {}", 1. / update.delta_time);
     }
 }
 
