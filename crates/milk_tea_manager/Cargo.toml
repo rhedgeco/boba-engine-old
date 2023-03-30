@@ -1,0 +1,13 @@
+[package]
+name = "milk_tea_manager"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+boba_hybrid = { path = "../boba_hybrid" }
+
+log = "0.4"
+winit = "0.28"
+anyhow = "1.0"
+env_logger = "0.10"
+raw-window-handle = "0.5"
