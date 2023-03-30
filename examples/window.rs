@@ -1,18 +1,14 @@
-use boba_hybrid::{events::EventListener, pearls::Pearl, BobaApp, World};
+use boba_hybrid::{events::EventListener, register_pearl, BobaApp, World};
 use handle_map::Handle;
 use milk_tea_manager::{events::MilkTeaUpdate, MilkTea};
 
 struct UpdatePrinter;
 
+register_pearl!(UpdatePrinter => MilkTeaUpdate);
+
 impl EventListener<MilkTeaUpdate> for UpdatePrinter {
     fn callback(_: &Handle<Self>, update: &MilkTeaUpdate, _: &mut World) {
         println!("FPS: {}", 1. / update.delta_time);
-    }
-}
-
-impl Pearl for UpdatePrinter {
-    fn register(registrar: &mut impl boba_hybrid::events::EventRegistrar<Self>) {
-        registrar.listen_for::<MilkTeaUpdate>();
     }
 }
 
