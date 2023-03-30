@@ -1,40 +1,50 @@
-use std::time::Instant;
+use std::{
+    marker::PhantomData,
+    time::{Duration, Instant},
+};
 
 use boba_hybrid::{events::EventRegistry, AppManager, World};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::WindowBuilder,
+    window::{Window, WindowBuilder},
 };
 
 use crate::events::MilkTeaUpdate;
 
-pub struct MilkTea {
-    title: String,
-    size: (u32, u32),
+pub trait Renderer: Sized + 'static {
+    fn build(window: Window) -> Self;
+    fn update_size(&mut self);
+    fn render(&mut self, world: &mut World, events: &mut EventRegistry);
 }
 
-impl Default for MilkTea {
+pub struct MilkTea<R: Renderer> {
+    title: String,
+    size: (u32, u32),
+
+    _renderer: PhantomData<*const R>,
+}
+
+impl<R: Renderer> Default for MilkTea<R> {
     fn default() -> Self {
         Self {
             title: "Milk Tea Window".into(),
             size: (1280, 720),
+
+            _renderer: PhantomData,
         }
     }
 }
 
-impl MilkTea {
-    pub fn new(title: impl Into<String>, size: (u32, u32)) -> Self {
-        Self {
-            title: title.into(),
-            size,
-        }
+impl<R: Renderer> MilkTea<R> {
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
-impl AppManager for MilkTea {
-    fn run(&mut self, mut world: World, events: EventRegistry) -> anyhow::Result<()> {
+impl<R: Renderer> AppManager for MilkTea<R> {
+    fn run(self, mut world: World, mut events: EventRegistry) -> anyhow::Result<()> {
         env_logger::init();
 
         let event_loop = EventLoop::new();
@@ -42,30 +52,49 @@ impl AppManager for MilkTea {
             .with_inner_size(PhysicalSize::new(self.size.0, self.size.1))
             .with_title(&self.title)
             .build(&event_loop)?;
+        let mut renderer = R::build(window);
 
-        let mut timer: Option<Instant> = None;
+        let mut timer = DeltaTimer::new();
         event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent { ref event, .. } => match event {
                 WindowEvent::CloseRequested => control_flow.set_exit(),
+                WindowEvent::Resized(_)
+                | WindowEvent::ScaleFactorChanged {
+                    scale_factor: _,
+                    new_inner_size: _,
+                } => renderer.update_size(),
                 _ => (),
             },
             Event::MainEventsCleared => {
-                let delta_time = match timer {
-                    None => {
-                        timer = Some(Instant::now());
-                        0.
-                    }
-                    Some(time) => {
-                        let elapsed = time.elapsed().as_secs_f64();
-                        timer = Some(Instant::now());
-                        elapsed
-                    }
-                };
-
+                let delta_time = timer.measure().as_secs_f64();
                 events.trigger(&MilkTeaUpdate::new(delta_time), &mut world);
-                window.request_redraw();
+                renderer.render(&mut world, &mut events);
             }
             _ => (),
         });
+    }
+}
+
+struct DeltaTimer {
+    instant: Option<Instant>,
+}
+
+impl DeltaTimer {
+    pub fn new() -> Self {
+        Self { instant: None }
+    }
+
+    pub fn measure(&mut self) -> Duration {
+        match &mut self.instant {
+            None => {
+                self.instant = Some(Instant::now());
+                Duration::new(0, 0)
+            }
+            Some(instant) => {
+                let elapsed = instant.elapsed();
+                *instant = Instant::now();
+                elapsed
+            }
+        }
     }
 }

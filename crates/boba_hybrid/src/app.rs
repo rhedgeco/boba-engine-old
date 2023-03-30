@@ -4,7 +4,7 @@ use crate::{events::EventRegistry, pearls::Pearl, World};
 
 /// Trait necessary to be a management type for a [`BobaApp`].
 pub trait AppManager: 'static {
-    fn run(&mut self, world: World, events: EventRegistry) -> anyhow::Result<()>;
+    fn run(self, world: World, events: EventRegistry) -> anyhow::Result<()>;
 }
 
 /// A simple system for directing the flow of a boba application.
@@ -56,7 +56,7 @@ impl BobaApp {
 
     /// Runs the app using its [`AppManager`]
     #[inline]
-    pub fn run<T: AppManager>(self, mut manager: T) -> anyhow::Result<()> {
+    pub fn run<T: AppManager>(self, manager: T) -> anyhow::Result<()> {
         manager.run(self.world, self.events)
     }
 }

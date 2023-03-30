@@ -1,0 +1,10 @@
+[package]
+name = "taro_renderer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wgpu = "0.15"
+pollster = "0.3"
+
+milk_tea_manager = { path = "../milk_tea_manager" }

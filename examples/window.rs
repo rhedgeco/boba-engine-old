@@ -1,6 +1,6 @@
-use boba_hybrid::{events::EventListener, register_pearl, BobaApp, World};
-use handle_map::Handle;
+use boba_hybrid::{events::EventListener, handle_map::Handle, register_pearl, BobaApp, World};
 use milk_tea_manager::{events::MilkTeaUpdate, MilkTea};
+use taro_renderer::TaroRenderer;
 
 struct UpdatePrinter;
 
@@ -16,6 +16,6 @@ fn main() {
     let mut app = BobaApp::new();
     app.insert_pearl(UpdatePrinter);
 
-    let manager = MilkTea::new("Milk Tea Window Test", (640, 480));
+    let manager = MilkTea::<TaroRenderer>::new();
     app.run(manager).unwrap();
 }
