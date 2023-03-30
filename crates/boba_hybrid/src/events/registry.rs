@@ -26,9 +26,8 @@ impl EventRegistry {
     pub fn trigger<E: Event>(&self, data: &E, world: &mut World) {
         let Some(map) = self.callbacks.get(&TypeId::of::<E>()) else { return };
         for any_callback in map.values() {
-            let runner: &CallbackRunner<E> =
-                any_callback.downcast_ref::<CallbackRunner<E>>().unwrap();
-            runner.call(data, world);
+            let callback_runner = any_callback.downcast_ref::<CallbackRunner<E>>().unwrap();
+            callback_runner.call(data, world);
         }
     }
 }
