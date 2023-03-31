@@ -1,8 +1,4 @@
-use boba_core::{
-    events::{EventData, EventListener},
-    handle_map::Handle,
-    register_pearl, BobaApp,
-};
+use boba_core::{events::EventListener, handle_map::Handle, register_pearl, BobaApp, World};
 use milk_tea::{events::Update, MilkTeaWindow};
 use taro_renderer::TaroBuilder;
 
@@ -11,8 +7,8 @@ struct UpdatePrinter;
 register_pearl!(UpdatePrinter => Update);
 
 impl EventListener<Update> for UpdatePrinter {
-    fn callback(_: &Handle<Self>, event: EventData<Update>) {
-        println!("FPS: {}", 1. / event.data.delta_time);
+    fn callback(_: &Handle<Self>, update: &Update, _: &mut World) {
+        println!("FPS: {}", 1. / update.delta_time);
     }
 }
 

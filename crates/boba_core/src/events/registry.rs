@@ -4,11 +4,11 @@ use hashbrown::{hash_map, HashMap};
 use indexmap::{map, IndexMap};
 
 use crate::{
-    pearls::{Pearl, PearlCollection, PearlId},
-    BobaResources, World,
+    pearls::{Pearl, PearlId},
+    World,
 };
 
-use super::{Event, EventData, EventListener, EventRegistrar};
+use super::{Event, EventListener, EventRegistrar};
 
 /// A collection of event runners that can be used to operate on a [`World`].
 #[derive(Default)]
@@ -25,12 +25,10 @@ impl EventRegistry {
     /// Triggers an event that runs the callback for all registered [`Pearl`] objects in `world`.
     pub fn trigger<E: Event>(&self, data: &E, world: &mut World) {
         let Some(map) = self.callbacks.get(&TypeId::of::<E>()) else { return };
-        let mut commands = PearlCommands::new();
         for any_callback in map.values() {
             let callback_runner = any_callback.downcast_ref::<CallbackRunner<E>>().unwrap();
-            callback_runner.call(data, &world.pearls, &mut commands, &mut world.resources);
+            callback_runner.call(data, world);
         }
-        commands.execute_commands(&mut world.pearls);
     }
 }
 
@@ -53,33 +51,8 @@ impl<T: Pearl> EventRegistrar<T> for EventRegistry {
     }
 }
 
-pub trait PearlCommand: 'static {
-    fn execute(&self, pearls: &mut PearlCollection);
-}
-
-pub struct PearlCommands {
-    commands: Vec<Box<dyn PearlCommand>>,
-}
-
-impl PearlCommands {
-    fn new() -> Self {
-        let commands = Vec::new();
-        Self { commands }
-    }
-
-    pub fn insert(&mut self, command: impl PearlCommand) {
-        self.commands.push(Box::new(command));
-    }
-
-    fn execute_commands(self, pearls: &mut PearlCollection) {
-        for command in self.commands.into_iter() {
-            command.execute(pearls);
-        }
-    }
-}
-
 struct CallbackRunner<E: Event> {
-    function: fn(&E, &PearlCollection, &mut PearlCommands, &mut BobaResources),
+    function: fn(&E, &mut World),
 }
 
 impl<E: Event> CallbackRunner<E> {
@@ -89,34 +62,15 @@ impl<E: Event> CallbackRunner<E> {
     }
 
     #[inline]
-    pub fn call(
-        &self,
-        data: &E,
-        pearls: &PearlCollection,
-        commands: &mut PearlCommands,
-        resources: &mut BobaResources,
-    ) {
-        (self.function)(data, pearls, commands, resources);
+    pub fn call(&self, data: &E, world: &mut World) {
+        (self.function)(data, world);
     }
 
-    fn callback<P: EventListener<E>>(
-        data: &E,
-        pearls: &PearlCollection,
-        commands: &mut PearlCommands,
-        resources: &mut BobaResources,
-    ) {
-        let Some(handles) = pearls.get_handles::<P>() else { return };
+    fn callback<P: EventListener<E>>(data: &E, world: &mut World) {
+        let Some(handles) = world.pearls.get_handles::<P>() else { return };
         let handles = handles.iter().copied().collect::<Vec<_>>();
         for handle in handles.iter() {
-            P::callback(
-                &handle,
-                EventData {
-                    data,
-                    pearls,
-                    commands,
-                    resources,
-                },
-            );
+            P::callback(&handle, data, world);
         }
     }
 }
