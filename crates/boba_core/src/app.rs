@@ -33,22 +33,6 @@ impl BobaApp {
         self.world.resources.insert(resource);
     }
 
-    /// Removes the [`Pearl`] associated with `handle`.
-    ///
-    /// Returns `None` if the handle is invalid.
-    #[inline]
-    pub fn remove_pearl<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<T> {
-        self.world.pearls.remove(handle)
-    }
-
-    /// Removes the resource of type `T`.
-    ///
-    /// Returns `None` if the resource does not exist.
-    #[inline]
-    pub fn remove_resource<T: 'static>(&mut self) -> Option<T> {
-        self.world.resources.remove::<T>()
-    }
-
     /// Consumes the builder, and returns a [`World`] and [`EventRegistry`].
     pub fn consume(self) -> (World, EventRegistry) {
         (self.world, self.events)
