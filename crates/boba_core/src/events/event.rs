@@ -19,16 +19,3 @@ pub trait EventRegistrar<T: Pearl> {
     where
         T: EventListener<E>;
 }
-
-#[macro_export]
-macro_rules! register_pearl {
-    ($item:ty => $($event:ty),* $(,)?) => {
-        impl $crate::pearls::Pearl for $item {
-            fn register(registrar: &mut impl $crate::events::EventRegistrar<Self>) {
-                $(
-                registrar.listen_for::<$event>();
-                )*
-            }
-        }
-    };
-}
