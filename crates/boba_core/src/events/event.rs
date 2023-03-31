@@ -1,14 +1,26 @@
 use handle_map::Handle;
 
-use crate::{pearls::Pearl, World};
+use crate::{
+    pearls::{Pearl, PearlCollection},
+    BobaResources,
+};
+
+use super::PearlCommands;
 
 /// A blanket trait that is automatically implemented for all items that are `Sized + `static`.
 pub trait Event: Sized + 'static {}
 impl<T: Sized + 'static> Event for T {}
 
+pub struct EventData<'a, E: Event> {
+    pub data: &'a E,
+    pub pearls: &'a PearlCollection,
+    pub commands: &'a mut PearlCommands,
+    pub resources: &'a mut BobaResources,
+}
+
 /// The trait that must be implemented to be registered with an [`EventRegistry`][super::EventRegistry]
 pub trait EventListener<E: Event>: Pearl {
-    fn callback(handle: &Handle<Self>, data: &E, world: &mut World);
+    fn callback(handle: &Handle<Self>, event: EventData<E>);
 }
 
 /// Trait to hide the struct that is passed into an [`EventListener`] `callback()`.
