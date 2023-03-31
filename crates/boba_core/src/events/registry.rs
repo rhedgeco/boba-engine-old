@@ -68,8 +68,11 @@ impl<E: Event> CallbackRunner<E> {
 
     fn callback<P: EventListener<E>>(data: &E, world: &mut World) {
         let Some(handles) = world.pearls.get_handles::<P>() else { return };
-        let handles = handles.iter().copied().collect::<Vec<_>>();
-        for handle in handles.iter() {
+
+        // handles must call `to_vec` first so that it is copied
+        // and the reference to world is dropped. This is needed so that
+        // world may be passed mutably to the pearl callback.
+        for handle in handles.to_vec().iter() {
             if world.pearls.contains(handle) {
                 P::callback(&handle, data, world);
             }
