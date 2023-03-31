@@ -1,11 +1,4 @@
-use boba_core::{
-    events::{EventListener, EventRegistrar},
-    handle_map::Handle,
-    pearls::Pearl,
-    BobaApp, World,
-};
-use milk_tea::{events::Update, MilkTeaWindow};
-use taro_renderer::TaroBuilder;
+use boba::prelude::*;
 
 struct UpdatePrinter;
 
