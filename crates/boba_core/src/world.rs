@@ -1,5 +1,6 @@
 use crate::{pearls::PearlCollection, BobaResources};
 
+/// Central storage for [`PearlCollection`] and [`BobaResources`]
 #[derive(Default)]
 pub struct World {
     pub pearls: PearlCollection,
