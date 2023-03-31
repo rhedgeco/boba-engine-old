@@ -70,7 +70,9 @@ impl<E: Event> CallbackRunner<E> {
         let Some(handles) = world.pearls.get_handles::<P>() else { return };
         let handles = handles.iter().copied().collect::<Vec<_>>();
         for handle in handles.iter() {
-            P::callback(&handle, data, world);
+            if world.pearls.contains(handle) {
+                P::callback(&handle, data, world);
+            }
         }
     }
 }
