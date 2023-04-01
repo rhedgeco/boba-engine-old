@@ -1,6 +1,10 @@
 use handle_map::Handle;
 
-use crate::{events::EventRegistry, pearls::Pearl, World};
+use crate::{
+    events::{Event, EventRegistry},
+    pearls::Pearl,
+    World,
+};
 
 /// A simple system for directing the flow of a boba application.
 #[derive(Default)]
@@ -27,14 +31,29 @@ impl BobaApp {
         self.world.pearls.insert(pearl)
     }
 
+    /// Removes and returns the [`Pearl`] associated with `handle`.
+    ///
+    /// Returns `None` if the handle is invalid.
+    #[inline]
+    pub fn remove_pearl<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<T> {
+        self.world.pearls.remove(handle)
+    }
+
     /// Inserts a resource into the application.
     #[inline]
     pub fn insert_resource<T: 'static>(&mut self, resource: T) {
         self.world.resources.insert(resource);
     }
 
-    /// Consumes the builder, and returns a [`World`] and [`EventRegistry`].
-    pub fn consume(self) -> (World, EventRegistry) {
-        (self.world, self.events)
+    /// Removes and returns a resource from the application.
+    #[inline]
+    pub fn remove_resource<T: 'static>(&mut self) -> Option<T> {
+        self.world.resources.remove::<T>()
+    }
+
+    /// Triggers an event on all the relevant pearls in this app.
+    #[inline]
+    pub fn trigger<E: Event>(&mut self, event: &E) {
+        self.events.trigger(event, &mut self.world);
     }
 }

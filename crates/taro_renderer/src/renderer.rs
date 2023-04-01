@@ -1,8 +1,4 @@
-use milk_tea::{
-    boba_core::{events::EventRegistry, World},
-    winit::window::Window,
-    Renderer, RendererBuilder,
-};
+use milk_tea::{boba_core::BobaApp, winit::window::Window, Renderer, RendererBuilder};
 use wgpu::{Backends, Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
 use crate::events::{TaroRenderFinish, TaroRenderStart};
@@ -106,9 +102,9 @@ impl Renderer for TaroRenderer {
         }
     }
 
-    fn render(&mut self, world: &mut World, events: &mut EventRegistry) {
+    fn render(&mut self, app: &mut BobaApp) {
         self.update_size();
-        events.trigger(&TaroRenderStart, world);
+        app.trigger(&TaroRenderStart);
 
         let output = self.surface.get_current_texture().unwrap();
         let view = output
@@ -144,7 +140,7 @@ impl Renderer for TaroRenderer {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
-        events.trigger(&TaroRenderFinish, world);
+        app.trigger(&TaroRenderFinish);
         self.window.request_redraw();
     }
 }

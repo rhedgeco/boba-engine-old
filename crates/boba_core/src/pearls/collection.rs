@@ -66,7 +66,11 @@ impl PearlCollection {
     /// Returns `None` if the handle is invalid.
     pub fn remove<T: Pearl>(&mut self, handle: &Handle<T>) -> Option<T> {
         let map = self.get_map_mut::<T>()?;
-        map.remove(handle)
+        let item = map.remove(handle)?;
+        if map.is_empty() {
+            self.pearls.remove(&PearlId::of::<T>());
+        }
+        Some(item)
     }
 
     /// Returns the densly packed slice reference for all pearls of type `T`.
@@ -90,7 +94,7 @@ impl PearlCollection {
     /// Returns `None` if the handle is invalid.
     pub fn get_handles<T: Pearl>(&self) -> Option<&[Handle<T>]> {
         let map = self.get_map::<T>()?;
-        Some(map.as_handles_slice())
+        Some(map.get_handles())
     }
 
     fn get_map<T: Pearl>(&self) -> Option<&DenseHandleMap<T>> {
