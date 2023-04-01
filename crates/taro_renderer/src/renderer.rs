@@ -1,5 +1,5 @@
 use milk_tea::{boba_core::BobaApp, winit::window::Window, Renderer, RendererBuilder};
-use wgpu::{Backends, Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
+use wgpu::{Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
 use crate::events::{TaroRenderFinish, TaroRenderStart};
 
@@ -19,10 +19,7 @@ impl RendererBuilder for TaroBuilder {
 
     fn build(self, window: Window) -> Self::Renderer {
         let size = window.inner_size();
-        let instance = wgpu::Instance::new(InstanceDescriptor {
-            backends: Backends::GL,
-            ..Default::default()
-        });
+        let instance = wgpu::Instance::new(InstanceDescriptor::default());
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,

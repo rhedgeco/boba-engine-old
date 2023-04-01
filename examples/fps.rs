@@ -15,6 +15,7 @@ impl EventListener<Update> for UpdatePrinter {
 }
 
 fn main() {
+    env_logger::init();
     let mut app = BobaApp::new();
     app.insert_pearl(UpdatePrinter);
     MilkTeaWindow::new().run(app, TaroBuilder::new()).unwrap();
