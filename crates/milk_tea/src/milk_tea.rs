@@ -5,7 +5,7 @@ use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window::{Window, WindowBuilder},
+    window::{Window, WindowBuilder, WindowId},
 };
 
 use crate::events::Update;
@@ -17,7 +17,7 @@ pub trait RendererBuilder {
 
 pub trait Renderer: Sized + 'static {
     fn update_size(&mut self);
-    fn render(&mut self, world: &mut BobaWorld);
+    fn render(&mut self, id: WindowId, world: &mut BobaWorld);
 }
 
 pub struct MilkTeaWindow {
@@ -56,7 +56,9 @@ impl MilkTeaWindow {
             Event::MainEventsCleared => {
                 let delta_time = timer.measure().as_secs_f64();
                 app.trigger(&Update::new(delta_time));
-                renderer.render(&mut app);
+            }
+            Event::RedrawRequested(id) => {
+                renderer.render(id, &mut app);
             }
             _ => (),
         });

@@ -1,4 +1,8 @@
-use milk_tea::{boba_core::BobaWorld, winit::window::Window, Renderer, RendererBuilder};
+use milk_tea::{
+    boba_core::BobaWorld,
+    winit::window::{Window, WindowId},
+    Renderer, RendererBuilder,
+};
 use wgpu::{Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
 use crate::events::{TaroRenderFinish, TaroRenderStart};
@@ -99,11 +103,15 @@ impl Renderer for TaroRenderer {
         }
     }
 
-    fn render(&mut self, app: &mut BobaWorld) {
-        self.update_size();
-        app.trigger(&TaroRenderStart);
+    fn render(&mut self, id: WindowId, app: &mut BobaWorld) {
+        if self.window.id() != id {
+            return;
+        }
 
-        let output = self.surface.get_current_texture().unwrap();
+        self.update_size();
+        let Ok(output) = self.surface.get_current_texture() else { return };
+
+        app.trigger(&TaroRenderStart);
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
