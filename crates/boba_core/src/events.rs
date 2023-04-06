@@ -1,6 +1,7 @@
 use crate::{pearls::Pearl, WorldView};
 
-/// A blanket trait that is automatically implemented for all items that are `Sized + `static`.
+/// A blanket trait that is automatically implemented for all items that are ``Sized + `static``.
+/// This is used as a simple tag for what items may be used to trigger an event in boba engine.
 pub trait Event: Sized + 'static {}
 impl<T: Sized + 'static> Event for T {}
 

@@ -41,6 +41,7 @@ pub struct Link<P: Pearl> {
 }
 
 impl<P: Pearl> Link<P> {
+    /// Returns a new link with `map` and `pearl`
     fn new(map: RawHandle, pearl: Handle<P>) -> Self {
         Self { map, pearl }
     }
@@ -136,17 +137,25 @@ impl PearlCollection {
         Some(self.get_map_mut(&map_link)?.data_mut())
     }
 
-    // Currently scoped to this crate, as it exposes the handle import
+    /// Returns an iterator over the handles and data for a specific pearl `P`.
+    ///
+    /// Currently scoped its own crate only as it exposes the innner `handle_map` import
     pub(crate) fn iter_mut<P: Pearl>(&mut self) -> Option<IterMut<P>> {
         let map_link = *self.map_links.get(&PearlId::of::<P>())?;
         Some(self.get_map_mut(&map_link)?.iter_mut())
     }
 
+    /// Returns a reference to the [`DenseHandleMap`] for pearl `P`.
+    ///
+    /// Returns `None` if one does not exist.
     fn get_map<P: Pearl>(&self, handle: &RawHandle) -> Option<&DenseHandleMap<P>> {
         let any_map = self.maps.get_data(handle.as_type())?;
         any_map.downcast_ref::<DenseHandleMap<P>>()
     }
 
+    /// Returns a mutable reference to the [`DenseHandleMap`] for pearl `P`.
+    ///
+    /// Returns `None` if one does not exist.
     fn get_map_mut<P: Pearl>(&mut self, handle: &RawHandle) -> Option<&mut DenseHandleMap<P>> {
         let any_map = self.maps.get_data_mut(handle.as_type())?;
         any_map.downcast_mut::<DenseHandleMap<P>>()

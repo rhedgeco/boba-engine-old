@@ -2,34 +2,52 @@ use std::any::{Any, TypeId};
 
 use hashbrown::HashMap;
 
+/// A generic storage solution for holding items in boba engine.
+/// It can only hold one of each item, so each item is a kind of singleton.
 #[derive(Default)]
 pub struct BobaResources {
     resources: HashMap<TypeId, Box<dyn Any>>,
 }
 
 impl BobaResources {
+    /// Returns a new resource map
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Inserts or replaces `resource` into this map.
+    ///
+    /// If a resource of the same type already existed, it is returned as `Some(T)`.
+    /// Otherwise `None` is returned.
     #[inline]
-    pub fn insert<T: 'static>(&mut self, resource: T) {
-        self.resources.insert(TypeId::of::<T>(), Box::new(resource));
+    pub fn insert<T: 'static>(&mut self, resource: T) -> Option<T> {
+        let type_id = TypeId::of::<T>();
+        let old = self.resources.insert(type_id, Box::new(resource))?;
+        Some(*old.downcast::<T>().unwrap())
     }
 
+    /// Returns a reference to the resource of type `T` stored in this map.
+    ///
+    /// Returns `None` if the resource does not exist.
     #[inline]
     pub fn get<T: 'static>(&self) -> Option<&T> {
         let any = self.resources.get(&TypeId::of::<T>())?;
         Some(any.downcast_ref::<T>().unwrap())
     }
 
+    /// Returns a mutable reference to the resource of type `T` stored in this map.
+    ///
+    /// Returns `None` if the resource does not exist.
     #[inline]
     pub fn get_mut<T: 'static>(&mut self) -> Option<&mut T> {
         let any = self.resources.get_mut(&TypeId::of::<T>())?;
         Some(any.downcast_mut::<T>().unwrap())
     }
 
+    /// Removes and returns the resource of type `T` stored in this map.
+    ///
+    /// Returns `None` if the resource does not exist.
     #[inline]
     pub fn remove<T: 'static>(&mut self) -> Option<T> {
         let any = self.resources.remove(&TypeId::of::<T>())?;

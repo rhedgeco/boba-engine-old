@@ -25,6 +25,7 @@ impl BobaWorld {
         Self::default()
     }
 
+    /// Inserts `pearl` into this world and returns a [`Link`] to its location.
     #[inline]
     pub fn insert_pearl<P: Pearl>(&mut self, pearl: P) -> Link<P> {
         // if this pearl type has not been registered, register it
@@ -35,41 +36,67 @@ impl BobaWorld {
         self.pearls.insert(pearl)
     }
 
+    /// Returns a reference to the pearl associated with `link`.
+    ///
+    /// Returns `None` if the pearl does not exist.
     #[inline]
     pub fn get_pearl<P: Pearl>(&self, link: &Link<P>) -> Option<&P> {
         self.pearls.get(link)
     }
 
+    /// Returns a mutable reference to the pearl associated with `link`.
+    ///
+    /// Returns `None` if the pearl does not exist.
     #[inline]
     pub fn get_pearl_mut<P: Pearl>(&mut self, link: &Link<P>) -> Option<&mut P> {
         self.pearls.get_mut(link)
     }
 
+    /// Removes and returns the pearl associated with `link`.
+    ///
+    /// Returns `None` if the pearl does not exist.
     #[inline]
     pub fn remove_pearl<P: Pearl>(&mut self, link: &Link<P>) -> Option<P> {
         self.pearls.remove(link)
     }
 
+    /// Inserts or replaces a `resource` in this world.
+    ///
+    /// If a resource of the same type already existed, it is returned as `Some(T)`.
+    /// Otherwise `None` is returned.
     #[inline]
-    pub fn insert_resource<T: 'static>(&mut self, resource: T) {
+    pub fn insert_resource<T: 'static>(&mut self, resource: T) -> Option<T> {
         self.resources.insert(resource)
     }
 
+    /// Returns a reference to the resource of type `T` stored in this world.
+    ///
+    /// Returns `None` if the resource does not exist.
     #[inline]
     pub fn get_resource<T: 'static>(&self) -> Option<&T> {
         self.resources.get()
     }
 
+    /// Returns a mutable reference to the resource of type `T` stored in this world.
+    ///
+    /// Returns `None` if the resource does not exist.
     #[inline]
     pub fn get_resource_mut<T: 'static>(&mut self) -> Option<&mut T> {
         self.resources.get_mut()
     }
 
+    /// Removes and returns the resource of type `T` stored in this world.
+    ///
+    /// Returns `None` if the resource does not exist.
     #[inline]
     pub fn remove_resource<T: 'static>(&mut self) -> Option<T> {
         self.resources.remove()
     }
 
+    /// Triggers an `event` that will call every pearl stored in this world that is listening for that event.
+    ///
+    /// For a pearl to "listen" to an event it must implement [`EventListener`]
+    /// and register that event in the `register` method of [`Pearl`].
     #[inline]
     pub fn trigger<E: Event>(&mut self, event: &E) {
         self.events
@@ -77,13 +104,21 @@ impl BobaWorld {
     }
 }
 
+/// A window into the resources stored in a world.
+///
+/// This is used in callbacks for events to provide access to the other pearls and resources.
 pub struct WorldView<'a> {
     exclude: RawHandle,
     pearls: &'a mut PearlCollection,
-    resources: &'a mut BobaResources,
+
+    /// A mutable reference to the resources for the world.
+    pub resources: &'a mut BobaResources,
 }
 
 impl<'a> WorldView<'a> {
+    /// Returns a reference to the pearl associated with `link`.
+    ///
+    /// Returns `None` if the pearl does not exist, or the pearl is currently being used for a callback.
     #[inline]
     pub fn get_pearl<P: Pearl>(&self, link: &Link<P>) -> Option<&P> {
         match &self.exclude == link.pearl.as_raw() {
@@ -92,22 +127,15 @@ impl<'a> WorldView<'a> {
         }
     }
 
+    /// Returns a mutable reference to the pearl associated with `link`.
+    ///
+    /// Returns `None` if the pearl does not exist, or the pearl is currently being used for a callback.
     #[inline]
     pub fn get_pearl_mut<P: Pearl>(&mut self, link: &Link<P>) -> Option<&mut P> {
         match &self.exclude == link.pearl.as_raw() {
             true => None,
             false => self.pearls.get_mut(link),
         }
-    }
-
-    #[inline]
-    pub fn get_resource<T: 'static>(&self) -> Option<&T> {
-        self.resources.get()
-    }
-
-    #[inline]
-    pub fn get_resource_mut<T: 'static>(&mut self) -> Option<&mut T> {
-        self.resources.get_mut()
     }
 }
 
