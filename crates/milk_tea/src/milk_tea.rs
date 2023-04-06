@@ -51,6 +51,11 @@ impl MilkTeaWindow {
         event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent { ref event, .. } => match event {
                 WindowEvent::CloseRequested => control_flow.set_exit(),
+                WindowEvent::Resized(_)
+                | WindowEvent::ScaleFactorChanged {
+                    scale_factor: _,
+                    new_inner_size: _,
+                } => renderer.update_size(),
                 _ => (),
             },
             Event::MainEventsCleared => {
