@@ -39,7 +39,7 @@ impl MilkTeaWindow {
         Self::default()
     }
 
-    pub fn run(self, mut app: BobaWorld, renderer: impl RendererBuilder) -> anyhow::Result<()> {
+    pub fn run(self, mut world: BobaWorld, renderer: impl RendererBuilder) -> anyhow::Result<()> {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_inner_size(PhysicalSize::new(self.size.0, self.size.1))
@@ -60,10 +60,10 @@ impl MilkTeaWindow {
             },
             Event::MainEventsCleared => {
                 let delta_time = timer.measure().as_secs_f64();
-                app.trigger(&Update::new(delta_time));
+                world.trigger(&Update::new(delta_time));
             }
             Event::RedrawRequested(id) => {
-                renderer.render(id, &mut app);
+                renderer.render(id, &mut world);
             }
             _ => (),
         });
@@ -99,11 +99,11 @@ pub struct MilkTeaHeadless {
 }
 
 impl MilkTeaHeadless {
-    pub fn run(mut app: BobaWorld) -> ! {
+    pub fn run(mut world: BobaWorld) -> ! {
         let mut timer = DeltaTimer::new();
         loop {
             let delta_time = timer.measure().as_secs_f64();
-            app.trigger(&Update::new(delta_time));
+            world.trigger(&Update::new(delta_time));
         }
     }
 }
