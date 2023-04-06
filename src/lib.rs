@@ -6,7 +6,7 @@ pub mod prelude {
     pub use boba_core::{
         events::{EventListener, EventRegistrar},
         pearls::Pearl,
-        BobaWorld,
+        BobaWorld, WorldView,
     };
 
     pub use milk_tea::{events::Update, MilkTeaWindow};
