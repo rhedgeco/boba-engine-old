@@ -93,3 +93,17 @@ impl DeltaTimer {
         }
     }
 }
+
+pub struct MilkTeaHeadless {
+    _private: (),
+}
+
+impl MilkTeaHeadless {
+    pub fn run(mut app: BobaWorld) -> ! {
+        let mut timer = DeltaTimer::new();
+        loop {
+            let delta_time = timer.measure().as_secs_f64();
+            app.trigger(&Update::new(delta_time));
+        }
+    }
+}
