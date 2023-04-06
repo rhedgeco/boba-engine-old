@@ -1,8 +1,23 @@
-use std::{hash::Hash, marker::PhantomData, mem::transmute};
+use std::{hash::Hash, marker::PhantomData};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct RawHandle {
-    pub id: u64,
+    id: u64,
+}
+
+impl RawHandle {
+    /// Converts this raw handle into a [`Handle`] of for type `T`
+    pub fn into_type<T>(self) -> Handle<T> {
+        Handle {
+            raw: self,
+            _type: PhantomData,
+        }
+    }
+
+    /// Converts this raw handle reference into a [`Handle`] reference of for type `T`
+    pub fn as_type<T>(&self) -> &Handle<T> {
+        unsafe { std::mem::transmute(self) }
+    }
 }
 
 pub struct Handle<T> {
@@ -43,15 +58,6 @@ impl<T> Handle<T> {
     const GEN_OFFSET: u32 = Self::INDEX_BITS;
     const META_OFFSET: u32 = Self::INDEX_BITS + Self::GEN_BITS;
 
-    /// Returns a new handle with the raw `id`
-    #[inline]
-    pub fn from_raw(raw: RawHandle) -> Self {
-        Self {
-            raw,
-            _type: PhantomData,
-        }
-    }
-
     /// Returns the underlying `u64` used as an id for this handle
     #[inline]
     pub fn into_raw(self) -> RawHandle {
@@ -65,7 +71,7 @@ impl<T> Handle<T> {
             + ((gen as u64) << Self::GEN_OFFSET)
             + ((meta as u64) << Self::META_OFFSET);
 
-        Self::from_raw(RawHandle { id })
+        RawHandle { id }.into_type()
     }
 
     /// Decomposes this handle into its raw parts:
@@ -88,7 +94,10 @@ impl<T> Handle<T> {
     /// it may not behave as expected. A handle should usually be used on the map it is associated with.
     #[inline]
     pub fn into_type<U>(self) -> Handle<U> {
-        unsafe { transmute(self) }
+        Handle {
+            raw: self.raw,
+            _type: PhantomData,
+        }
     }
 
     /// Transforms a handle reference into another types handle
@@ -98,7 +107,7 @@ impl<T> Handle<T> {
     /// it may not behave as expected. A handle should usually be used on the map it is associated with.
     #[inline]
     pub fn as_type<U>(&self) -> &Handle<U> {
-        unsafe { transmute(self) }
+        unsafe { std::mem::transmute(self) }
     }
 
     // Returns the underlying `u64` used as an id for this handle
