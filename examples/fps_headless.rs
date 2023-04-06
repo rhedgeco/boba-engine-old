@@ -1,5 +1,4 @@
 use boba::prelude::*;
-use milk_tea::MilkTeaHeadless;
 
 struct UpdatePrinter;
 

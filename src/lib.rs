@@ -9,7 +9,7 @@ pub mod prelude {
         BobaWorld, WorldView,
     };
 
-    pub use milk_tea::{events::Update, MilkTeaWindow};
+    pub use milk_tea::{events::Update, MilkTeaHeadless, MilkTeaWindow};
 
     pub use taro_renderer::TaroBuilder;
 }
