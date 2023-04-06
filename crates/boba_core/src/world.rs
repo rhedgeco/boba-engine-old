@@ -27,6 +27,11 @@ impl BobaWorld {
 
     #[inline]
     pub fn insert_pearl<P: Pearl>(&mut self, pearl: P) -> Link<P> {
+        // if this pearl type has not been registered, register it
+        if !self.pearls.contains_type::<P>() {
+            P::register(&mut self.events);
+        }
+
         self.pearls.insert(pearl)
     }
 
