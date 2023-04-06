@@ -1,4 +1,4 @@
-use milk_tea::{boba_core::BobaApp, winit::window::Window, Renderer, RendererBuilder};
+use milk_tea::{boba_core::BobaWorld, winit::window::Window, Renderer, RendererBuilder};
 use wgpu::{Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
 use crate::events::{TaroRenderFinish, TaroRenderStart};
@@ -99,7 +99,7 @@ impl Renderer for TaroRenderer {
         }
     }
 
-    fn render(&mut self, app: &mut BobaApp) {
+    fn render(&mut self, app: &mut BobaWorld) {
         self.update_size();
         app.trigger(&TaroRenderStart);
 

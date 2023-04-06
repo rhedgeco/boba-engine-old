@@ -110,6 +110,12 @@ impl<T> Handle<T> {
         unsafe { std::mem::transmute(self) }
     }
 
+    /// Returns a reference to the underlying raw handle
+    #[inline]
+    pub fn as_raw(&self) -> &RawHandle {
+        &self.raw
+    }
+
     // Returns the underlying `u64` used as an id for this handle
     #[inline]
     pub fn id(&self) -> u64 {

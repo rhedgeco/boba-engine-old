@@ -9,14 +9,14 @@ impl Pearl for UpdatePrinter {
 }
 
 impl EventListener<Update> for UpdatePrinter {
-    fn callback(_: &Handle<Self>, update: &Update, _: &mut World) {
-        println!("FPS: {}", 1. / update.delta_time);
+    fn callback(&mut self, event: &Update, _: &mut boba_core::WorldView) {
+        println!("FPS: {}", 1. / event.delta_time);
     }
 }
 
 fn main() {
     env_logger::init();
-    let mut app = BobaApp::new();
+    let mut app = BobaWorld::new();
     app.insert_pearl(UpdatePrinter);
     MilkTeaWindow::new().run(app, TaroBuilder::new()).unwrap();
 }

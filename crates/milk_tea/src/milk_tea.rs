@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use boba_core::BobaApp;
+use boba_core::BobaWorld;
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -17,7 +17,7 @@ pub trait RendererBuilder {
 
 pub trait Renderer: Sized + 'static {
     fn update_size(&mut self);
-    fn render(&mut self, app: &mut BobaApp);
+    fn render(&mut self, world: &mut BobaWorld);
 }
 
 pub struct MilkTeaWindow {
@@ -39,7 +39,7 @@ impl MilkTeaWindow {
         Self::default()
     }
 
-    pub fn run(self, mut app: BobaApp, renderer: impl RendererBuilder) -> anyhow::Result<()> {
+    pub fn run(self, mut app: BobaWorld, renderer: impl RendererBuilder) -> anyhow::Result<()> {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_inner_size(PhysicalSize::new(self.size.0, self.size.1))
