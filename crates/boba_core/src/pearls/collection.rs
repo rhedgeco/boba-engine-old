@@ -188,10 +188,10 @@ impl<'a, P: Pearl> SplitStep<'a, P> {
     pub fn new(collection: &'a mut PearlCollection) -> Option<Self> {
         // SAFETY: We split the collection to have a reference to itself and its iterator.
         // while this technically aliases over the collection twice, the split step does not access both at the same time.
-        // Furthermore, for each step that this stepper provides, it gives back a single mutable pearl, and an
-        // exclusive collection that excludes the single pearl it is returning. This ensures that while we have techincally
-        // have multimple exclusive access, all methods of accessing the data does not have any overlap,
-        // and thus is safe to use.
+        // Furthermore, for each step of next, this gives back a single mutable pearl and an
+        // exclusive collection that excludes the other pearl that is being returned.
+        // This ensures that while we have techincally have multimple exclusive access,
+        // all methods of accessing the data does not have any overlap, and as such is safe to use.
         let ptr = collection as *mut PearlCollection;
         let map_link = *collection.map_links.get(&PearlId::of::<P>())?;
         let iter = collection.get_map_mut(&map_link)?.iter_mut();
