@@ -4,9 +4,9 @@ pub use taro_renderer;
 
 pub mod prelude {
     pub use boba_core::{
-        events::{EventListener, EventRegistrar},
+        events::{EventListener, EventRegistrar, WorldView},
         pearls::Pearl,
-        BobaWorld, WorldView,
+        BobaWorld,
     };
 
     pub use milk_tea::{events::Update, MilkTeaHeadless, MilkTeaWindow};
