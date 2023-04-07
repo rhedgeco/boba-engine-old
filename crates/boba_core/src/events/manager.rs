@@ -16,6 +16,41 @@ use crate::{
 pub struct WorldView<'a> {
     pub pearls: &'a mut ExclusivePearlProvider<'a>,
     pub resources: &'a mut BobaResources,
+    pub commands: &'a mut WorldCommands,
+}
+
+impl<'a> WorldView<'a> {
+    pub fn new(
+        pearls: &'a mut ExclusivePearlProvider<'a>,
+        resources: &'a mut BobaResources,
+        commands: &'a mut WorldCommands,
+    ) -> Self {
+        Self {
+            pearls,
+            resources,
+            commands,
+        }
+    }
+}
+
+type WorldCommand = fn(&mut PearlCollection, &mut BobaResources);
+
+/// A collection for storing commands to be run later on a [`BobaWorld`].
+pub struct WorldCommands {
+    commands: Vec<WorldCommand>,
+}
+
+impl WorldCommands {
+    fn new() -> Self {
+        Self {
+            commands: Vec::new(),
+        }
+    }
+
+    /// Inserts a [`WorldCommand`] to be executed later.
+    pub fn insert(&mut self, command: WorldCommand) {
+        self.commands.push(command);
+    }
 }
 
 type EventCallback<E> = fn(&E, &mut PearlCollection, &mut BobaResources);
@@ -94,15 +129,17 @@ impl<E: Event> EventDispatcher<E> {
         pearls: &mut PearlCollection,
         resources: &mut BobaResources,
     ) {
+        // iterate over all the pearls and collect commands if necessary.
         let Some(mut split_step) = pearls.split_step::<L>() else { return };
+        let commands = &mut WorldCommands::new();
         while let Some((pearl, mut provider)) = split_step.next() {
-            pearl.callback(
-                event,
-                WorldView {
-                    pearls: &mut provider,
-                    resources,
-                },
-            );
+            let world = WorldView::new(&mut provider, resources, commands);
+            pearl.callback(event, world);
+        }
+
+        // execute all the commands after iteration.
+        for command in commands.commands.iter() {
+            command(pearls, resources);
         }
     }
 }
