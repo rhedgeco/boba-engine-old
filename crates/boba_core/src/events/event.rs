@@ -1,4 +1,6 @@
-use crate::{pearls::Pearl, WorldView};
+use crate::pearls::Pearl;
+
+use super::WorldView;
 
 /// A blanket trait that is automatically implemented for all items that are ``Sized + `static``.
 /// This is used as a simple tag for what items may be used to trigger an event in boba engine.
