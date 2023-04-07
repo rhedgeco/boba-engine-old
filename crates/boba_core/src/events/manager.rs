@@ -1,48 +1,21 @@
 use std::any::{Any, TypeId};
 
-use handle_map::RawHandle;
 use hashbrown::{hash_map::Entry, HashMap};
 use indexmap::IndexMap;
 
 use crate::{
     events::{Event, EventListener, EventRegistrar},
-    pearls::{Link, Pearl, PearlCollection, PearlId},
+    pearls::{ExclusivePearlProvider, Pearl, PearlCollection, PearlId},
     BobaResources,
 };
 
 /// A window into the resources stored in a world.
 ///
-/// This is used in callbacks for events to provide access to the other pearls and resources.
+/// This is used internally in [`EventListener`] callbacks
+///  for events to provide access to the other pearls and resources in the world.
 pub struct WorldView<'a> {
-    exclude: RawHandle,
-    pearls: &'a mut PearlCollection,
-
-    /// A mutable reference to the resources for the world.
+    pub pearls: &'a mut ExclusivePearlProvider<'a>,
     pub resources: &'a mut BobaResources,
-}
-
-impl<'a> WorldView<'a> {
-    /// Returns a reference to the pearl associated with `link`.
-    ///
-    /// Returns `None` if the pearl does not exist, or the pearl is currently being used for a callback.
-    #[inline]
-    pub fn get_pearl<P: Pearl>(&self, link: &Link<P>) -> Option<&P> {
-        match &self.exclude == link.pearl.as_raw() {
-            true => None,
-            false => self.pearls.get(link),
-        }
-    }
-
-    /// Returns a mutable reference to the pearl associated with `link`.
-    ///
-    /// Returns `None` if the pearl does not exist, or the pearl is currently being used for a callback.
-    #[inline]
-    pub fn get_pearl_mut<P: Pearl>(&mut self, link: &Link<P>) -> Option<&mut P> {
-        match &self.exclude == link.pearl.as_raw() {
-            true => None,
-            false => self.pearls.get_mut(link),
-        }
-    }
 }
 
 type EventCallback<E> = fn(&E, &mut PearlCollection, &mut BobaResources);
@@ -121,23 +94,15 @@ impl<E: Event> EventDispatcher<E> {
         pearls: &mut PearlCollection,
         resources: &mut BobaResources,
     ) {
-        // SAFETY: We get a pointer to the pearls here so that we can split it.
-        // The pearls will essentially be split for each iteration and the WorldView
-        // hold the only handle that could incorrectly alias the pearls as an "exclusion".
-        // the `WorldView` does not allow modification to the ordering of the collection,
-        // and as such, is safe to iterate over while items can still be accessed mutably.
-        let pearls_ptr = pearls as *mut PearlCollection;
-        let Some(pearl_iter) = pearls.iter_mut::<L>() else { return };
-        let pearls = unsafe { &mut *pearls_ptr };
-
-        for (handle, pearl) in pearl_iter {
-            let mut view = WorldView {
-                exclude: handle.into_raw(),
-                pearls,
-                resources,
-            };
-
-            pearl.callback(event, &mut view);
+        let Some(mut split_step) = pearls.split_step::<L>() else { return };
+        while let Some((pearl, mut provider)) = split_step.next() {
+            pearl.callback(
+                event,
+                WorldView {
+                    pearls: &mut provider,
+                    resources,
+                },
+            );
         }
     }
 }
