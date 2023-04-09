@@ -151,17 +151,21 @@ impl PearlCollection {
 
 /// A wrapper over a [`PearlCollection`] that only allows accessing items and not mutating the collection.
 /// It also prevents access to a single pearl as it is the main type used in a [`SplitStep`].
-pub struct ExclusivePearlProvider<'a> {
-    exclude: &'a RawHandle,
+pub struct ExclusivePearlProvider<'a, P: Pearl> {
+    exclude: Link<P>,
     collection: &'a mut PearlCollection,
 }
 
-impl<'a> ExclusivePearlProvider<'a> {
+impl<'a, T: Pearl> ExclusivePearlProvider<'a, T> {
+    pub fn link(&self) -> &Link<T> {
+        &self.exclude
+    }
+
     /// Returns a reference to the pearl that `link` points to.
     ///
     /// Returns `None` if the link is invalid, or if the pearl has been excluded.
     pub fn get<P: Pearl>(&self, link: &Link<P>) -> Option<&P> {
-        if self.exclude == link.pearl.as_raw() {
+        if self.exclude.pearl.as_raw() == link.pearl.as_raw() {
             return None;
         }
 
@@ -172,7 +176,7 @@ impl<'a> ExclusivePearlProvider<'a> {
     ///
     /// Returns `None` if the link is invalid, or if the pearl has been excluded.
     pub fn get_mut<P: Pearl>(&mut self, link: &Link<P>) -> Option<&mut P> {
-        if self.exclude == link.pearl.as_raw() {
+        if self.exclude.pearl.as_raw() == link.pearl.as_raw() {
             return None;
         }
 
@@ -188,6 +192,7 @@ type IterMut<'a, P> = DataMut<'a, P>;
 /// other pearls using [`Link`]. This is useful to be able to iterate over all pearls while
 /// also allowing access to the other pearls in case they need to reference eachother.
 pub struct SplitStep<'a, P: Pearl> {
+    map_link: RawHandle,
     iter: dense::IterMut<'a, P>,
     collection: &'a mut PearlCollection,
 }
@@ -207,7 +212,11 @@ impl<'a, P: Pearl> SplitStep<'a, P> {
         let map_link = *collection.map_links.get(&PearlId::of::<P>())?;
         let iter = collection.get_map_mut(&map_link)?.iter_mut();
         let collection = unsafe { &mut *ptr };
-        Some(Self { iter, collection })
+        Some(Self {
+            map_link,
+            iter,
+            collection,
+        })
     }
 
     /// Gets the next pearl, and the matching [`ExclusivePearlProvider`].
@@ -215,12 +224,15 @@ impl<'a, P: Pearl> SplitStep<'a, P> {
     /// This diverges from typical iterators as the returned items must go out scope
     /// before `next` is called again. This is due to providing access to the whole
     /// collection through the exclusive provider.
-    pub fn next(&mut self) -> Option<(&mut P, ExclusivePearlProvider)> {
+    pub fn next(&mut self) -> Option<(&mut P, ExclusivePearlProvider<P>)> {
         let (handle, pearl) = self.iter.next()?;
         Some((
             pearl,
             ExclusivePearlProvider {
-                exclude: handle.as_raw(),
+                exclude: Link {
+                    map: self.map_link,
+                    pearl: *handle,
+                },
                 collection: self.collection,
             },
         ))

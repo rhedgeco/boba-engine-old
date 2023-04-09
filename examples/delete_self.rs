@@ -1,8 +1,7 @@
 use boba::prelude::*;
 
-struct SelfDestroy {
-    link: Option<Link<SelfDestroy>>,
-}
+struct SelfDestroy;
+
 impl Pearl for SelfDestroy {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
         registrar.listen_for::<Update>();
@@ -10,18 +9,15 @@ impl Pearl for SelfDestroy {
 }
 
 impl EventListener<Update> for SelfDestroy {
-    fn callback(&mut self, _: &Update, world: EventView) {
+    fn callback(&mut self, _: &Update, world: EventView<Self>) {
         println!("GOODBYE CRUEL WORLD!");
-        if let Some(link) = self.link {
-            world.commands.destroy_pearl(link);
-        }
+        world.commands.destroy_pearl(world.pearls.link());
     }
 }
 
 fn main() {
     env_logger::init();
     let mut world = BobaWorld::new();
-    let link = world.insert_pearl(SelfDestroy { link: None });
-    world.get_pearl_mut(&link).unwrap().link = Some(link);
+    world.insert_pearl(SelfDestroy);
     MilkTeaHeadless::run(world);
 }

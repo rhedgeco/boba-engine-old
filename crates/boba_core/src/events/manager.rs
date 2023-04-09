@@ -5,11 +5,11 @@ use indexmap::IndexMap;
 
 use crate::{
     events::{Event, EventListener, EventRegistrar},
-    pearls::{ExclusivePearlProvider, Pearl, PearlCollection, PearlId},
+    pearls::{Pearl, PearlCollection, PearlId},
     BobaResources,
 };
 
-use super::commands::EventCommands;
+use super::{commands::EventCommands, EventView};
 
 #[derive(Default)]
 pub struct EventManager {
@@ -97,29 +97,5 @@ impl<E: Event> EventDispatcher<E> {
 
         // execute all collected commands after iteration
         commands.execute(pearls, resources);
-    }
-}
-
-/// A window into the resources stored in a world.
-///
-/// This is used internally in [`EventListener`] callbacks
-///  for events to provide access to the other pearls and resources in the world.
-pub struct EventView<'a> {
-    pub pearls: &'a mut ExclusivePearlProvider<'a>,
-    pub resources: &'a mut BobaResources,
-    pub commands: &'a mut EventCommands,
-}
-
-impl<'a> EventView<'a> {
-    pub fn new(
-        pearls: &'a mut ExclusivePearlProvider<'a>,
-        resources: &'a mut BobaResources,
-        commands: &'a mut EventCommands,
-    ) -> Self {
-        Self {
-            pearls,
-            resources,
-            commands,
-        }
     }
 }
