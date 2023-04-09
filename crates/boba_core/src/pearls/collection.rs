@@ -157,7 +157,10 @@ pub struct ExclusivePearlProvider<'a, P: Pearl> {
 }
 
 impl<'a, T: Pearl> ExclusivePearlProvider<'a, T> {
-    pub fn link(&self) -> &Link<T> {
+    /// Returns a [`Link`] to the current pearl.
+    ///
+    /// This is also the pearl that is excluded from this collection.
+    pub fn current(&self) -> &Link<T> {
         &self.exclude
     }
 

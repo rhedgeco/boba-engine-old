@@ -9,9 +9,9 @@ impl Pearl for SelfDestroy {
 }
 
 impl EventListener<Update> for SelfDestroy {
-    fn callback(&mut self, _: &Update, world: EventView<Self>) {
+    fn callback(&mut self, _: &Update, view: EventView<Self>) {
         println!("GOODBYE CRUEL WORLD!");
-        world.commands.destroy_pearl(world.pearls.link());
+        view.commands.destroy_pearl(view.pearls.current());
     }
 }
 

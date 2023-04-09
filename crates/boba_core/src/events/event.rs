@@ -12,7 +12,7 @@ impl<T: Sized + 'static> Event for T {}
 
 /// The trait that must be implemented to be registered with an [`EventRegistry`][super::EventRegistry]
 pub trait EventListener<E: Event>: Pearl {
-    fn callback(&mut self, event: &E, world: EventView<Self>);
+    fn callback(&mut self, event: &E, view: EventView<Self>);
 }
 
 /// Trait to hide the struct that is passed into an [`EventListener`] `callback()`.
