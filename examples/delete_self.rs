@@ -11,7 +11,7 @@ impl Pearl for SelfDestroy {
 impl EventListener<Update> for SelfDestroy {
     fn callback(pearl: PearlLink<Self>, _: &Update, view: EventView<Self>) {
         println!("GOODBYE CRUEL WORLD!");
-        view.commands.destroy_pearl(&pearl);
+        view.commands.destroy_pearl(pearl.link());
     }
 }
 
