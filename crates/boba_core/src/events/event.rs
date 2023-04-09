@@ -1,6 +1,6 @@
 use crate::pearls::Pearl;
 
-use super::WorldView;
+use super::EventView;
 
 /// A blanket trait that is automatically implemented for all items that are ``Sized + `static``.
 /// This is used as a simple tag for what items may be used to trigger an event in boba engine.
@@ -9,7 +9,7 @@ impl<T: Sized + 'static> Event for T {}
 
 /// The trait that must be implemented to be registered with an [`EventRegistry`][super::EventRegistry]
 pub trait EventListener<E: Event>: Pearl {
-    fn callback(&mut self, event: &E, world: WorldView);
+    fn callback(&mut self, event: &E, world: EventView);
 }
 
 /// Trait to hide the struct that is passed into an [`EventListener`] `callback()`.

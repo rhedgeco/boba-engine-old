@@ -13,8 +13,19 @@ use super::{Pearl, PearlId};
 
 /// Represents a link to a single pearl in a [`PearlCollection`].
 pub struct Link<P: Pearl> {
-    pub map: RawHandle,
-    pub pearl: Handle<P>,
+    pub(crate) map: RawHandle,
+    pub(crate) pearl: Handle<P>,
+}
+
+impl<P: Pearl> Copy for Link<P> {}
+
+impl<P: Pearl> Clone for Link<P> {
+    fn clone(&self) -> Self {
+        Self {
+            map: self.map,
+            pearl: self.pearl,
+        }
+    }
 }
 
 impl<P: Pearl> Link<P> {
