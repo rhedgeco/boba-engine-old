@@ -1,5 +1,5 @@
 use crate::{
-    pearls::{Link, Pearl, PearlCollection},
+    pearls::{Pearl, PearlCollection, PearlLink},
     BobaResources,
 };
 
@@ -26,8 +26,8 @@ impl EventCommands {
     }
 
     /// Shortahand for inserting a `DestroyPearl` command
-    pub fn destroy_pearl<P: Pearl>(&mut self, link: &Link<P>) {
-        self.insert(DestroyPearl { link: *link })
+    pub fn destroy_pearl<P: Pearl>(&mut self, link: &PearlLink<P>) {
+        self.insert(DestroyPearl { link: *link.link() })
     }
 
     /// Consumes and executes all commands

@@ -5,7 +5,7 @@ use indexmap::IndexMap;
 
 use crate::{
     events::{Event, EventListener, EventRegistrar},
-    pearls::{Pearl, PearlCollection, PearlId},
+    pearls::{Pearl, PearlCollection, PearlId, PearlLink},
     BobaResources,
 };
 
@@ -91,8 +91,9 @@ impl<E: Event> EventDispatcher<E> {
         let Some(mut split_step) = pearls.split_step::<L>() else { return };
         let mut commands = EventCommands::new();
         while let Some((pearl, mut provider)) = split_step.next() {
+            let pearl_link = PearlLink::new(pearl, *provider.excluded());
             let world = EventView::new(&mut provider, resources, &mut commands);
-            pearl.callback(event, world);
+            L::callback(pearl_link, event, world);
         }
 
         // execute all collected commands after iteration

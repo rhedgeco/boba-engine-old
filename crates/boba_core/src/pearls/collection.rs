@@ -1,4 +1,7 @@
-use std::any::Any;
+use std::{
+    any::Any,
+    ops::{Deref, DerefMut},
+};
 
 use handle_map::{
     map::{
@@ -32,6 +35,35 @@ impl<P: Pearl> Link<P> {
     /// Returns a new link with `map` and `pearl`
     fn new(map: RawHandle, pearl: Handle<P>) -> Self {
         Self { map, pearl }
+    }
+}
+
+pub struct PearlLink<'a, P: Pearl> {
+    pearl: &'a mut P,
+    link: Link<P>,
+}
+
+impl<'a, P: Pearl> PearlLink<'a, P> {
+    pub fn new(pearl: &'a mut P, link: Link<P>) -> Self {
+        Self { pearl, link }
+    }
+
+    pub fn link(&self) -> &Link<P> {
+        &self.link
+    }
+}
+
+impl<'a, P: Pearl> Deref for PearlLink<'a, P> {
+    type Target = P;
+
+    fn deref(&self) -> &Self::Target {
+        self.pearl
+    }
+}
+
+impl<'a, P: Pearl> DerefMut for PearlLink<'a, P> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.pearl
     }
 }
 
@@ -157,10 +189,8 @@ pub struct ExclusivePearlProvider<'a, P: Pearl> {
 }
 
 impl<'a, T: Pearl> ExclusivePearlProvider<'a, T> {
-    /// Returns a [`Link`] to the current pearl.
-    ///
-    /// This is also the pearl that is excluded from this collection.
-    pub fn current(&self) -> &Link<T> {
+    /// Returns a [`Link`] to the excluded pearl.
+    pub fn excluded(&self) -> &Link<T> {
         &self.exclude
     }
 
