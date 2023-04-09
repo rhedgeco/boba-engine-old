@@ -127,22 +127,17 @@ impl PearlCollection {
 
 /// A wrapper over a [`PearlCollection`] that only allows accessing items and not mutating the collection.
 /// It also prevents access to a single pearl as it is the main type used in a [`SplitStep`].
-pub struct ExclusivePearlProvider<'a, P: Pearl> {
-    exclude: Link<P>,
+pub struct ExclusivePearlProvider<'a> {
+    pub(crate) exclude: RawHandle,
     collection: &'a mut PearlCollection,
 }
 
-impl<'a, T: Pearl> ExclusivePearlProvider<'a, T> {
-    /// Returns a [`Link`] to the excluded pearl.
-    pub fn excluded(&self) -> &Link<T> {
-        &self.exclude
-    }
-
+impl<'a> ExclusivePearlProvider<'a> {
     /// Returns a reference to the pearl that `link` points to.
     ///
     /// Returns `None` if the link is invalid, or if the pearl has been excluded.
     pub fn get<P: Pearl>(&self, link: &Link<P>) -> Option<&P> {
-        if self.exclude.pearl.as_raw() == link.pearl.as_raw() {
+        if &self.exclude == link.pearl.as_raw() {
             return None;
         }
 
@@ -153,7 +148,7 @@ impl<'a, T: Pearl> ExclusivePearlProvider<'a, T> {
     ///
     /// Returns `None` if the link is invalid, or if the pearl has been excluded.
     pub fn get_mut<P: Pearl>(&mut self, link: &Link<P>) -> Option<&mut P> {
-        if self.exclude.pearl.as_raw() == link.pearl.as_raw() {
+        if &self.exclude == link.pearl.as_raw() {
             return None;
         }
 
@@ -169,7 +164,7 @@ type IterMut<'a, P> = DataMut<'a, P>;
 /// other pearls using [`Link`]. This is useful to be able to iterate over all pearls while
 /// also allowing access to the other pearls in case they need to reference eachother.
 pub struct SplitStep<'a, P: Pearl> {
-    map_link: RawHandle,
+    pub(crate) map_link: RawHandle,
     iter: dense::IterMut<'a, P>,
     collection: &'a mut PearlCollection,
 }
@@ -201,15 +196,12 @@ impl<'a, P: Pearl> SplitStep<'a, P> {
     /// This diverges from typical iterators as the returned items must go out scope
     /// before `next` is called again. This is due to providing access to the whole
     /// collection through the exclusive provider.
-    pub fn next(&mut self) -> Option<(&mut P, ExclusivePearlProvider<P>)> {
+    pub fn next(&mut self) -> Option<(&mut P, ExclusivePearlProvider)> {
         let (handle, pearl) = self.iter.next()?;
         Some((
             pearl,
             ExclusivePearlProvider {
-                exclude: Link {
-                    map: self.map_link,
-                    pearl: *handle,
-                },
+                exclude: handle.into_raw(),
                 collection: self.collection,
             },
         ))

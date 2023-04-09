@@ -5,11 +5,11 @@ use indexmap::IndexMap;
 
 use crate::{
     events::{Event, EventListener, EventRegistrar},
-    pearls::{Pearl, PearlCollection, PearlId, PearlLink},
+    pearls::{Link, Pearl, PearlCollection, PearlId, PearlLink},
     BobaResources,
 };
 
-use super::{commands::EventCommands, EventView};
+use super::{commands::EventCommands, EventData};
 
 #[derive(Default)]
 pub struct EventManager {
@@ -89,11 +89,13 @@ impl<E: Event> EventDispatcher<E> {
     ) {
         // iterate over all the pearls and collect commands if necessary.
         let Some(mut split_step) = pearls.split_step::<L>() else { return };
+        let map_link = split_step.map_link;
         let mut commands = EventCommands::new();
         while let Some((pearl, mut provider)) = split_step.next() {
-            let pearl_link = PearlLink::new(pearl, *provider.excluded());
-            let world = EventView::new(&mut provider, resources, &mut commands);
-            L::callback(pearl_link, event, world);
+            let link = Link::new(map_link, provider.exclude.into_type::<L>());
+            let pearl_link = PearlLink::new(pearl, link);
+            let event_data = EventData::new(event, &mut provider, resources, &mut commands);
+            L::callback(pearl_link, event_data);
         }
 
         // execute all collected commands after iteration

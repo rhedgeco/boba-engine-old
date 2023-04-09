@@ -12,7 +12,7 @@ impl<T: Sized + 'static> Event for T {}
 
 /// The trait that must be implemented to be registered with an [`EventRegistry`][super::EventRegistry]
 pub trait EventListener<E: Event>: Pearl {
-    fn callback(pearl: PearlLink<Self>, event: &E, view: EventView<Self>);
+    fn callback(pearl: PearlLink<Self>, event: EventData<E>);
 }
 
 /// Trait to hide the struct that is passed into an [`EventListener`] `callback()`.
@@ -28,19 +28,22 @@ pub trait EventRegistrar<P: Pearl> {
 ///
 /// This is used internally in [`EventListener`] callbacks
 ///  for events to provide access to the other pearls and resources in the world.
-pub struct EventView<'a, P: Pearl> {
-    pub pearls: &'a mut ExclusivePearlProvider<'a, P>,
+pub struct EventData<'a, E: Event> {
+    pub data: &'a E,
+    pub pearls: &'a mut ExclusivePearlProvider<'a>,
     pub resources: &'a mut BobaResources,
     pub commands: &'a mut EventCommands,
 }
 
-impl<'a, P: Pearl> EventView<'a, P> {
+impl<'a, E: Event> EventData<'a, E> {
     pub fn new(
-        pearls: &'a mut ExclusivePearlProvider<'a, P>,
+        event: &'a E,
+        pearls: &'a mut ExclusivePearlProvider<'a>,
         resources: &'a mut BobaResources,
         commands: &'a mut EventCommands,
     ) -> Self {
         Self {
+            data: event,
             pearls,
             resources,
             commands,

@@ -4,7 +4,7 @@ pub use taro_renderer;
 
 pub mod prelude {
     pub use boba_core::{
-        events::{EventListener, EventRegistrar, EventView},
+        events::{EventData, EventListener, EventRegistrar},
         pearls::{Link, Pearl, PearlCollection, PearlLink},
         BobaResources, BobaWorld,
     };
