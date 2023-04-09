@@ -4,7 +4,7 @@ use handle_map::{Handle, RawHandle};
 
 use super::Pearl;
 
-/// Represents a link to a single pearl in a [`PearlCollection`].
+/// Represents a link to a single pearl in a [`PearlCollection`][crate::pearls::PearlCollection].
 pub struct Link<P: Pearl> {
     pub(crate) map: RawHandle,
     pub(crate) pearl: Handle<P>,
