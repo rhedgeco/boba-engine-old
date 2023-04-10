@@ -5,11 +5,11 @@ use indexmap::IndexMap;
 
 use crate::{
     events::{Event, EventListener, EventRegistrar},
-    pearls::{Link, Pearl, PearlCollection, PearlId, PearlLink},
+    pearls::{Pearl, PearlCollection, PearlId},
     BobaResources,
 };
 
-use super::{commands::EventCommands, EventData};
+use super::{commands::CommandCollection, EventData};
 
 #[derive(Default)]
 pub struct EventManager {
@@ -22,10 +22,12 @@ impl EventManager {
         event: &E,
         pearls: &mut PearlCollection,
         resources: &mut BobaResources,
-    ) {
-        let Some(dispatcher) = self.dispatchers.get(&TypeId::of::<E>()) else { return };
+    ) -> CommandCollection {
+        let mut commands = CommandCollection::new();
+        let Some(dispatcher) = self.dispatchers.get(&TypeId::of::<E>()) else { return commands };
         let dispatcher = dispatcher.downcast_ref::<EventDispatcher<E>>().unwrap();
-        dispatcher.call(event, pearls, resources);
+        dispatcher.call(event, pearls, resources, &mut commands);
+        commands
     }
 }
 
@@ -48,7 +50,7 @@ impl<P: Pearl> EventRegistrar<P> for EventManager {
     }
 }
 
-type EventCallback<E> = fn(&E, &mut PearlCollection, &mut BobaResources);
+type EventCallback<E> = fn(&E, &mut PearlCollection, &mut BobaResources, &mut CommandCollection);
 
 struct EventDispatcher<E: Event> {
     callbacks: IndexMap<PearlId, EventCallback<E>>,
@@ -76,9 +78,15 @@ impl<E: Event> EventDispatcher<E> {
     }
 
     #[inline]
-    pub fn call(&self, event: &E, pearls: &mut PearlCollection, resources: &mut BobaResources) {
+    pub fn call(
+        &self,
+        event: &E,
+        pearls: &mut PearlCollection,
+        resources: &mut BobaResources,
+        commands: &mut CommandCollection,
+    ) {
         for callback in self.callbacks.values() {
-            callback(event, pearls, resources);
+            callback(event, pearls, resources, commands);
         }
     }
 
@@ -86,19 +94,14 @@ impl<E: Event> EventDispatcher<E> {
         event: &E,
         pearls: &mut PearlCollection,
         resources: &mut BobaResources,
+        commands: &mut CommandCollection,
     ) {
         // iterate over all the pearls and collect commands if necessary.
-        let Some(mut split_step) = pearls.split_step::<L>() else { return };
-        let map_link = split_step.map_link;
-        let mut commands = EventCommands::new();
+        let Some(mut split_step) = pearls.exclusive_stream::<L>() else { return };
+        let event_commands = commands.create();
         while let Some((pearl, mut provider)) = split_step.next() {
-            let link = Link::new(map_link, provider.exclude.into_type::<L>());
-            let pearl_link = PearlLink::new(pearl, link);
-            let event_data = EventData::new(event, &mut provider, resources, &mut commands);
-            L::callback(pearl_link, event_data);
+            let event_data = EventData::new(event, &mut provider, resources, event_commands);
+            L::callback(pearl, event_data);
         }
-
-        // execute all collected commands after iteration
-        commands.execute(pearls, resources);
     }
 }

@@ -17,6 +17,6 @@ impl EventListener<Update> for UpdatePrinter {
 fn main() {
     env_logger::init();
     let mut world = BobaWorld::new();
-    world.insert_pearl(UpdatePrinter);
+    world.pearls.insert(UpdatePrinter);
     MilkTeaHeadless::run(world);
 }

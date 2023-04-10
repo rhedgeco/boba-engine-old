@@ -1,5 +1,8 @@
-use std::any::Any;
-
+use super::{Link, Pearl, PearlId, PearlLink};
+use crate::{
+    events::{Event, EventManager},
+    BobaResources,
+};
 use handle_map::{
     map::{
         dense::{self, Data, DataMut, DenseHandleMap},
@@ -8,12 +11,85 @@ use handle_map::{
     RawHandle,
 };
 use hashbrown::{hash_map::Entry, HashMap};
+use std::{
+    any::Any,
+    ops::{Deref, DerefMut},
+};
 
-use super::{Link, Pearl, PearlId};
+type Iter<'a, P> = Data<'a, P>;
+type IterMut<'a, P> = DataMut<'a, P>;
 
-/// A storage solution for [`Pearl`] objects.
-/// Stored pearls in a densly packed array, for quick iteration.
-/// But also provides a link for their location for quick access.
+/// A wrapper around a [`PearlCollectionNew`] that provides access to modify the collection and run events.
+#[derive(Default)]
+pub struct PearlManager {
+    events: EventManager,
+    pearls: PearlCollection,
+}
+
+impl DerefMut for PearlManager {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.pearls
+    }
+}
+
+impl Deref for PearlManager {
+    type Target = PearlCollection;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.pearls
+    }
+}
+
+impl PearlManager {
+    /// Returns a new pearl manager.
+    #[inline]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Inserts `pearl` into the collection, and returns a [`Link`] to its location.
+    pub fn insert<P: Pearl>(&mut self, pearl: P) -> Link<P> {
+        let (map_handle, pearl_handle) = match self.pearls.map_links.entry(PearlId::of::<P>()) {
+            Entry::Occupied(e) => {
+                let map_handle = *e.get();
+                let any_map = self.pearls.maps.get_data_mut(map_handle.as_type()).unwrap();
+                let map = any_map.downcast_mut::<DenseHandleMap<P>>().unwrap();
+                let pearl_handle = map.insert(pearl);
+                (map_handle, pearl_handle)
+            }
+            Entry::Vacant(e) => {
+                P::register(&mut self.events);
+                let mut map = DenseHandleMap::<P>::new();
+                let pearl_handle = map.insert(pearl);
+                let map_handle = self.pearls.maps.insert(Box::new(map)).into_raw();
+                e.insert(map_handle);
+                (map_handle, pearl_handle)
+            }
+        };
+
+        Link::new(map_handle, pearl_handle)
+    }
+
+    /// Removes and returns the pearl that `link` points to.
+    ///
+    /// Returns `None` if the link is invalid.
+    pub fn remove<P: Pearl>(&mut self, link: &Link<P>) -> Option<P> {
+        let map = self.pearls.get_map_mut::<P>(&link.map)?;
+        map.remove(&link.pearl)
+    }
+
+    pub fn trigger<E: Event>(&mut self, event: &E, resources: &mut BobaResources) {
+        let commands = self.events.trigger(event, &mut self.pearls, resources);
+        commands.execute(self, resources);
+    }
+}
+
+/// A collection of pearls that can be queried in a number of ways.
+///
+/// The collection layout cannot be modified.
+/// The only way to modify a collection is within a [`PearlManager`].
 #[derive(Default)]
 pub struct PearlCollection {
     map_links: HashMap<PearlId, RawHandle>,
@@ -24,28 +100,6 @@ impl PearlCollection {
     /// Returns a new collection.
     pub fn new() -> Self {
         Self::default()
-    }
-
-    /// Inserts a [`Pearl`] to this collection, returning a [`Link`] to its location.
-    pub fn insert<P: Pearl>(&mut self, pearl: P) -> Link<P> {
-        let (map_handle, pearl_handle) = match self.map_links.entry(PearlId::of::<P>()) {
-            Entry::Occupied(e) => {
-                let map_handle = *e.get();
-                let any_map = self.maps.get_data_mut(map_handle.as_type()).unwrap();
-                let map = any_map.downcast_mut::<DenseHandleMap<P>>().unwrap();
-                let pearl_handle = map.insert(pearl);
-                (map_handle, pearl_handle)
-            }
-            Entry::Vacant(e) => {
-                let mut map = DenseHandleMap::<P>::new();
-                let pearl_handle = map.insert(pearl);
-                let map_handle = self.maps.insert(Box::new(map)).into_raw();
-                e.insert(map_handle);
-                (map_handle, pearl_handle)
-            }
-        };
-
-        Link::new(map_handle, pearl_handle)
     }
 
     /// Returns true if `link` is valid for this collection.
@@ -77,14 +131,6 @@ impl PearlCollection {
         map.get_data_mut(&link.pearl)
     }
 
-    /// Removes and returns the pearl that `link` points to.
-    ///
-    /// Returns `None` if the link is invalid.
-    pub fn remove<P: Pearl>(&mut self, link: &Link<P>) -> Option<P> {
-        let map = self.get_map_mut::<P>(&link.map)?;
-        map.remove(&link.pearl)
-    }
-
     /// Returns an iterator over all pearls of type `P`
     ///
     /// Returns `None` if there are no pearls
@@ -101,11 +147,12 @@ impl PearlCollection {
         Some(self.get_map_mut(&map_link)?.data_mut())
     }
 
-    /// Returns a [`SplitStep`] over the pearls of type `P` in this collection.
+    /// Returns an exclusive stream over pearls of type `P`.
     ///
-    /// Returns `None` there are no pearls.
-    pub fn split_step<P: Pearl>(&mut self) -> Option<SplitStep<P>> {
-        SplitStep::new(self)
+    /// Returns `None` if there are no pearls.
+    #[inline]
+    pub fn exclusive_stream<P: Pearl>(&mut self) -> Option<ExclusiveStream<P>> {
+        ExclusiveStream::new(self)
     }
 
     /// Returns a reference to the [`DenseHandleMap`] for pearl `P`.
@@ -125,84 +172,76 @@ impl PearlCollection {
     }
 }
 
-/// A wrapper over a [`PearlCollection`] that only allows accessing items and not mutating the collection.
-/// It also prevents access to a single pearl as it is the main type used in a [`SplitStep`].
-pub struct ExclusivePearlProvider<'a> {
-    pub(crate) exclude: RawHandle,
-    collection: &'a mut PearlCollection,
+pub struct ExclusivePearlCollection<'a> {
+    exclude: RawHandle,
+    pearls: &'a mut PearlCollection,
 }
 
-impl<'a> ExclusivePearlProvider<'a> {
+impl<'a> ExclusivePearlCollection<'a> {
+    /// Returns true if `link` is valid for this collection.
+    pub fn contains<P: Pearl>(&self, link: &Link<P>) -> bool {
+        match self.pearls.get_map::<P>(&link.map) {
+            Some(map) => map.contains(&link.pearl),
+            _ => false,
+        }
+    }
+
+    /// Returns true if a pearl of type `P` is stored in this collection.
+    pub fn contains_type<P: Pearl>(&self) -> bool {
+        self.pearls.map_links.contains_key(&PearlId::of::<P>())
+    }
+
     /// Returns a reference to the pearl that `link` points to.
     ///
-    /// Returns `None` if the link is invalid, or if the pearl has been excluded.
+    /// Returns `None` if the link is invalid, or the pearl has been excluded.
     pub fn get<P: Pearl>(&self, link: &Link<P>) -> Option<&P> {
-        if &self.exclude == link.pearl.as_raw() {
+        if link.pearl.as_raw() == &self.exclude {
             return None;
         }
 
-        self.collection.get(link)
+        let map = self.pearls.get_map::<P>(&link.map)?;
+        map.get_data(&link.pearl)
     }
 
     /// Returns a mutable reference to the pearl that `link` points to.
     ///
-    /// Returns `None` if the link is invalid, or if the pearl has been excluded.
+    /// Returns `None` if the link is invalid, or the pearl has been excluded.
     pub fn get_mut<P: Pearl>(&mut self, link: &Link<P>) -> Option<&mut P> {
-        if &self.exclude == link.pearl.as_raw() {
+        if link.pearl.as_raw() == &self.exclude {
             return None;
         }
 
-        self.collection.get_mut(link)
+        let map = self.pearls.get_map_mut::<P>(&link.map)?;
+        map.get_data_mut(&link.pearl)
     }
 }
 
-type Iter<'a, P> = Data<'a, P>;
-type IterMut<'a, P> = DataMut<'a, P>;
-
-/// A "iterator" of sorts that provides access to pearls in an iterator fashion.
-/// But it also gives an [`ExclusivePearlProvider`] that allows indexing into all
-/// other pearls using [`Link`]. This is useful to be able to iterate over all pearls while
-/// also allowing access to the other pearls in case they need to reference eachother.
-pub struct SplitStep<'a, P: Pearl> {
-    pub(crate) map_link: RawHandle,
+pub struct ExclusiveStream<'a, P: Pearl> {
+    map: &'a RawHandle,
     iter: dense::IterMut<'a, P>,
     collection: &'a mut PearlCollection,
 }
 
-impl<'a, P: Pearl> SplitStep<'a, P> {
-    /// Creates and returns a new split step over `collection`.
-    ///
-    /// Returns `None` if there are no pearls of type `P`.
+impl<'a, P: Pearl> ExclusiveStream<'a, P> {
     pub fn new(collection: &'a mut PearlCollection) -> Option<Self> {
-        // SAFETY: We split the collection to have a reference to itself and its iterator.
-        // while this technically aliases over the collection twice, the split step does not access both at the same time.
-        // Furthermore, for each step of next, this gives back a single mutable pearl and an
-        // exclusive collection that excludes the other pearl that is being returned.
-        // This ensures that while we have techincally have multimple exclusive access,
-        // all methods of accessing the data does not have any overlap, and as such is safe to use.
         let ptr = collection as *mut PearlCollection;
-        let map_link = *collection.map_links.get(&PearlId::of::<P>())?;
-        let iter = collection.get_map_mut(&map_link)?.iter_mut();
-        let collection = unsafe { &mut *ptr };
+        let map_link = collection.map_links.get(&PearlId::of::<P>())?;
+        let map = collection.maps.get_data_mut(map_link.as_type())?;
+        let map = map.downcast_mut::<DenseHandleMap<P>>()?;
         Some(Self {
-            map_link,
-            iter,
-            collection,
+            map: map_link,
+            iter: map.iter_mut(),
+            collection: unsafe { &mut *ptr },
         })
     }
 
-    /// Gets the next pearl, and the matching [`ExclusivePearlProvider`].
-    ///
-    /// This diverges from typical iterators as the returned items must go out scope
-    /// before `next` is called again. This is due to providing access to the whole
-    /// collection through the exclusive provider.
-    pub fn next(&mut self) -> Option<(&mut P, ExclusivePearlProvider)> {
+    pub fn next(&mut self) -> Option<(PearlLink<P>, ExclusivePearlCollection)> {
         let (handle, pearl) = self.iter.next()?;
         Some((
-            pearl,
-            ExclusivePearlProvider {
+            PearlLink::new(pearl, Link::new(*self.map, *handle)),
+            ExclusivePearlCollection {
                 exclude: handle.into_raw(),
-                collection: self.collection,
+                pearls: self.collection,
             },
         ))
     }

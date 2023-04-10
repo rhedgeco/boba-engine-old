@@ -1,12 +1,12 @@
 use crate::{
-    pearls::{Link, Pearl, PearlCollection},
+    pearls::{Link, Pearl, PearlManager},
     BobaResources,
 };
 
 use super::DestroyPearl;
 
 pub trait EventCommand: 'static {
-    fn execute(&mut self, pearls: &mut PearlCollection, resources: &mut BobaResources);
+    fn execute(&mut self, pearls: &mut PearlManager, resources: &mut BobaResources);
 }
 
 #[derive(Default)]
@@ -31,9 +31,32 @@ impl EventCommands {
     }
 
     /// Consumes and executes all commands
-    pub fn execute(mut self, pearls: &mut PearlCollection, resources: &mut BobaResources) {
-        for command in self.commands.iter_mut() {
+    pub fn execute(self, pearls: &mut PearlManager, resources: &mut BobaResources) {
+        for mut command in self.commands.into_iter() {
             command.execute(pearls, resources);
+        }
+    }
+}
+
+#[derive(Default)]
+pub struct CommandCollection {
+    commands: Vec<EventCommands>,
+}
+
+impl CommandCollection {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn create(&mut self) -> &mut EventCommands {
+        let index = self.commands.len();
+        self.commands.push(EventCommands::new());
+        &mut self.commands[index]
+    }
+
+    pub fn execute(self, pearls: &mut PearlManager, resources: &mut BobaResources) {
+        for commands in self.commands.into_iter() {
+            commands.execute(pearls, resources);
         }
     }
 }

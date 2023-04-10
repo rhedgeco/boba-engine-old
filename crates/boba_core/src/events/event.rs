@@ -1,5 +1,5 @@
 use crate::{
-    pearls::{ExclusivePearlProvider, Pearl, PearlLink},
+    pearls::{ExclusivePearlCollection, Pearl, PearlLink},
     BobaResources,
 };
 
@@ -30,7 +30,7 @@ pub trait EventRegistrar<P: Pearl> {
 ///  for events to provide access to the other pearls and resources in the world.
 pub struct EventData<'a, E: Event> {
     pub data: &'a E,
-    pub pearls: &'a mut ExclusivePearlProvider<'a>,
+    pub pearls: &'a mut ExclusivePearlCollection<'a>,
     pub resources: &'a mut BobaResources,
     pub commands: &'a mut EventCommands,
 }
@@ -38,7 +38,7 @@ pub struct EventData<'a, E: Event> {
 impl<'a, E: Event> EventData<'a, E> {
     pub fn new(
         event: &'a E,
-        pearls: &'a mut ExclusivePearlProvider<'a>,
+        pearls: &'a mut ExclusivePearlCollection<'a>,
         resources: &'a mut BobaResources,
         commands: &'a mut EventCommands,
     ) -> Self {

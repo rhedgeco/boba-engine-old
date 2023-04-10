@@ -18,6 +18,6 @@ impl EventListener<Update> for SelfDestroy {
 fn main() {
     env_logger::init();
     let mut world = BobaWorld::new();
-    world.insert_pearl(SelfDestroy);
+    world.pearls.insert(SelfDestroy);
     MilkTeaHeadless::run(world);
 }

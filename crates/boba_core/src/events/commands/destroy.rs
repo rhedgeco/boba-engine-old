@@ -1,5 +1,5 @@
 use crate::{
-    pearls::{Link, Pearl, PearlCollection},
+    pearls::{Link, Pearl, PearlManager},
     BobaResources,
 };
 
@@ -10,7 +10,7 @@ pub struct DestroyPearl<P: Pearl> {
 }
 
 impl<P: Pearl> EventCommand for DestroyPearl<P> {
-    fn execute(&mut self, pearls: &mut PearlCollection, _: &mut BobaResources) {
+    fn execute(&mut self, pearls: &mut PearlManager, _: &mut BobaResources) {
         pearls.remove(&self.link);
     }
 }
