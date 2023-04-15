@@ -4,27 +4,24 @@ use boba_core::{
     EventListener, EventRegistrar,
 };
 
-struct SelfRebirth {
+struct RebirthPearl {
     count: u32,
 }
 
-impl SelfRebirth {
-    pub fn new(count: u32) -> Self {
-        Self { count }
-    }
-}
-
-impl Pearl for SelfRebirth {
+impl Pearl for RebirthPearl {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
         registrar.listen_for::<Update>();
     }
 }
 
-impl EventListener<Update> for SelfRebirth {
+impl EventListener<Update> for RebirthPearl {
     fn callback(pearl: PearlMut<Self>, mut world: EventWorldView<Update>) {
-        println!("THE CYCLE OF REBIRTH CONTINUES! Count: {}", pearl.count);
-        let child = SelfRebirth::new(pearl.count + 1);
+        println!("GOODBYE CRUEL WORLD!");
         world.pearls.destroy(pearl.link());
+
+        let count = pearl.count + 1;
+        println!("THE CYCLE OF REBIRTH SHALL CONTINUE! Count: {count}");
+        let child = RebirthPearl { count };
         world.pearls.insert(child);
     }
 }
@@ -32,6 +29,6 @@ impl EventListener<Update> for SelfRebirth {
 fn main() {
     env_logger::init();
     let mut pearls = PearlMap::new();
-    pearls.insert(SelfRebirth { count: 0 });
+    pearls.insert(RebirthPearl { count: 0 });
     MilkTeaHeadless::run(pearls, BobaResources::new());
 }
