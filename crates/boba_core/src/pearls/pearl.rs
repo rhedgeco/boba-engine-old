@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::events::EventRegistrar;
+use crate::EventRegistrar;
 
 /// Central trait to register structs in boba engine.
 pub trait Pearl: Sized + 'static {
@@ -22,5 +22,32 @@ impl PearlId {
     #[inline]
     pub fn into_raw(self) -> TypeId {
         self.0
+    }
+}
+
+pub trait PearlExt: Pearl {
+    fn id() -> PearlId;
+    fn pearl_id(&self) -> PearlId;
+    fn into_concrete<P: Pearl>(self) -> Result<P, Self>;
+}
+
+impl<T: Pearl> PearlExt for T {
+    #[inline]
+    fn id() -> PearlId {
+        PearlId::of::<T>()
+    }
+
+    #[inline]
+    fn pearl_id(&self) -> PearlId {
+        T::id()
+    }
+
+    fn into_concrete<P: Pearl>(self) -> Result<P, Self> {
+        if T::id() == P::id() {
+            let ptr = Box::into_raw(Box::new(self)) as *mut P;
+            return Ok(unsafe { *Box::from_raw(ptr) });
+        }
+
+        return Err(self);
     }
 }

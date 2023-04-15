@@ -2,20 +2,7 @@ use std::collections::VecDeque;
 
 use crate::{map::HandleMapId, Handle};
 
-struct SparseEntry<T> {
-    handle: Handle<T>,
-    data: Option<T>,
-}
-
-impl<T> SparseEntry<T> {
-    #[inline]
-    pub fn new(handle: Handle<T>, data: T) -> Self {
-        Self {
-            handle,
-            data: Some(data),
-        }
-    }
-}
+use super::{IntoIter, Iter, IterMut, SparseAccessMap, SparseInsertPredictor};
 
 /// A storage solution that gives a [`Handle`] to the location of the data.
 /// This is optimized for fast access, as the [`Handle`] ensures an array indexing operation.
@@ -29,8 +16,8 @@ impl<T> SparseEntry<T> {
 /// Since the map uses a [`Handle`] for indexing, the max length of the map is limited to `u32::MAX`.
 pub struct SparseHandleMap<T> {
     id: u16,
-    data: Vec<SparseEntry<T>>,
-    open_data: VecDeque<usize>,
+    data: Vec<(Handle<T>, Option<T>)>,
+    open_data: VecDeque<Handle<T>>,
 }
 
 impl<T> Default for SparseHandleMap<T> {
@@ -74,9 +61,10 @@ impl<T> SparseHandleMap<T> {
     #[inline]
     pub fn insert(&mut self, data: T) -> Handle<T> {
         match self.open_data.pop_front() {
-            Some(index) => {
-                let entry = &self.data[index];
-                entry.handle.clone()
+            Some(handle) => {
+                let mut entry = &mut self.data[handle.uindex()];
+                entry.1 = Some(data);
+                handle
             }
             None => {
                 let index = self.data.len();
@@ -88,7 +76,7 @@ impl<T> SparseHandleMap<T> {
                 }
 
                 let handle = Handle::from_raw_parts(index as u32, 0, self.id);
-                self.data.push(SparseEntry::new(handle.clone(), data));
+                self.data.push((handle, Some(data)));
                 handle
             }
         }
@@ -96,9 +84,9 @@ impl<T> SparseHandleMap<T> {
 
     /// Returns true if `handle` is valid for this map.
     #[inline]
-    pub fn contains(&self, handle: &Handle<T>) -> bool {
+    pub fn contains(&self, handle: Handle<T>) -> bool {
         match self.data.get(handle.uindex()) {
-            Some(other) => &other.handle == handle,
+            Some(other) => other.0 == handle,
             None => false,
         }
     }
@@ -107,9 +95,9 @@ impl<T> SparseHandleMap<T> {
     ///
     /// Returns `None` if `handle` is invalid for this map.
     #[inline]
-    pub fn get_data(&self, handle: &Handle<T>) -> Option<&T> {
+    pub fn get(&self, handle: Handle<T>) -> Option<&T> {
         match self.data.get(handle.uindex()) {
-            Some(entry) if &entry.handle == handle => entry.data.as_ref(),
+            Some(entry) if entry.0 == handle => entry.1.as_ref(),
             _ => None,
         }
     }
@@ -118,9 +106,9 @@ impl<T> SparseHandleMap<T> {
     ///
     /// Returns `None` if `handle` is invalid for this map.
     #[inline]
-    pub fn get_data_mut(&mut self, handle: &Handle<T>) -> Option<&mut T> {
+    pub fn get_mut(&mut self, handle: Handle<T>) -> Option<&mut T> {
         match self.data.get_mut(handle.uindex()) {
-            Some(entry) if &entry.handle == handle => entry.data.as_mut(),
+            Some(entry) if entry.0 == handle => entry.1.as_mut(),
             _ => None,
         }
     }
@@ -129,13 +117,13 @@ impl<T> SparseHandleMap<T> {
     ///
     /// Returns `None` if `handle` is invalid for this map.
     #[inline]
-    pub fn remove(&mut self, handle: &Handle<T>) -> Option<T> {
+    pub fn remove(&mut self, handle: Handle<T>) -> Option<T> {
         match self.data.get_mut(handle.uindex()) {
-            Some(entry) if &entry.handle == handle => {
-                let (index, gen, meta) = entry.handle.clone().into_raw_parts();
-                entry.handle = Handle::from_raw_parts(index, gen.wrapping_add(1), meta);
-                let data = std::mem::replace(&mut entry.data, None);
-                self.open_data.push_back(handle.uindex());
+            Some(entry) if entry.0 == handle => {
+                let (index, gen, meta) = entry.0.into_raw_parts();
+                entry.0 = Handle::from_raw_parts(index, gen.wrapping_add(1), meta);
+                let data = std::mem::replace(&mut entry.1, None);
+                self.open_data.push_back(entry.0);
                 data
             }
             _ => None,
@@ -146,7 +134,7 @@ impl<T> SparseHandleMap<T> {
     #[inline]
     pub fn iter(&self) -> Iter<'_, T> {
         Iter {
-            inner: self.data.iter(),
+            iter: self.data.iter(),
         }
     }
 
@@ -154,7 +142,7 @@ impl<T> SparseHandleMap<T> {
     #[inline]
     pub fn iter_mut(&mut self) -> IterMut<'_, T> {
         IterMut {
-            inner: self.data.iter_mut(),
+            iter: self.data.iter_mut(),
         }
     }
 
@@ -162,55 +150,44 @@ impl<T> SparseHandleMap<T> {
     #[inline]
     pub fn into_iter(self) -> IntoIter<T> {
         IntoIter {
-            inner: self.data.into_iter(),
+            iter: self.data.into_iter(),
         }
     }
-}
 
-pub struct Iter<'a, T> {
-    inner: std::slice::Iter<'a, SparseEntry<T>>,
-}
-
-impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(data) = &self.inner.next()?.data {
-                return Some(data);
-            }
+    pub fn as_access_map(&mut self) -> SparseAccessMap<T> {
+        SparseAccessMap {
+            id: self.id,
+            data: &mut self.data,
         }
     }
-}
 
-pub struct IterMut<'a, T> {
-    inner: std::slice::IterMut<'a, SparseEntry<T>>,
-}
-
-impl<'a, T> Iterator for IterMut<'a, T> {
-    type Item = &'a mut T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(data) = &mut self.inner.next()?.data {
-                return Some(data);
-            }
+    pub fn as_insert_predictor(&self) -> SparseInsertPredictor<T> {
+        SparseInsertPredictor {
+            id: self.id,
+            open_data: &self.open_data,
+            next_push_index: self.data.len() as u32,
         }
     }
-}
 
-pub struct IntoIter<T> {
-    inner: std::vec::IntoIter<SparseEntry<T>>,
-}
+    /// Splits a sparse map into two seperate maps that can perform different functions.
+    ///
+    /// The access map allows for mutable access to the contained data, but no inserting or removing.
+    /// While the insert queue allows for insertions, but no access to the data.
+    /// The insertion queue will not be reflected until it is merged back in.
+    #[inline]
+    pub fn split_access_insert(&mut self) -> (SparseAccessMap<T>, SparseInsertPredictor<T>) {
+        let next_push_index = self.data.len() as u32;
 
-impl<T> Iterator for IntoIter<T> {
-    type Item = T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            if let Some(data) = self.inner.next()?.data {
-                return Some(data);
-            }
-        }
+        (
+            SparseAccessMap {
+                id: self.id,
+                data: &mut self.data,
+            },
+            SparseInsertPredictor {
+                id: self.id,
+                open_data: &self.open_data,
+                next_push_index,
+            },
+        )
     }
 }

@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use boba_core::BobaWorld;
+use boba_core::{pearls::map::PearlMap, BobaResources};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -17,7 +17,7 @@ pub trait RendererBuilder {
 
 pub trait Renderer: Sized + 'static {
     fn update_size(&mut self);
-    fn render(&mut self, id: WindowId, world: &mut BobaWorld);
+    fn render(&mut self, id: WindowId, pearls: &mut PearlMap, resources: &mut BobaResources);
 }
 
 pub struct MilkTeaWindow {
@@ -39,7 +39,12 @@ impl MilkTeaWindow {
         Self::default()
     }
 
-    pub fn run(self, mut world: BobaWorld, renderer: impl RendererBuilder) -> anyhow::Result<()> {
+    pub fn run(
+        self,
+        mut pearls: PearlMap,
+        mut resouces: BobaResources,
+        renderer: impl RendererBuilder,
+    ) -> anyhow::Result<()> {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_inner_size(PhysicalSize::new(self.size.0, self.size.1))
@@ -60,10 +65,10 @@ impl MilkTeaWindow {
             },
             Event::MainEventsCleared => {
                 let delta_time = timer.measure().as_secs_f64();
-                world.trigger(&Update::new(delta_time));
+                pearls.trigger(&Update::new(delta_time), &mut resouces);
             }
             Event::RedrawRequested(id) => {
-                renderer.render(id, &mut world);
+                renderer.render(id, &mut pearls, &mut resouces);
             }
             _ => (),
         });
@@ -99,11 +104,11 @@ pub struct MilkTeaHeadless {
 }
 
 impl MilkTeaHeadless {
-    pub fn run(mut world: BobaWorld) -> ! {
+    pub fn run(mut pearls: PearlMap, mut resources: BobaResources) -> ! {
         let mut timer = DeltaTimer::new();
         loop {
             let delta_time = timer.measure().as_secs_f64();
-            world.trigger(&Update::new(delta_time));
+            pearls.trigger(&Update::new(delta_time), &mut resources);
         }
     }
 }

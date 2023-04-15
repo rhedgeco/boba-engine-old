@@ -1,5 +1,5 @@
 use milk_tea::{
-    boba_core::BobaWorld,
+    boba_core::{pearls::map::PearlMap, BobaResources},
     winit::window::{Window, WindowId},
     Renderer, RendererBuilder,
 };
@@ -103,7 +103,7 @@ impl Renderer for TaroRenderer {
         }
     }
 
-    fn render(&mut self, id: WindowId, app: &mut BobaWorld) {
+    fn render(&mut self, id: WindowId, pearls: &mut PearlMap, resources: &mut BobaResources) {
         if self.window.id() != id {
             return;
         }
@@ -111,7 +111,7 @@ impl Renderer for TaroRenderer {
         self.update_size();
         let Ok(output) = self.surface.get_current_texture() else { return };
 
-        app.trigger(&TaroRenderStart);
+        pearls.trigger(&TaroRenderStart, resources);
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -145,7 +145,7 @@ impl Renderer for TaroRenderer {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
-        app.trigger(&TaroRenderFinish);
+        pearls.trigger(&TaroRenderFinish, resources);
         self.window.request_redraw();
     }
 }

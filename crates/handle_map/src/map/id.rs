@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU16, Ordering};
 
-/// A simple ZST wrapper for generating unique `u16` values for use in handle maps.
+/// A simple ZST for generating unique `u16` values for use in handle maps.
 pub struct HandleMapId {
     // use private `()` to prevent struct from being created
     _private: (),

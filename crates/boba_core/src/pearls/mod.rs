@@ -1,7 +1,5 @@
-mod collection;
-mod link;
 mod pearl;
 
-pub use collection::*;
-pub use link::*;
+pub mod map;
+
 pub use pearl::*;
