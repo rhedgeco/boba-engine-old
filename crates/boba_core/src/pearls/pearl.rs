@@ -4,7 +4,8 @@ use crate::EventRegistrar;
 
 /// Central trait to register structs in boba engine.
 pub trait Pearl: Sized + 'static {
-    fn register(registrar: &mut impl EventRegistrar<Self>);
+    #[allow(unused_variables)]
+    fn register(registrar: &mut impl EventRegistrar<Self>) {}
 }
 
 /// A light wrapper over [`TypeId`] that is limited to types that derive [`Pearl`]

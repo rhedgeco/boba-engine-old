@@ -9,7 +9,7 @@ use crate::{
 };
 
 use super::{
-    EventRegistry, Iter, IterMut, PearlAccessMap, PearlInsertQueue, PearlLink, PearlQueue,
+    EventRegistry, Iter, IterMut, PearlAccessMap, PearlLink, PearlQueue, PearlQueueEvents,
 };
 
 #[derive(Default)]
@@ -47,23 +47,23 @@ impl PearlMap {
         self.inner.iter_mut()
     }
 
-    pub fn as_insert_queue<'a>(&'a self, pearl_queue: &'a mut PearlQueue) -> PearlInsertQueue {
-        self.inner.as_insert_queue(pearl_queue)
+    pub fn as_queue<'a>(&'a self, pearl_queue: &'a mut PearlQueueEvents) -> PearlQueue {
+        self.inner.as_queue(pearl_queue)
     }
 
     pub fn as_access_map(&mut self) -> PearlAccessMap {
         self.inner.as_access_map()
     }
 
-    pub fn split_insert_access<'a>(
+    pub fn split_queue_access<'a>(
         &'a mut self,
-        pearl_queue: &'a mut PearlQueue,
-    ) -> (PearlInsertQueue, PearlAccessMap) {
-        self.inner.split_insert_access(pearl_queue)
+        pearl_queue: &'a mut PearlQueueEvents,
+    ) -> (PearlQueue, PearlAccessMap) {
+        self.inner.split_queue_access(pearl_queue)
     }
 
     pub fn trigger<E: Event>(&mut self, event: &E, resources: &mut BobaResources) {
-        let mut pearl_queue = PearlQueue::new();
+        let mut pearl_queue = PearlQueueEvents::new();
         self.events
             .run_event(event, &mut self.inner, resources, &mut pearl_queue);
         pearl_queue.merge_into(self);
@@ -173,13 +173,13 @@ impl InnerPearlMap {
         })
     }
 
-    pub fn as_insert_queue<'a>(&'a self, pearl_queue: &'a mut PearlQueue) -> PearlInsertQueue {
-        PearlInsertQueue {
+    pub fn as_queue<'a>(&'a self, queue_events: &'a mut PearlQueueEvents) -> PearlQueue {
+        PearlQueue {
             map_id: self.map_id,
             pearl_link: &self.pearl_link,
             open_links: &self.open_links,
             pearl_counts: &self.pearl_counts,
-            pearl_queue,
+            queue_events,
         }
     }
 
@@ -191,17 +191,17 @@ impl InnerPearlMap {
         }
     }
 
-    pub fn split_insert_access<'a>(
+    pub fn split_queue_access<'a>(
         &'a mut self,
-        pearl_queue: &'a mut PearlQueue,
-    ) -> (PearlInsertQueue, PearlAccessMap) {
+        pearl_queue: &'a mut PearlQueueEvents,
+    ) -> (PearlQueue, PearlAccessMap) {
         (
-            PearlInsertQueue {
+            PearlQueue {
                 map_id: self.map_id,
                 pearl_link: &self.pearl_link,
                 open_links: &self.open_links,
                 pearl_counts: &self.pearl_counts,
-                pearl_queue,
+                queue_events: pearl_queue,
             },
             PearlAccessMap {
                 pearl_link: &self.pearl_link,

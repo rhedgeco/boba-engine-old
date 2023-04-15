@@ -8,15 +8,15 @@ use crate::pearls::{Pearl, PearlExt, PearlId};
 
 use super::{PearlLink, PearlMap};
 
-pub struct PearlInsertQueue<'a> {
+pub struct PearlQueue<'a> {
     pub(super) map_id: u16,
     pub(super) pearl_link: &'a HashMap<PearlId, usize>,
     pub(super) open_links: &'a Vec<Vec<RawHandle>>,
     pub(super) pearl_counts: &'a Vec<usize>,
-    pub(super) pearl_queue: &'a mut PearlQueue,
+    pub(super) queue_events: &'a mut PearlQueueEvents,
 }
 
-impl<'a> PearlInsertQueue<'a> {
+impl<'a> PearlQueue<'a> {
     pub fn insert<P: Pearl>(&mut self, pearl: P) -> PearlLink<P> {
         let map_queue = self.get_or_create_map_queue::<P>();
         let insert_index = map_queue.insert(pearl);
@@ -42,18 +42,20 @@ impl<'a> PearlInsertQueue<'a> {
     }
 
     pub fn destroy<P: Pearl>(&mut self, link: PearlLink<P>) {
-        self.pearl_queue.destroy_queue.push(DestroyPearl::new(link));
+        self.queue_events
+            .destroy_queue
+            .push(DestroyPearl::new(link));
     }
 
     fn get_or_create_map_queue<P: Pearl>(&mut self) -> &mut PearlMapQueue {
-        match self.pearl_queue.insert_queues.entry(P::id()) {
+        match self.queue_events.insert_queues.entry(P::id()) {
             Entry::Occupied(e) => e.into_mut(),
             Entry::Vacant(e) => {
                 let map_type = match self.pearl_link.get(&P::id()) {
                     Some(index) => MapType::Existing(*index),
                     None => {
-                        let index = self.pearl_counts.len() + self.pearl_queue.new_maps;
-                        self.pearl_queue.new_maps.add_assign(1);
+                        let index = self.pearl_counts.len() + self.queue_events.new_maps;
+                        self.queue_events.new_maps.add_assign(1);
                         MapType::New(index)
                     }
                 };
@@ -65,13 +67,13 @@ impl<'a> PearlInsertQueue<'a> {
 }
 
 #[derive(Default)]
-pub struct PearlQueue {
+pub struct PearlQueueEvents {
     insert_queues: IndexMap<PearlId, PearlMapQueue>,
     destroy_queue: Vec<DestroyPearl>,
     new_maps: usize,
 }
 
-impl PearlQueue {
+impl PearlQueueEvents {
     pub fn new() -> Self {
         Self::default()
     }

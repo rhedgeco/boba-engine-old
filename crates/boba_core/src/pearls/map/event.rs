@@ -7,7 +7,7 @@ use crate::{
     BobaResources, Event, EventListener, EventRegistrar,
 };
 
-use super::{ExclusivePearlAccess, InnerPearlMap, PearlInsertQueue, PearlLink, PearlQueue};
+use super::{ExclusivePearlAccess, InnerPearlMap, PearlLink, PearlQueue, PearlQueueEvents};
 
 pub struct EventWorldView<'a, 'access, E: Event> {
     pub event: &'a E,
@@ -17,15 +17,15 @@ pub struct EventWorldView<'a, 'access, E: Event> {
 
 pub struct EventPearls<'a, 'access> {
     exclusive_access: ExclusivePearlAccess<'a, 'access>,
-    insert_queue: &'access mut PearlInsertQueue<'a>,
+    insert_queue: &'access mut PearlQueue<'a>,
 }
 
 impl<'a, 'access> EventPearls<'a, 'access> {
-    pub fn insert<P: Pearl>(&mut self, pearl: P) -> PearlLink<P> {
+    pub fn queue_insert<P: Pearl>(&mut self, pearl: P) -> PearlLink<P> {
         self.insert_queue.insert(pearl)
     }
 
-    pub fn destroy<P: Pearl>(&mut self, link: PearlLink<P>) {
+    pub fn queue_destroy<P: Pearl>(&mut self, link: PearlLink<P>) {
         self.insert_queue.destroy(link);
     }
 
@@ -49,7 +49,7 @@ impl EventRegistry {
         event: &E,
         map: &mut InnerPearlMap,
         resources: &mut BobaResources,
-        pearl_queue: &mut PearlQueue,
+        pearl_queue: &mut PearlQueueEvents,
     ) {
         let Some(any) = self.dispatchers.get(&TypeId::of::<E>()) else { return };
         let dispatcher = any.downcast_ref::<EventDispatcher<E>>().unwrap();
@@ -76,7 +76,7 @@ impl<P: Pearl> EventRegistrar<P> for EventRegistry {
     }
 }
 
-type EventRunner<E> = fn(&E, &mut InnerPearlMap, &mut BobaResources, &mut PearlQueue);
+type EventRunner<E> = fn(&E, &mut InnerPearlMap, &mut BobaResources, &mut PearlQueueEvents);
 
 struct EventDispatcher<E: Event> {
     pearls: HashSet<PearlId>,
@@ -102,7 +102,7 @@ impl<E: Event> EventDispatcher<E> {
         event: &E,
         map: &mut InnerPearlMap,
         resources: &mut BobaResources,
-        pearl_queue: &mut PearlQueue,
+        pearl_queue: &mut PearlQueueEvents,
     ) {
         for runner in self.runners.iter() {
             runner(event, map, resources, pearl_queue);
@@ -113,9 +113,9 @@ impl<E: Event> EventDispatcher<E> {
         event: &E,
         map: &mut InnerPearlMap,
         resources: &mut BobaResources,
-        pearl_queue: &mut PearlQueue,
+        pearl_queue: &mut PearlQueueEvents,
     ) {
-        let (mut insert_queue, mut access_map) = map.split_insert_access(pearl_queue);
+        let (mut insert_queue, mut access_map) = map.split_queue_access(pearl_queue);
         let Some(mut access_stream) = access_map.exclusive_stream::<L>() else { return };
         while let Some((pearl, exclusive_access)) = access_stream.next() {
             let pearls = EventPearls {

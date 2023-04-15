@@ -1,8 +1,4 @@
 use boba::prelude::*;
-use boba_core::{
-    pearls::map::{EventWorldView, PearlMap, PearlMut},
-    EventListener, EventRegistrar,
-};
 
 struct RebirthPearl {
     count: u32,
@@ -17,12 +13,12 @@ impl Pearl for RebirthPearl {
 impl EventListener<Update> for RebirthPearl {
     fn callback(pearl: PearlMut<Self>, mut world: EventWorldView<Update>) {
         println!("GOODBYE CRUEL WORLD!");
-        world.pearls.destroy(pearl.link());
+        world.pearls.queue_destroy(pearl.link());
 
         let count = pearl.count + 1;
         println!("THE CYCLE OF REBIRTH SHALL CONTINUE! Count: {count}");
         let child = RebirthPearl { count };
-        world.pearls.insert(child);
+        world.pearls.queue_insert(child);
     }
 }
 
