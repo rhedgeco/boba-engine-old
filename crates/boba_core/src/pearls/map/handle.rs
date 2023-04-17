@@ -12,6 +12,12 @@ pub struct RawHandle {
     id: u64,
 }
 
+impl<P: Pearl> PartialEq<Handle<P>> for RawHandle {
+    fn eq(&self, other: &Handle<P>) -> bool {
+        &other.raw == self
+    }
+}
+
 impl RawHandle {
     const MAP_OFFSET: u32 = u32::BITS;
     const GEN_OFFSET: u32 = u32::BITS + u16::BITS;
@@ -129,17 +135,22 @@ impl<P: Pearl> Clone for Handle<P> {
     }
 }
 
+impl<P: Pearl> PartialEq<RawHandle> for Handle<P> {
+    fn eq(&self, other: &RawHandle) -> bool {
+        other == &self.raw
+    }
+}
+
 impl<P: Pearl> Eq for Handle<P> {}
 impl<P: Pearl> PartialEq for Handle<P> {
     fn eq(&self, other: &Self) -> bool {
-        self.raw == other.raw && self._type == self._type
+        self.raw == other.raw
     }
 }
 
 impl<P: Pearl> Hash for Handle<P> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.raw.hash(state);
-        self._type.hash(state);
     }
 }
 

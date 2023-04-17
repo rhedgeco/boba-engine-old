@@ -113,7 +113,7 @@ impl RawPearlMap {
     pub fn remove<P: Pearl>(&mut self, handle: Handle<P>) -> Option<P> {
         let locations = self.locations.get_mut(handle.umap_id())?; // get the link vector
         let location = locations.get_mut(handle.uindex())?; // get the link out of the vector
-        if location.handle != handle.into_raw() {
+        if location.handle != handle {
             return None; // check to make sure link is valid
         }
 
@@ -185,7 +185,7 @@ impl RawPearlMap {
     fn validate_handle(&self, handle: Handle<impl Pearl>) -> Option<usize> {
         let locations = self.locations.get(handle.umap_id())?;
         let location = locations.get(handle.uindex())?;
-        if location.handle != handle.into_raw() {
+        if location.handle != handle {
             return None; // check to make sure link is valid
         }
 
