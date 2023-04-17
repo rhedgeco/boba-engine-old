@@ -1,7 +1,6 @@
-use std::{any::Any, ops::AddAssign};
+use std::{any::Any, collections::hash_map::Entry, ops::AddAssign};
 
 use fxhash::FxHashMap;
-use indexmap::{map::Entry, IndexMap};
 
 use crate::pearls::{Pearl, PearlExt, PearlId};
 
@@ -59,8 +58,11 @@ impl<'a> PearlEventQueue<'a> {
     }
 
     fn get_or_create_map_queue<P: Pearl>(&mut self) -> &mut PearlMapQueue {
-        match self.queue.insert_queues.entry(P::id()) {
-            Entry::Occupied(e) => e.into_mut(),
+        match self.queue.insert_ids.entry(P::id()) {
+            Entry::Occupied(e) => {
+                let insert_index = *e.into_mut();
+                &mut self.queue.insert_queues[insert_index]
+            }
             Entry::Vacant(e) => {
                 let map_type = match self.map_ids.get(&P::id()) {
                     Some(index) => MapType::Existing(*index),
@@ -74,7 +76,11 @@ impl<'a> PearlEventQueue<'a> {
                     }
                 };
 
-                e.insert(PearlMapQueue::new::<P>(map_type))
+                let insert_index = *e.insert(self.queue.insert_queues.len());
+                self.queue
+                    .insert_queues
+                    .push(PearlMapQueue::new::<P>(map_type));
+                &mut self.queue.insert_queues[insert_index]
             }
         }
     }
@@ -82,7 +88,8 @@ impl<'a> PearlEventQueue<'a> {
 
 #[derive(Default)]
 pub struct PearlQueue {
-    insert_queues: IndexMap<PearlId, PearlMapQueue>,
+    insert_ids: FxHashMap<PearlId, usize>,
+    insert_queues: Vec<PearlMapQueue>,
     destroy_queue: Vec<DestroyPearl>,
     new_maps: usize,
 }
@@ -93,7 +100,7 @@ impl PearlQueue {
     }
 
     pub fn merge_into(self, map: &mut BobaPearls) {
-        for (_, queue) in self.insert_queues.into_iter() {
+        for queue in self.insert_queues.into_iter() {
             queue.finalize(map);
         }
 
