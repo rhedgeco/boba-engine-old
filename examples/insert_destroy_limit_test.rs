@@ -1,11 +1,10 @@
 use boba::prelude::*;
+use boba_core::macros::Pearl;
 
-#[derive(Default)]
+#[derive(Default, Pearl)]
 struct DummyItem {
     _item: u128,
 }
-
-impl Pearl for DummyItem {}
 
 struct LimitTestPearl {
     count: u32,
