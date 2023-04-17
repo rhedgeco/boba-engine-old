@@ -10,6 +10,8 @@ use winit::{
 
 use crate::events::Update;
 
+type MilkTeaResult = anyhow::Result<()>;
+
 pub trait RendererBuilder {
     type Renderer: Renderer;
     fn build(self, window: Window) -> Self::Renderer;
@@ -44,7 +46,7 @@ impl MilkTeaWindow {
         mut pearls: BobaPearls,
         mut resouces: BobaResources,
         renderer: impl RendererBuilder,
-    ) -> anyhow::Result<()> {
+    ) -> MilkTeaResult {
         let event_loop = EventLoop::new();
         let window = WindowBuilder::new()
             .with_inner_size(PhysicalSize::new(self.size.0, self.size.1))
