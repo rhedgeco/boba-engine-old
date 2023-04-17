@@ -65,10 +65,10 @@ impl<'a> PearlEventQueue<'a> {
                 let map_type = match self.map_ids.get(&P::id()) {
                     Some(index) => MapType::Existing(*index),
                     None => {
-                        let map_index = self.map_sizes.len() + self.queue.new_maps;
-                        let map_index = u16::try_from(map_index).expect(
-                            "PearlQueue type capacity overflow. Pearl types are over u16::MAX",
-                        );
+                        let map_index = u16::try_from(self.map_sizes.len() + self.queue.new_maps)
+                            .expect(
+                                "PearlQueue type capacity overflow. Pearl types are over u16::MAX",
+                            );
                         self.queue.new_maps.add_assign(1);
                         MapType::New(map_index)
                     }
