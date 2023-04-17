@@ -1,0 +1,11 @@
+[package]
+name = "boba_3d"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+glam = "0.23"
+indexmap = "1.9"
+thiserror = "1.0"
+
+boba_core = { path = "../boba_core" }
