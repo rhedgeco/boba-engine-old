@@ -6,6 +6,4 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0"
 indexmap = "1.9"
-hashbrown = "0.13"
-
-handle_map = { path = "../handle_map" }
+fxhash = "0.2"

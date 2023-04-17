@@ -1,12 +1,12 @@
 use std::any::{Any, TypeId};
 
-use hashbrown::HashMap;
+use fxhash::FxHashMap;
 
 /// A generic storage solution for holding items in boba engine.
 /// It can only hold one of each item, so each item is a kind of singleton.
 #[derive(Default)]
 pub struct BobaResources {
-    resources: HashMap<TypeId, Box<dyn Any>>,
+    resources: FxHashMap<TypeId, Box<dyn Any>>,
 }
 
 impl BobaResources {

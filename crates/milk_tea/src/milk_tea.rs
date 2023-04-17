@@ -1,6 +1,6 @@
 use std::time::{Duration, Instant};
 
-use boba_core::{pearls::map::PearlMap, BobaResources};
+use boba_core::{pearls::map::BobaPearls, BobaResources};
 use winit::{
     dpi::PhysicalSize,
     event::{Event, WindowEvent},
@@ -17,7 +17,7 @@ pub trait RendererBuilder {
 
 pub trait Renderer: Sized + 'static {
     fn update_size(&mut self);
-    fn render(&mut self, id: WindowId, pearls: &mut PearlMap, resources: &mut BobaResources);
+    fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources);
 }
 
 pub struct MilkTeaWindow {
@@ -41,7 +41,7 @@ impl MilkTeaWindow {
 
     pub fn run(
         self,
-        mut pearls: PearlMap,
+        mut pearls: BobaPearls,
         mut resouces: BobaResources,
         renderer: impl RendererBuilder,
     ) -> anyhow::Result<()> {
@@ -104,7 +104,7 @@ pub struct MilkTeaHeadless {
 }
 
 impl MilkTeaHeadless {
-    pub fn run(mut pearls: PearlMap, mut resources: BobaResources) -> ! {
+    pub fn run(mut pearls: BobaPearls, mut resources: BobaResources) -> ! {
         let mut timer = DeltaTimer::new();
         loop {
             let delta_time = timer.measure().as_secs_f64();

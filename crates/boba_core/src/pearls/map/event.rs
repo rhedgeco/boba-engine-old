@@ -1,13 +1,16 @@
-use std::any::{Any, TypeId};
+use std::{
+    any::{Any, TypeId},
+    collections::hash_map::Entry,
+};
 
-use hashbrown::{hash_map::Entry, HashMap, HashSet};
+use fxhash::{FxHashMap, FxHashSet};
 
 use crate::{
     pearls::{Pearl, PearlExt, PearlId},
     BobaResources, Event, EventListener, EventRegistrar,
 };
 
-use super::{ExclusivePearlAccess, InnerPearlMap, PearlLink, PearlQueue, PearlQueueEvents};
+use super::{ExclusivePearlAccess, Handle, PearlEventQueue, PearlQueue, RawPearlMap};
 
 pub struct EventWorldView<'a, 'access, E: Event> {
     pub event: &'a E,
@@ -17,39 +20,39 @@ pub struct EventWorldView<'a, 'access, E: Event> {
 
 pub struct EventPearls<'a, 'access> {
     exclusive_access: ExclusivePearlAccess<'a, 'access>,
-    insert_queue: &'access mut PearlQueue<'a>,
+    insert_queue: &'access mut PearlEventQueue<'a>,
 }
 
 impl<'a, 'access> EventPearls<'a, 'access> {
-    pub fn queue_insert<P: Pearl>(&mut self, pearl: P) -> PearlLink<P> {
+    pub fn queue_insert<P: Pearl>(&mut self, pearl: P) -> Handle<P> {
         self.insert_queue.insert(pearl)
     }
 
-    pub fn queue_destroy<P: Pearl>(&mut self, link: PearlLink<P>) {
-        self.insert_queue.destroy(link);
+    pub fn queue_destroy<P: Pearl>(&mut self, handle: Handle<P>) {
+        self.insert_queue.destroy(handle);
     }
 
-    pub fn get<P: Pearl>(&self, link: PearlLink<P>) -> Option<&P> {
-        self.exclusive_access.get(link)
+    pub fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P> {
+        self.exclusive_access.get(handle)
     }
 
-    pub fn get_mut<P: Pearl>(&mut self, link: PearlLink<P>) -> Option<&mut P> {
-        self.exclusive_access.get_mut(link)
+    pub fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P> {
+        self.exclusive_access.get_mut(handle)
     }
 }
 
 #[derive(Default)]
 pub(super) struct EventRegistry {
-    dispatchers: HashMap<TypeId, Box<dyn Any>>,
+    dispatchers: FxHashMap<TypeId, Box<dyn Any>>,
 }
 
 impl EventRegistry {
     pub fn run_event<E: Event>(
         &self,
         event: &E,
-        map: &mut InnerPearlMap,
+        map: &mut RawPearlMap,
         resources: &mut BobaResources,
-        pearl_queue: &mut PearlQueueEvents,
+        pearl_queue: &mut PearlQueue,
     ) {
         let Some(any) = self.dispatchers.get(&TypeId::of::<E>()) else { return };
         let dispatcher = any.downcast_ref::<EventDispatcher<E>>().unwrap();
@@ -76,17 +79,17 @@ impl<P: Pearl> EventRegistrar<P> for EventRegistry {
     }
 }
 
-type EventRunner<E> = fn(&E, &mut InnerPearlMap, &mut BobaResources, &mut PearlQueueEvents);
+type EventRunner<E> = fn(&E, &mut RawPearlMap, &mut BobaResources, &mut PearlQueue);
 
 struct EventDispatcher<E: Event> {
-    pearls: HashSet<PearlId>,
+    pearls: FxHashSet<PearlId>,
     runners: Vec<EventRunner<E>>,
 }
 
 impl<E: Event> EventDispatcher<E> {
     pub fn new() -> Self {
         Self {
-            pearls: HashSet::new(),
+            pearls: Default::default(),
             runners: Vec::new(),
         }
     }
@@ -100,9 +103,9 @@ impl<E: Event> EventDispatcher<E> {
     pub fn dispatch(
         &self,
         event: &E,
-        map: &mut InnerPearlMap,
+        map: &mut RawPearlMap,
         resources: &mut BobaResources,
-        pearl_queue: &mut PearlQueueEvents,
+        pearl_queue: &mut PearlQueue,
     ) {
         for runner in self.runners.iter() {
             runner(event, map, resources, pearl_queue);
@@ -111,9 +114,9 @@ impl<E: Event> EventDispatcher<E> {
 
     fn _runner<L: EventListener<E>>(
         event: &E,
-        map: &mut InnerPearlMap,
+        map: &mut RawPearlMap,
         resources: &mut BobaResources,
-        pearl_queue: &mut PearlQueueEvents,
+        pearl_queue: &mut PearlQueue,
     ) {
         let (mut insert_queue, mut access_map) = map.split_queue_access(pearl_queue);
         let Some(mut access_stream) = access_map.exclusive_stream::<L>() else { return };

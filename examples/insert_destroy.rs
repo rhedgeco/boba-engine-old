@@ -11,9 +11,9 @@ impl Pearl for RebirthPearl {
 }
 
 impl EventListener<Update> for RebirthPearl {
-    fn callback(pearl: PearlMut<Self>, mut world: EventWorldView<Update>) {
+    fn callback(pearl: &mut PearlData<Self>, mut world: EventWorldView<Update>) {
         println!("GOODBYE CRUEL WORLD!");
-        world.pearls.queue_destroy(pearl.link());
+        world.pearls.queue_destroy(pearl.handle());
 
         let count = pearl.count + 1;
         println!("THE CYCLE OF REBIRTH SHALL CONTINUE! Count: {count}");
@@ -24,7 +24,7 @@ impl EventListener<Update> for RebirthPearl {
 
 fn main() {
     env_logger::init();
-    let mut pearls = PearlMap::new();
+    let mut pearls = BobaPearls::new();
     pearls.insert(RebirthPearl { count: 0 });
     MilkTeaHeadless::run(pearls, BobaResources::new());
 }

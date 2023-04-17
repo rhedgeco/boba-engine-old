@@ -1,8 +1,13 @@
-use std::{marker::PhantomData, ops::Deref};
+use std::{
+    fmt::Debug,
+    hash::Hash,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+};
 
 use crate::pearls::Pearl;
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct RawHandle {
     id: u64,
 }
@@ -27,14 +32,8 @@ impl RawHandle {
 
     #[inline]
     pub fn from_raw_usize_parts(index: usize, map_id: usize, generation: u16) -> Self {
-        if index > u32::MAX as usize {
-            panic!("Handle index overflow");
-        }
-
-        if map_id > u16::MAX as usize {
-            panic!("Handle map_id overflow");
-        }
-
+        let index = u32::try_from(index).expect("Handle index overflow");
+        let map_id = u16::try_from(map_id).expect("Handle map_id overflow");
         Self::from_raw_parts(index as u32, map_id as u16, generation)
     }
 
@@ -87,9 +86,9 @@ impl RawHandle {
     }
 
     #[inline]
-    pub fn increment_generation(self) -> Self {
+    pub fn increment_generation(&mut self) {
         let (index, map, gen) = self.into_raw_parts();
-        Self::from_raw_parts(index, map, gen.wrapping_add(1))
+        *self = Self::from_raw_parts(index, map, gen.wrapping_add(1))
     }
 }
 
@@ -120,11 +119,84 @@ impl<P: Pearl> Handle<P> {
     }
 }
 
+impl<P: Pearl> Copy for Handle<P> {}
+impl<P: Pearl> Clone for Handle<P> {
+    fn clone(&self) -> Self {
+        Self {
+            raw: self.raw.clone(),
+            _type: self._type.clone(),
+        }
+    }
+}
+
+impl<P: Pearl> Eq for Handle<P> {}
+impl<P: Pearl> PartialEq for Handle<P> {
+    fn eq(&self, other: &Self) -> bool {
+        self.raw == other.raw && self._type == self._type
+    }
+}
+
+impl<P: Pearl> Hash for Handle<P> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.raw.hash(state);
+        self._type.hash(state);
+    }
+}
+
+impl<P: Pearl> Debug for Handle<P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Handle")
+            .field("raw", &self.raw)
+            .field("_type", &self._type)
+            .finish()
+    }
+}
+
+impl<P: Pearl> DerefMut for Handle<P> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.raw
+    }
+}
+
 impl<P: Pearl> Deref for Handle<P> {
     type Target = RawHandle;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
         &self.raw
+    }
+}
+
+pub struct PearlData<P: Pearl> {
+    pearl: P,
+    handle: Handle<P>,
+}
+
+impl<P: Pearl> PearlData<P> {
+    pub(super) fn new(pearl: P, handle: Handle<P>) -> Self {
+        Self { pearl, handle }
+    }
+
+    pub fn into_pearl(self) -> P {
+        self.pearl
+    }
+
+    pub fn handle(&self) -> Handle<P> {
+        self.handle
+    }
+}
+
+impl<P: Pearl> DerefMut for PearlData<P> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.pearl
+    }
+}
+
+impl<P: Pearl> Deref for PearlData<P> {
+    type Target = P;
+
+    fn deref(&self) -> &Self::Target {
+        &self.pearl
     }
 }

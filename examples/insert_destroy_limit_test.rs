@@ -18,7 +18,7 @@ impl Pearl for LimitTestPearl {
 }
 
 impl EventListener<Update> for LimitTestPearl {
-    fn callback(pearl: PearlMut<Self>, mut world: EventWorldView<Update>) {
+    fn callback(pearl: &mut PearlData<Self>, mut world: EventWorldView<Update>) {
         println!("FPS: {}", 1. / world.event.delta_time);
         for _ in 0..pearl.count {
             let link = world.pearls.queue_insert(DummyItem::default());
@@ -29,7 +29,7 @@ impl EventListener<Update> for LimitTestPearl {
 
 fn main() {
     env_logger::init();
-    let mut pearls = PearlMap::new();
+    let mut pearls = BobaPearls::new();
     pearls.insert(LimitTestPearl { count: 10000 });
     MilkTeaHeadless::run(pearls, BobaResources::new());
 }

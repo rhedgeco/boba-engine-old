@@ -9,14 +9,14 @@ impl Pearl for UpdatePrinter {
 }
 
 impl EventListener<Update> for UpdatePrinter {
-    fn callback(_: PearlMut<Self>, world: EventWorldView<Update>) {
+    fn callback(_: &mut PearlData<Self>, world: EventWorldView<Update>) {
         println!("FPS: {}", 1. / world.event.delta_time);
     }
 }
 
 fn main() {
     env_logger::init();
-    let mut pearls = PearlMap::new();
+    let mut pearls = BobaPearls::new();
     pearls.insert(UpdatePrinter);
     MilkTeaHeadless::run(pearls, BobaResources::new());
 }

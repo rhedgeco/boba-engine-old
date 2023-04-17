@@ -1,5 +1,5 @@
 use milk_tea::{
-    boba_core::{pearls::map::PearlMap, BobaResources},
+    boba_core::{pearls::map::BobaPearls, BobaResources},
     winit::window::{Window, WindowId},
     Renderer, RendererBuilder,
 };
@@ -103,7 +103,7 @@ impl Renderer for TaroRenderer {
         }
     }
 
-    fn render(&mut self, id: WindowId, pearls: &mut PearlMap, resources: &mut BobaResources) {
+    fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {
         if self.window.id() != id {
             return;
         }
