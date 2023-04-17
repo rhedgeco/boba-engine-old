@@ -6,4 +6,4 @@ pub mod pearls;
 pub use event::*;
 pub use resources::*;
 
-pub use boba_proc_macros as macros;
+pub use boba_core_macros as macros;
