@@ -15,7 +15,6 @@ impl EventListener<Update> for UpdatePrinter {
 }
 
 fn main() {
-    env_logger::init();
     let mut pearls = BobaPearls::new();
     pearls.insert(UpdatePrinter);
     MilkTeaHeadless::run(pearls, BobaResources::new());

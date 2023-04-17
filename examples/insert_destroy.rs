@@ -23,7 +23,6 @@ impl EventListener<Update> for RebirthPearl {
 }
 
 fn main() {
-    env_logger::init();
     let mut pearls = BobaPearls::new();
     pearls.insert(RebirthPearl { count: 0 });
     MilkTeaHeadless::run(pearls, BobaResources::new());
