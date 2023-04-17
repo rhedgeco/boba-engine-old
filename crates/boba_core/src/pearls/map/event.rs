@@ -1,6 +1,7 @@
 use std::{
     any::{Any, TypeId},
     collections::hash_map::Entry,
+    ops::Deref,
 };
 
 use fxhash::{FxHashMap, FxHashSet};
@@ -12,10 +13,18 @@ use crate::{
 
 use super::{ExclusivePearlAccess, Handle, PearlEventQueue, PearlQueue, RawPearlMap};
 
-pub struct EventWorldView<'a, 'access, E: Event> {
-    pub event: &'a E,
+pub struct EventData<'a, 'access, E: Event> {
+    event: &'a E,
     pub pearls: EventPearls<'a, 'access>,
     pub resources: &'access mut BobaResources,
+}
+
+impl<'a, 'access, E: Event> Deref for EventData<'a, 'access, E> {
+    type Target = E;
+
+    fn deref(&self) -> &Self::Target {
+        self.event
+    }
 }
 
 pub struct EventPearls<'a, 'access> {
@@ -126,7 +135,7 @@ impl<E: Event> EventDispatcher<E> {
                 insert_queue: &mut insert_queue,
             };
 
-            let world_view = EventWorldView {
+            let world_view = EventData {
                 event,
                 pearls,
                 resources,

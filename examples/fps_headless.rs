@@ -9,8 +9,8 @@ impl Pearl for UpdatePrinter {
 }
 
 impl EventListener<Update> for UpdatePrinter {
-    fn callback(_: &mut PearlData<Self>, world: EventWorldView<Update>) {
-        println!("FPS: {}", 1. / world.event.delta_time);
+    fn callback(_: &mut PearlData<Self>, event: EventData<Update>) {
+        println!("FPS: {}", 1. / event.delta_time);
     }
 }
 

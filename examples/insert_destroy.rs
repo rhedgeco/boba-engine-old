@@ -11,7 +11,7 @@ impl Pearl for RebirthPearl {
 }
 
 impl EventListener<Update> for RebirthPearl {
-    fn callback(pearl: &mut PearlData<Self>, mut world: EventWorldView<Update>) {
+    fn callback(pearl: &mut PearlData<Self>, mut world: EventData<Update>) {
         println!("GOODBYE CRUEL WORLD!");
         world.pearls.queue_destroy(pearl.handle());
 
