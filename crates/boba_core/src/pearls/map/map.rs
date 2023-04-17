@@ -71,12 +71,12 @@ impl PearlMap {
 }
 
 pub(super) struct InnerPearlMap {
-    pub(super) map_id: u16,
-    pub(super) pearl_link: HashMap<PearlId, usize>,
-    pub(super) data_links: Vec<Vec<(RawHandle, Option<usize>)>>,
-    pub(super) open_links: Vec<Vec<RawHandle>>,
-    pub(super) pearl_counts: Vec<usize>,
-    pub(super) pearl_data: Vec<Box<dyn Any>>,
+    map_id: u16,
+    pearl_link: HashMap<PearlId, usize>,
+    data_links: Vec<Vec<(RawHandle, Option<usize>)>>,
+    open_links: Vec<Vec<RawHandle>>,
+    pearl_counts: Vec<usize>,
+    pearl_data: Vec<Box<dyn Any>>,
 }
 
 impl Default for InnerPearlMap {
