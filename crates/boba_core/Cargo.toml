@@ -5,3 +5,5 @@ edition = "2021"
 
 [dependencies]
 fxhash = "0.2"
+
+boba_proc_macros = { path = "../boba_proc_macros" }
