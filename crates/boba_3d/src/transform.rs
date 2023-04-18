@@ -137,7 +137,7 @@ impl Transform {
     }
 }
 
-pub trait TransformExt {
+pub trait TransformHandleExt {
     fn set_local_pos(self, pos: Vec3, pearls: &mut impl PearlProvider);
     fn set_local_pos_no_sync(self, pos: Vec3, pearls: &mut impl PearlProvider);
 
@@ -153,7 +153,7 @@ pub trait TransformExt {
     fn set_parent(self, parent: Handle<Transform>, pearls: &mut impl PearlProvider);
 }
 
-impl TransformExt for Handle<Transform> {
+impl TransformHandleExt for Handle<Transform> {
     fn set_local_pos(self, pos: Vec3, pearls: &mut impl PearlProvider) {
         self.set_local_pos_no_sync(pos, pearls);
         self.sync_children(pearls);
