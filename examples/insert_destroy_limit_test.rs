@@ -1,5 +1,4 @@
 use boba::prelude::*;
-use boba_core::macros::Pearl;
 
 #[derive(Default, Pearl)]
 struct DummyItem {
