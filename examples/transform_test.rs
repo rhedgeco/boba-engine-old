@@ -1,4 +1,5 @@
 use boba::prelude::*;
+use milk_tea::MilkTeaCommands;
 
 struct TransformPrinter {
     transform: Handle<Transform>,
@@ -16,7 +17,10 @@ impl EventListener<Update> for TransformPrinter {
         let location = transform.calculate_world_pos();
         println!("Transform location: {location}");
         event.pearls.queue_destroy(pearl.handle());
-        event.exit_application();
+
+        if let Some(commands) = event.resources.get_mut::<MilkTeaCommands>() {
+            commands.exit_app();
+        }
     }
 }
 

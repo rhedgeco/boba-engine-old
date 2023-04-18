@@ -8,7 +8,10 @@ use winit::{
     window::{Window, WindowBuilder, WindowId},
 };
 
-use crate::events::{MilkTeaCommand, Update};
+use crate::{
+    events::{KeyboardInput, Update},
+    MilkTeaCommand, MilkTeaCommands,
+};
 
 type MilkTeaResult = anyhow::Result<()>;
 
@@ -45,7 +48,7 @@ impl MilkTeaWindow {
     pub fn run(
         self,
         mut pearls: BobaPearls,
-        mut resouces: BobaResources,
+        mut resources: BobaResources,
         renderer: impl RendererBuilder,
     ) -> MilkTeaResult {
         let event_loop = EventLoop::new();
@@ -56,6 +59,7 @@ impl MilkTeaWindow {
         let mut renderer = renderer.build(window);
 
         let mut timer = DeltaTimer::new();
+        resources.insert(MilkTeaCommands::new());
         event_loop.run(move |event, _, control_flow| match event {
             Event::WindowEvent { ref event, .. } => match event {
                 WindowEvent::CloseRequested => control_flow.set_exit(),
@@ -64,22 +68,37 @@ impl MilkTeaWindow {
                     scale_factor: _,
                     new_inner_size: _,
                 } => renderer.update_size(),
+                WindowEvent::KeyboardInput {
+                    device_id,
+                    input,
+                    is_synthetic,
+                } => {
+                    let mut input = KeyboardInput::new(*device_id, *input, *is_synthetic);
+                    pearls.trigger(&mut input, &mut resources);
+                }
                 _ => (),
             },
             Event::MainEventsCleared => {
                 let delta_time = timer.measure().as_secs_f64();
                 let mut update = Update::new(delta_time);
-                pearls.trigger(&mut update, &mut resouces);
+                pearls.trigger(&mut update, &mut resources);
 
-                for command in update.commands.drain(..) {
-                    match command {
-                        MilkTeaCommand::Exit => control_flow.set_exit(),
-                        MilkTeaCommand::Resize(width, height) => renderer.set_size(width, height),
+                match resources.get_mut::<MilkTeaCommands>() {
+                    None => control_flow.set_exit(),
+                    Some(commands) => {
+                        for command in commands.drain() {
+                            match command {
+                                MilkTeaCommand::Exit => control_flow.set_exit(),
+                                MilkTeaCommand::Resize(width, height) => {
+                                    renderer.set_size(width, height)
+                                }
+                            }
+                        }
                     }
                 }
             }
             Event::RedrawRequested(id) => {
-                renderer.render(id, &mut pearls, &mut resouces);
+                renderer.render(id, &mut pearls, &mut resources);
             }
             _ => (),
         });
@@ -122,10 +141,15 @@ impl MilkTeaHeadless {
             let mut update = Update::new(delta_time);
             pearls.trigger(&mut update, &mut resources);
 
-            for command in update.commands.drain(..) {
-                match command {
-                    MilkTeaCommand::Exit => return,
-                    _ => (),
+            match resources.get_mut::<MilkTeaCommands>() {
+                None => return,
+                Some(commands) => {
+                    for command in commands.drain() {
+                        match command {
+                            MilkTeaCommand::Exit => return,
+                            _ => (),
+                        }
+                    }
                 }
             }
         }
