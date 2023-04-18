@@ -37,48 +37,20 @@ pub struct Transform {
 
 impl Pearl for Transform {
     fn on_insert(handle: Handle<Self>, pearls: &mut impl PearlProvider) {
-        let Some(pearl) = pearls.get(handle) else { return }; // ensure handle is valid
-        let Some(parent_handle) = pearl.parent else { return }; // check if transform has a parent
-        let Some(parent) = pearls.get_mut(parent_handle) else {
-            // set this parent to none if a parent does not exist
-            pearls.get_mut(handle).unwrap().parent = None;
-            return;
-        };
+        let Some(pearl) = pearls.get_mut(handle) else { return }; // ensure handle is valid
 
-        // if this transform had a parent and the parent exists
-        // add this handle to the parents child set, and set the childs parent_matrix
-        parent.children.insert(handle);
-        let parent_mat = parent.calculate_world_mat();
-        pearls.get_mut(handle).unwrap().parent_mat = parent_mat;
+        // extract parent to prepare for `set parent` algorithm
+        // the algorithm does a equality check to make sure a parent repeat isnt happening
+        // so removing the target parent ensures that the check passes
+        let target_parent = std::mem::replace(&mut pearl.parent, None);
+        set_parent_unchecked(handle, target_parent, pearls);
     }
 
     fn on_remove(pearl: &mut PearlData<Self>, pearls: &mut impl PearlProvider) {
-        match pearl.parent {
-            Some(parent_handle) => {
-                if let Some(parent) = pearls.get_mut(parent_handle) {
-                    let world_mat = parent.calculate_world_mat();
-                    parent.children.remove(&pearl.handle());
-                    for child_handle in pearl.children.iter() {
-                        if let Some(child) = pearls.get_mut(*child_handle) {
-                            child.parent = Some(parent_handle);
-                            child.parent_mat = world_mat;
-                        }
-                    }
-                } else {
-                    for child_handle in pearl.children.iter() {
-                        if let Some(child) = pearls.get_mut(*child_handle) {
-                            child.parent = None;
-                        }
-                    }
-                }
-            }
-            None => {
-                for child_handle in pearl.children.iter() {
-                    if let Some(child) = pearls.get_mut(*child_handle) {
-                        child.parent = None;
-                    }
-                }
-            }
+        // connect all this pearls children to the parent of this pearl when it is removed
+        // this is done to maintain the heirarchy as best as possible
+        for child_handle in pearl.children.iter().cloned() {
+            set_parent_unchecked(child_handle, pearl.parent, pearls);
         }
     }
 }
@@ -191,17 +163,13 @@ impl TransformHandleExt for Handle<Transform> {
     }
 
     fn sync_children(self, pearls: &mut impl PearlProvider) {
-        let Some(this_child) = pearls.get(self) else { return };
-        let world_mat = this_child.calculate_world_mat();
-        let children = this_child.children.clone();
-
-        for child_handle in children.iter() {
-            match pearls.get_mut(*child_handle) {
-                Some(child) => {
-                    child.parent_mat = world_mat;
-                    Self::sync_children(*child_handle, pearls);
-                }
-                None => todo!(),
+        let Some(pearl) = pearls.get(self) else { return };
+        let parent_mat = pearl.calculate_world_mat();
+        let children = pearl.children.clone();
+        for child_handle in children.into_iter() {
+            if let Some(child) = pearls.get_mut(child_handle) {
+                child.parent_mat = parent_mat;
+                child_handle.sync_children(pearls);
             }
         }
     }
@@ -214,7 +182,7 @@ impl TransformHandleExt for Handle<Transform> {
         };
 
         // Set the parent
-        force_replace_parent(self, None, pearls);
+        set_parent_unchecked(self, None, pearls);
     }
 
     fn set_parent(self, parent_handle: Handle<Transform>, pearls: &mut impl PearlProvider) {
@@ -253,9 +221,9 @@ impl TransformHandleExt for Handle<Transform> {
                 Some(next_parent) if next_parent == child_handle => {
                     // set the child parent, and get the old parent
                     let old_parent =
-                        force_replace_parent(child_handle, Some(parent_handle), pearls);
+                        set_parent_unchecked(child_handle, Some(parent_handle), pearls);
                     // set the old parent as the new parents parent
-                    force_replace_parent(parent_handle, old_parent, pearls);
+                    set_parent_unchecked(parent_handle, old_parent, pearls);
                 }
                 // if we are not at the top of the chain yet, recurse again up the chain
                 Some(next_parent) => {
@@ -263,7 +231,7 @@ impl TransformHandleExt for Handle<Transform> {
                 }
                 // if we got to the end of the chain, it is safe to just set the parent
                 None => {
-                    force_replace_parent(child_handle, Some(parent_handle), pearls);
+                    set_parent_unchecked(child_handle, Some(parent_handle), pearls);
                 }
             }
         }
@@ -273,28 +241,35 @@ impl TransformHandleExt for Handle<Transform> {
     }
 }
 
-fn force_replace_parent(
+fn set_parent_unchecked(
     child_handle: Handle<Transform>,
     parent_handle_option: Option<Handle<Transform>>,
     pearls: &mut impl PearlProvider,
 ) -> Option<Handle<Transform>> {
-    // replace the childs parent with new parent
-    let child_transform = pearls.get_mut(child_handle).unwrap();
-    let old_parent_option = std::mem::replace(&mut child_transform.parent, parent_handle_option);
+    // pre validate child handle
+    pearls
+        .get(child_handle)
+        .expect("`child_handle` should be valid");
 
-    // remove the child from the old parents set, if there is one
-    if let Some(old_parent_handle) = old_parent_option {
-        if let Some(old_parent) = pearls.get_mut(old_parent_handle) {
-            old_parent.children.remove(&child_handle);
+    // if the parent is `Some`, add the child to its child set and get its world matrix
+    let mut parent_mat = Mat4::IDENTITY;
+    if let Some(parent_handle) = parent_handle_option {
+        if let Some(parent) = pearls.get_mut(parent_handle) {
+            parent_mat = parent.calculate_world_mat();
+            parent.children.insert(child_handle);
         }
     }
 
-    // add child to the new parents set, if there is one
-    if let Some(parent_handle) = parent_handle_option {
-        if let Some(parent) = pearls.get_mut(parent_handle) {
-            parent.children.insert(child_handle);
-            let parent_mat = parent.calculate_world_mat();
-            pearls.get_mut(child_handle).unwrap().parent_mat = parent_mat;
+    // replace the childs parent with the new one and sync the children matrices
+    let child = pearls.get_mut(child_handle).unwrap();
+    let old_parent_option = std::mem::replace(&mut child.parent, parent_handle_option);
+    child.parent_mat = parent_mat;
+    child_handle.sync_children(pearls);
+
+    // if the child used to have a parent, remove the child from its child set
+    if let Some(old_parent_handle) = old_parent_option {
+        if let Some(old_parent) = pearls.get_mut(old_parent_handle) {
+            old_parent.children.remove(&child_handle);
         }
     }
 
