@@ -8,17 +8,27 @@ impl Pearl for RebirthPearl {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
         registrar.listen_for::<Update>();
     }
+
+    fn on_insert(&mut self, _: Handle<Self>) {
+        // print rebirth count when inserted into a pearl map
+        println!("THE CYCLE OF REBIRTH CONTINUES! Count: {}", self.count);
+    }
+
+    fn on_remove(&mut self) {
+        // print goodbye on removal from a pearl map
+        println!("GOODBYE CRUEL WORLD!");
+    }
 }
 
 impl EventListener<Update> for RebirthPearl {
     fn callback(pearl: &mut PearlData<Self>, mut world: EventData<Update>) {
-        println!("GOODBYE CRUEL WORLD!");
+        // queue destroy self
         world.pearls.queue_destroy(pearl.handle());
 
-        let count = pearl.count + 1;
-        println!("THE CYCLE OF REBIRTH SHALL CONTINUE! Count: {count}");
-        let child = RebirthPearl { count };
-        world.pearls.queue_insert(child);
+        // queue insert of new child with increased count
+        world.pearls.queue_insert(RebirthPearl {
+            count: pearl.count + 1,
+        });
     }
 }
 
