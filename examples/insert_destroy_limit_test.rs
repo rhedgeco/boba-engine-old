@@ -17,7 +17,7 @@ impl Pearl for LimitTestPearl {
 
 impl EventListener<Update> for LimitTestPearl {
     fn callback(pearl: &mut PearlData<Self>, mut event: EventData<Update>) {
-        println!("FPS: {}", 1. / event.delta_time);
+        println!("FPS: {}", 1. / event.delta_time());
         for _ in 0..pearl.count {
             let link = event.pearls.queue_insert(DummyItem::default());
             event.pearls.queue_destroy(link);

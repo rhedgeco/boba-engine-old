@@ -1,7 +1,7 @@
 use std::{
     any::{Any, TypeId},
     collections::hash_map::Entry,
-    ops::Deref,
+    ops::{Deref, DerefMut},
 };
 
 use fxhash::{FxHashMap, FxHashSet};
@@ -17,9 +17,15 @@ use super::{
 };
 
 pub struct EventData<'a, 'access, E: Event> {
-    event: &'a E,
+    event: &'access mut E,
     pub pearls: EventPearls<'a, 'access>,
     pub resources: &'access mut BobaResources,
+}
+
+impl<'a, 'access, E: Event> DerefMut for EventData<'a, 'access, E> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.event
+    }
 }
 
 impl<'a, 'access, E: Event> Deref for EventData<'a, 'access, E> {
@@ -75,7 +81,7 @@ pub(super) struct EventRegistry {
 impl EventRegistry {
     pub fn run_event<E: Event>(
         &self,
-        event: &E,
+        event: &mut E,
         map: &mut RawPearlMap,
         resources: &mut BobaResources,
         pearl_queue: &mut PearlQueue,
@@ -105,7 +111,7 @@ impl<P: Pearl> EventRegistrar<P> for EventRegistry {
     }
 }
 
-type EventRunner<E> = fn(&E, &mut RawPearlMap, &mut BobaResources, &mut PearlQueue);
+type EventRunner<E> = fn(&mut E, &mut RawPearlMap, &mut BobaResources, &mut PearlQueue);
 
 struct EventDispatcher<E: Event> {
     pearls: FxHashSet<PearlId>,
@@ -128,7 +134,7 @@ impl<E: Event> EventDispatcher<E> {
 
     pub fn dispatch(
         &self,
-        event: &E,
+        event: &mut E,
         map: &mut RawPearlMap,
         resources: &mut BobaResources,
         pearl_queue: &mut PearlQueue,
@@ -139,7 +145,7 @@ impl<E: Event> EventDispatcher<E> {
     }
 
     fn _runner<L: EventListener<E>>(
-        event: &E,
+        event: &mut E,
         map: &mut RawPearlMap,
         resources: &mut BobaResources,
         pearl_queue: &mut PearlQueue,

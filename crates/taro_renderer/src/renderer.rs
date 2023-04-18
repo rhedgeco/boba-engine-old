@@ -1,7 +1,10 @@
 use milk_tea::{
     boba_core::{pearls::map::BobaPearls, BobaResources},
-    winit::window::{Window, WindowId},
-    Renderer, RendererBuilder,
+    winit::{
+        dpi::LogicalSize,
+        window::{Window, WindowId},
+    },
+    MilkTeaRenderer, RendererBuilder,
 };
 use wgpu::{Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
@@ -85,7 +88,7 @@ pub struct TaroRenderer {
     queue: Queue,
 }
 
-impl Renderer for TaroRenderer {
+impl MilkTeaRenderer for TaroRenderer {
     fn update_size(&mut self) {
         let new_size = self
             .window
@@ -103,6 +106,11 @@ impl Renderer for TaroRenderer {
         }
     }
 
+    fn set_size(&mut self, width: u32, height: u32) {
+        self.window.set_inner_size(LogicalSize::new(width, height));
+        self.update_size();
+    }
+
     fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {
         if self.window.id() != id {
             return;
@@ -111,7 +119,7 @@ impl Renderer for TaroRenderer {
         self.update_size();
         let Ok(output) = self.surface.get_current_texture() else { return };
 
-        pearls.trigger(&TaroRenderStart, resources);
+        pearls.trigger(&mut TaroRenderStart, resources);
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -145,7 +153,7 @@ impl Renderer for TaroRenderer {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
 
-        pearls.trigger(&TaroRenderFinish, resources);
+        pearls.trigger(&mut TaroRenderFinish, resources);
         self.window.request_redraw();
     }
 }

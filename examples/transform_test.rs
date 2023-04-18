@@ -16,6 +16,7 @@ impl EventListener<Update> for TransformPrinter {
         let location = transform.calculate_world_pos();
         println!("Transform location: {location}");
         event.pearls.queue_destroy(pearl.handle());
+        event.exit_application();
     }
 }
 

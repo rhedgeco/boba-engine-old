@@ -66,7 +66,7 @@ impl BobaPearls {
         self.inner.iter_mut()
     }
 
-    pub fn trigger<E: Event>(&mut self, event: &E, resources: &mut BobaResources) {
+    pub fn trigger<E: Event>(&mut self, event: &mut E, resources: &mut BobaResources) {
         let mut pearl_queue = PearlQueue::new();
         self.events
             .run_event(event, &mut self.inner, resources, &mut pearl_queue);

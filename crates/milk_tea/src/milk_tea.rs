@@ -8,17 +8,18 @@ use winit::{
     window::{Window, WindowBuilder, WindowId},
 };
 
-use crate::events::Update;
+use crate::events::{MilkTeaCommand, Update};
 
 type MilkTeaResult = anyhow::Result<()>;
 
 pub trait RendererBuilder {
-    type Renderer: Renderer;
+    type Renderer: MilkTeaRenderer;
     fn build(self, window: Window) -> Self::Renderer;
 }
 
-pub trait Renderer: Sized + 'static {
+pub trait MilkTeaRenderer: Sized + 'static {
     fn update_size(&mut self);
+    fn set_size(&mut self, width: u32, height: u32);
     fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources);
 }
 
@@ -67,7 +68,15 @@ impl MilkTeaWindow {
             },
             Event::MainEventsCleared => {
                 let delta_time = timer.measure().as_secs_f64();
-                pearls.trigger(&Update::new(delta_time), &mut resouces);
+                let mut update = Update::new(delta_time);
+                pearls.trigger(&mut update, &mut resouces);
+
+                for command in update.commands.drain(..) {
+                    match command {
+                        MilkTeaCommand::Exit => control_flow.set_exit(),
+                        MilkTeaCommand::Resize(width, height) => renderer.set_size(width, height),
+                    }
+                }
             }
             Event::RedrawRequested(id) => {
                 renderer.render(id, &mut pearls, &mut resouces);
@@ -106,11 +115,19 @@ pub struct MilkTeaHeadless {
 }
 
 impl MilkTeaHeadless {
-    pub fn run(mut pearls: BobaPearls, mut resources: BobaResources) -> ! {
+    pub fn run(mut pearls: BobaPearls, mut resources: BobaResources) {
         let mut timer = DeltaTimer::new();
         loop {
             let delta_time = timer.measure().as_secs_f64();
-            pearls.trigger(&Update::new(delta_time), &mut resources);
+            let mut update = Update::new(delta_time);
+            pearls.trigger(&mut update, &mut resources);
+
+            for command in update.commands.drain(..) {
+                match command {
+                    MilkTeaCommand::Exit => return,
+                    _ => (),
+                }
+            }
         }
     }
 }
