@@ -170,7 +170,7 @@ impl Transform {
         };
 
         // Set the parent
-        Self::force_set_parent(handle, None, pearls);
+        Self::force_replace_parent(handle, None, pearls);
     }
 
     pub fn set_parent(
@@ -216,9 +216,10 @@ impl Transform {
             // if we find that the parent child relationship would be recursive, set the parent and resolve the recursion
             Some(next_parent) if next_parent == child_handle => {
                 // set the child parent, and get the old parent
-                let old_parent = Self::force_set_parent(child_handle, Some(parent_handle), pearls);
+                let old_parent =
+                    Self::force_replace_parent(child_handle, Some(parent_handle), pearls);
                 // set the old parent as the new parents parent
-                Self::force_set_parent(parent_handle, old_parent, pearls);
+                Self::force_replace_parent(parent_handle, old_parent, pearls);
             }
             // if we are not at the top of the chain yet, recurse again up the chain
             Some(next_parent) => {
@@ -226,7 +227,7 @@ impl Transform {
             }
             // if we got to the end of the chain, it is safe to just set the parent
             None => {
-                Self::force_set_parent(child_handle, Some(parent_handle), pearls);
+                Self::force_replace_parent(child_handle, Some(parent_handle), pearls);
             }
         }
     }
@@ -235,7 +236,7 @@ impl Transform {
     ///
     /// # Panics
     /// Will panic if the child handle is invalid
-    fn force_set_parent(
+    fn force_replace_parent(
         child_handle: Handle<Self>,
         parent_handle_option: Option<Handle<Self>>,
         pearls: &mut impl PearlProvider,
