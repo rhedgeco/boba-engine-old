@@ -97,8 +97,22 @@ pub struct RawPearlMap {
     pearls: Vec<Box<dyn Any>>,
 }
 
+impl PearlProvider for RawPearlMap {
+    fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P> {
+        let pearl_index = self.validate_handle(handle)?;
+        let pearl_map = self.get_map(handle.map_id())?;
+        Some(&pearl_map[pearl_index])
+    }
+
+    fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P> {
+        let pearl_index = self.validate_handle(handle)?;
+        let pearl_map = self.get_map_mut(handle.map_id())?;
+        Some(&mut pearl_map[pearl_index])
+    }
+}
+
 impl RawPearlMap {
-    pub fn insert<P: Pearl>(&mut self, mut pearl: P, on_new_map: impl FnOnce()) -> Handle<P> {
+    pub fn insert<P: Pearl>(&mut self, pearl: P, on_new_map: impl FnOnce()) -> Handle<P> {
         let map_index = self.get_or_create_pearl_index::<P>(on_new_map) as usize;
         let locations = &mut self.locations[map_index];
         let available = &mut self.available[map_index];
@@ -111,17 +125,18 @@ impl RawPearlMap {
             Some(available_index) => {
                 let location = &mut locations[available_index.uindex()];
                 location.index = Some(pearls.len());
-                pearl.on_insert(location.handle.into_type());
-                pearls.push(PearlData::new(pearl, location.handle.into_type()));
-                location.handle.into_type()
+                let handle = location.handle;
+                pearls.push(PearlData::new(pearl, handle.into_type()));
+                P::on_insert(handle.into_type(), self);
+                handle.into_type()
             }
             None => {
                 let pearl_index =
                     u32::try_from(locations.len()).expect("PearlMap capacity overflow");
                 let handle = RawHandle::from_raw_parts(pearl_index, map_index as u16, 0);
                 locations.push(PearlLocation::new(handle, pearls.len()));
-                pearl.on_insert(handle.into_type());
                 pearls.push(PearlData::new(pearl, handle.into_type()));
+                P::on_insert(handle.into_type(), self);
                 handle.into_type()
             }
         }
@@ -147,20 +162,8 @@ impl RawPearlMap {
 
         self.map_sizes[handle.umap_id()].sub_assign(1); // decrement the tracked count
         let mut pearl = pearl_data.into_pearl();
-        pearl.on_remove();
+        pearl.on_remove(self);
         Some(pearl)
-    }
-
-    pub fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P> {
-        let pearl_index = self.validate_handle(handle)?;
-        let pearl_map = self.get_map(handle.map_id())?;
-        Some(&pearl_map[pearl_index])
-    }
-
-    pub fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P> {
-        let pearl_index = self.validate_handle(handle)?;
-        let pearl_map = self.get_map_mut(handle.map_id())?;
-        Some(&mut pearl_map[pearl_index])
     }
 
     pub fn iter<P: Pearl>(&self) -> Option<Iter<PearlData<P>>> {

@@ -9,12 +9,13 @@ impl Pearl for RebirthPearl {
         registrar.listen_for::<Update>();
     }
 
-    fn on_insert(&mut self, _: Handle<Self>) {
+    fn on_insert(handle: Handle<Self>, pearls: &mut impl PearlProvider) {
         // print rebirth count when inserted into a pearl map
-        println!("THE CYCLE OF REBIRTH CONTINUES! Count: {}", self.count);
+        let count = pearls.get(handle).unwrap().count;
+        println!("THE CYCLE OF REBIRTH CONTINUES! Count: {count}");
     }
 
-    fn on_remove(&mut self) {
+    fn on_remove(&mut self, _: &mut impl PearlProvider) {
         // print goodbye on removal from a pearl map
         println!("GOODBYE CRUEL WORLD!");
     }
