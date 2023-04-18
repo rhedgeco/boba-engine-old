@@ -7,6 +7,7 @@ use boba_core::{
 };
 use glam::{Mat4, Quat, Vec3, Vec4};
 use indexmap::IndexSet;
+use log::warn;
 
 #[derive(Pearl)]
 pub struct Transform {
@@ -137,14 +138,14 @@ impl Transform {
                 Some(child) => {
                     child.parent_mat = world_mat;
                     child.sync_world_transforms();
-                    Self::sync_children_nested(*child_handle, pearls);
+                    Self::sync_children_recursive(*child_handle, pearls);
                 }
                 None => todo!(),
             }
         }
     }
 
-    fn sync_children_nested(handle: Handle<Self>, pearls: &mut EventPearls) {
+    fn sync_children_recursive(handle: Handle<Self>, pearls: &mut EventPearls) {
         let Some(this_child) = pearls.get(handle) else { return };
         let world_mat = this_child.world_mat();
         let children = this_child.children.clone();
@@ -154,10 +155,110 @@ impl Transform {
                 Some(child) => {
                     child.parent_mat = world_mat;
                     child.sync_world_transforms();
-                    Self::sync_children_nested(*child_handle, pearls);
+                    Self::sync_children_recursive(*child_handle, pearls);
                 }
                 None => todo!(),
             }
         }
+    }
+
+    pub fn clear_parent(handle: Handle<Self>, pearls: &mut EventPearls) {
+        // check if the transform_handle is valid
+        if pearls.get_mut(handle).is_none() {
+            warn!("Tried to `clear_parent` with a handle that is invalid.");
+            return;
+        };
+
+        // Set the parent
+        Self::force_set_parent(handle, None, pearls);
+    }
+
+    pub fn set_parent(
+        child_handle: Handle<Self>,
+        parent_handle: Handle<Self>,
+        pearls: &mut EventPearls,
+    ) {
+        if child_handle == parent_handle {
+            warn!("Tried to `set_parent` with identical handles.");
+            return;
+        }
+
+        // check if the parent is valid
+        if pearls.get(parent_handle).is_none() {
+            warn!("Tried to `set_parent` with a parent handle that is invalid.");
+            return;
+        };
+
+        // check if the transform_handle is valid
+        let Some(child) = pearls.get_mut(child_handle) else {
+            warn!("Tried to `set_parent` with a child handle that is invalid.");
+            return;
+        };
+
+        // check if parent is already correct, and if so, skip parenting process
+        match child.parent {
+            Some(current_parent) if current_parent == parent_handle => return,
+            _ => (),
+        };
+
+        // set parent and resolve recursive loops
+        Self::parent_resolve_recursive(child_handle, parent_handle, parent_handle, pearls);
+    }
+
+    fn parent_resolve_recursive(
+        child_handle: Handle<Self>,
+        parent_handle: Handle<Self>,
+        current_handle: Handle<Self>,
+        pearls: &mut EventPearls,
+    ) {
+        let current_transform = pearls.get_mut(current_handle).unwrap();
+        match current_transform.parent {
+            // if we find that the parent child relationship would be recursive, set the parent and resolve the recursion
+            Some(next_parent) if next_parent == child_handle => {
+                // set the child parent, and get the old parent
+                let old_parent = Self::force_set_parent(child_handle, Some(parent_handle), pearls);
+                // set the old parent as the new parents parent
+                Self::force_set_parent(parent_handle, old_parent, pearls);
+            }
+            // if we are not at the top of the chain yet, recurse again up the chain
+            Some(next_parent) => {
+                Self::parent_resolve_recursive(child_handle, parent_handle, next_parent, pearls)
+            }
+            // if we got to the end of the chain, it is safe to just set the parent
+            None => {
+                Self::force_set_parent(child_handle, Some(parent_handle), pearls);
+            }
+        }
+    }
+
+    /// Forcefully sets a parent and returns the old one
+    ///
+    /// # Panics
+    /// Will panic if the child handle is invalid
+    fn force_set_parent(
+        child_handle: Handle<Self>,
+        parent_handle_option: Option<Handle<Self>>,
+        pearls: &mut EventPearls,
+    ) -> Option<Handle<Self>> {
+        // replace the childs parent with new parent
+        let child_transform = pearls.get_mut(child_handle).unwrap();
+        let old_parent_option =
+            std::mem::replace(&mut child_transform.parent, parent_handle_option);
+
+        // remove the child from the old parents set, if there is one
+        if let Some(old_parent_handle) = old_parent_option {
+            if let Some(old_parent) = pearls.get_mut(old_parent_handle) {
+                old_parent.children.remove(&child_handle);
+            }
+        }
+
+        // add child to the new parents set, if there is one
+        if let Some(parent_handle) = parent_handle_option {
+            if let Some(parent) = pearls.get_mut(parent_handle) {
+                parent.children.insert(child_handle);
+            }
+        }
+
+        old_parent_option
     }
 }
