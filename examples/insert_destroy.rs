@@ -10,12 +10,13 @@ impl Pearl for RebirthPearl {
     }
 
     fn on_insert(handle: Handle<Self>, pearls: &mut impl PearlProvider) {
-        // print rebirth count when inserted into a pearl map
-        let count = pearls.get(handle).unwrap().count;
-        println!("THE CYCLE OF REBIRTH CONTINUES! Count: {count}");
+        // while it is guaranteed that the pearl will be valid
+        // it is good practice to still not use `unwrap` when possible
+        let Some(pearl) = pearls.get(handle) else { return };
+        println!("THE CYCLE OF REBIRTH CONTINUES! Count: {}", pearl.count);
     }
 
-    fn on_remove(&mut self, _: &mut impl PearlProvider) {
+    fn on_remove(_: &mut PearlData<Self>, _: &mut impl PearlProvider) {
         // print goodbye on removal from a pearl map
         println!("GOODBYE CRUEL WORLD!");
     }

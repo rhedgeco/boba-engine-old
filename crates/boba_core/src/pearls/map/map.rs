@@ -154,16 +154,15 @@ impl RawPearlMap {
         self.available[handle.umap_id()].push(location.handle); // add link index to open links for re-use
         let pearls = self.pearls[handle.umap_id()].downcast_mut::<Vec<PearlData<P>>>()?; // get the pearl data vec
 
-        let pearl_data = pearls.swap_remove(pearl_index); // swap remove the pearl to keep vec packed
+        let mut pearl_data = pearls.swap_remove(pearl_index); // swap remove the pearl to keep vec packed
         if let Some(swapped_data) = pearls.get_mut(pearl_index) {
             // fix the link for the swapped handle if there is one
             locations[swapped_data.handle().uindex()].index = Some(pearl_index);
         }
 
         self.map_sizes[handle.umap_id()].sub_assign(1); // decrement the tracked count
-        let mut pearl = pearl_data.into_pearl();
-        pearl.on_remove(self);
-        Some(pearl)
+        P::on_remove(&mut pearl_data, self);
+        Some(pearl_data.into_data().0)
     }
 
     pub fn iter<P: Pearl>(&self) -> Option<Iter<PearlData<P>>> {

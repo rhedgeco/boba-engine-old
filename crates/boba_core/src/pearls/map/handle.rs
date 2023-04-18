@@ -189,8 +189,8 @@ impl<P: Pearl> PearlData<P> {
         Self { pearl, handle }
     }
 
-    pub fn into_pearl(self) -> P {
-        self.pearl
+    pub fn into_data(self) -> (P, Handle<P>) {
+        (self.pearl, self.handle)
     }
 
     pub fn handle(&self) -> Handle<P> {

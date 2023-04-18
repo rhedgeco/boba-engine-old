@@ -2,14 +2,14 @@ use std::any::TypeId;
 
 use crate::EventRegistrar;
 
-use super::map::{Handle, PearlProvider};
+use super::map::{Handle, PearlData, PearlProvider};
 
 /// Central trait to register structs in boba engine.
 #[allow(unused_variables)]
 pub trait Pearl: Sized + 'static {
     fn register(registrar: &mut impl EventRegistrar<Self>) {}
     fn on_insert(handle: Handle<Self>, pearls: &mut impl PearlProvider) {}
-    fn on_remove(&mut self, pearls: &mut impl PearlProvider) {}
+    fn on_remove(pearl: &mut PearlData<Self>, pearls: &mut impl PearlProvider) {}
 }
 
 /// A light wrapper over [`TypeId`] that is limited to types that derive [`Pearl`]
