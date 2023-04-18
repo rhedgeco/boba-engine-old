@@ -136,6 +136,7 @@ pub struct MilkTeaHeadless {
 impl MilkTeaHeadless {
     pub fn run(mut pearls: BobaPearls, mut resources: BobaResources) {
         let mut timer = DeltaTimer::new();
+        resources.insert(MilkTeaCommands::new());
         loop {
             let delta_time = timer.measure().as_secs_f64();
             let mut update = Update::new(delta_time);
