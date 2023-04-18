@@ -42,6 +42,10 @@ pub struct ExclusivePearlAccess<'a, 'access> {
 }
 
 impl<'a, 'access> ExclusivePearlAccess<'a, 'access> {
+    pub fn get_excluded_handle(access: &ExclusivePearlAccess) -> RawHandle {
+        access.exclude
+    }
+
     pub fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P> {
         if handle == self.exclude {
             return None;

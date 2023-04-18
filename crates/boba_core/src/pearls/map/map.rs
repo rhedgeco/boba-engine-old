@@ -16,10 +16,25 @@ use super::{
     EventRegistry, Handle, PearlAccessMap, PearlData, PearlEventQueue, PearlQueue, RawHandle,
 };
 
+pub trait PearlProvider {
+    fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P>;
+    fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P>;
+}
+
 #[derive(Default)]
 pub struct BobaPearls {
     inner: RawPearlMap,
     events: EventRegistry,
+}
+
+impl PearlProvider for BobaPearls {
+    fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P> {
+        self.inner.get(handle)
+    }
+
+    fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P> {
+        self.inner.get_mut(handle)
+    }
 }
 
 impl BobaPearls {
@@ -32,11 +47,11 @@ impl BobaPearls {
     }
 
     pub fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P> {
-        self.inner.get(handle)
+        <Self as PearlProvider>::get(self, handle)
     }
 
     pub fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P> {
-        self.inner.get_mut(handle)
+        <Self as PearlProvider>::get_mut(self, handle)
     }
 
     pub fn remove<P: Pearl>(&mut self, handle: Handle<P>) -> Option<P> {

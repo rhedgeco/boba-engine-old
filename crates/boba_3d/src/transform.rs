@@ -1,7 +1,7 @@
 use boba_core::{
     macros::Pearl,
     pearls::{
-        map::{EventPearls, Handle},
+        map::{Handle, PearlProvider},
         Pearl,
     },
 };
@@ -103,12 +103,12 @@ impl Transform {
         self.local_mat
     }
 
-    pub fn set_local_pos(&mut self, pos: Vec3, pearls: &mut EventPearls) {
+    pub fn set_local_pos_sync(&mut self, pos: Vec3, pearls: &mut impl PearlProvider) {
         self.set_local_pos_no_sync(pos);
         self.sync_children(pearls);
     }
 
-    pub fn set_local_rot(&mut self, rot: Quat, pearls: &mut EventPearls) {
+    pub fn set_local_rot_sync(&mut self, rot: Quat, pearls: &mut impl PearlProvider) {
         self.set_local_rot_no_sync(rot);
         self.sync_children(pearls);
     }
@@ -129,7 +129,7 @@ impl Transform {
             self.world_mat().to_scale_rotation_translation()
     }
 
-    pub fn sync_children(&mut self, pearls: &mut EventPearls) {
+    pub fn sync_children(&mut self, pearls: &mut impl PearlProvider) {
         self.sync_world_transforms();
         let world_mat = self.world_mat();
 
@@ -145,7 +145,7 @@ impl Transform {
         }
     }
 
-    fn sync_children_recursive(handle: Handle<Self>, pearls: &mut EventPearls) {
+    fn sync_children_recursive(handle: Handle<Self>, pearls: &mut impl PearlProvider) {
         let Some(this_child) = pearls.get(handle) else { return };
         let world_mat = this_child.world_mat();
         let children = this_child.children.clone();
@@ -162,7 +162,7 @@ impl Transform {
         }
     }
 
-    pub fn clear_parent(handle: Handle<Self>, pearls: &mut EventPearls) {
+    pub fn clear_parent(handle: Handle<Self>, pearls: &mut impl PearlProvider) {
         // check if the transform_handle is valid
         if pearls.get_mut(handle).is_none() {
             warn!("Tried to `clear_parent` with a handle that is invalid.");
@@ -176,7 +176,7 @@ impl Transform {
     pub fn set_parent(
         child_handle: Handle<Self>,
         parent_handle: Handle<Self>,
-        pearls: &mut EventPearls,
+        pearls: &mut impl PearlProvider,
     ) {
         if child_handle == parent_handle {
             warn!("Tried to `set_parent` with identical handles.");
@@ -209,7 +209,7 @@ impl Transform {
         child_handle: Handle<Self>,
         parent_handle: Handle<Self>,
         current_handle: Handle<Self>,
-        pearls: &mut EventPearls,
+        pearls: &mut impl PearlProvider,
     ) {
         let current_transform = pearls.get_mut(current_handle).unwrap();
         match current_transform.parent {
@@ -238,7 +238,7 @@ impl Transform {
     fn force_set_parent(
         child_handle: Handle<Self>,
         parent_handle_option: Option<Handle<Self>>,
-        pearls: &mut EventPearls,
+        pearls: &mut impl PearlProvider,
     ) -> Option<Handle<Self>> {
         // replace the childs parent with new parent
         let child_transform = pearls.get_mut(child_handle).unwrap();

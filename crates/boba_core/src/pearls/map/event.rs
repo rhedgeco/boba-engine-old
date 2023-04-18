@@ -11,7 +11,10 @@ use crate::{
     BobaResources, Event, EventListener, EventRegistrar,
 };
 
-use super::{ExclusivePearlAccess, Handle, PearlEventQueue, PearlQueue, RawPearlMap};
+use super::{
+    ExclusivePearlAccess, Handle, PearlEventQueue, PearlProvider, PearlQueue, RawHandle,
+    RawPearlMap,
+};
 
 pub struct EventData<'a, 'access, E: Event> {
     event: &'a E,
@@ -32,7 +35,21 @@ pub struct EventPearls<'a, 'access> {
     insert_queue: &'access mut PearlEventQueue<'a>,
 }
 
+impl<'a, 'access> PearlProvider for EventPearls<'a, 'access> {
+    fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P> {
+        self.exclusive_access.get(handle)
+    }
+
+    fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P> {
+        self.exclusive_access.get_mut(handle)
+    }
+}
+
 impl<'a, 'access> EventPearls<'a, 'access> {
+    pub fn get_excluded_handle(access: &EventPearls) -> RawHandle {
+        ExclusivePearlAccess::get_excluded_handle(&access.exclusive_access)
+    }
+
     pub fn queue_insert<P: Pearl>(&mut self, pearl: P) -> Handle<P> {
         self.insert_queue.insert(pearl)
     }
@@ -42,11 +59,11 @@ impl<'a, 'access> EventPearls<'a, 'access> {
     }
 
     pub fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P> {
-        self.exclusive_access.get(handle)
+        <Self as PearlProvider>::get(self, handle)
     }
 
     pub fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P> {
-        self.exclusive_access.get_mut(handle)
+        <Self as PearlProvider>::get_mut(self, handle)
     }
 }
 
