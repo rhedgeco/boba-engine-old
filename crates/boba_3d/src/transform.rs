@@ -37,7 +37,7 @@ pub struct Transform {
 
 impl Pearl for Transform {
     fn on_insert(handle: Handle<Self>, pearls: &mut impl PearlProvider) {
-        let Some(pearl) = pearls.get_mut(handle) else { return }; // ensure handle is valid
+        let Some(pearl) = pearls.get(handle) else { return }; // ensure handle is valid
         let Some(parent_handle) = pearl.parent else { return }; // check if transform has a parent
         let Some(parent) = pearls.get_mut(parent_handle) else {
             // set this parent to none if a parent does not exist
@@ -48,31 +48,37 @@ impl Pearl for Transform {
         // if this transform had a parent and the parent exists
         // add this handle to the parents child set
         parent.children.insert(handle);
+        let parent_mat = parent.calculate_world_mat();
+        pearls.get_mut(handle).unwrap().parent_mat = parent_mat;
     }
 
     fn on_remove(pearl: &mut PearlData<Self>, pearls: &mut impl PearlProvider) {
-        fn set_childrens_parent(
-            children: &IndexSet<Handle<Transform>>,
-            parent: Option<Handle<Transform>>,
-            pearls: &mut impl PearlProvider,
-        ) {
-            for child_handle in children.iter() {
-                if let Some(child) = pearls.get_mut(*child_handle) {
-                    child.parent = parent
-                }
-            }
-        }
-
         match pearl.parent {
             Some(parent_handle) => {
                 if let Some(parent) = pearls.get_mut(parent_handle) {
+                    let world_mat = parent.calculate_world_mat();
                     parent.children.remove(&pearl.handle());
-                    set_childrens_parent(&pearl.children, Some(parent_handle), pearls);
+                    for child_handle in pearl.children.iter() {
+                        if let Some(child) = pearls.get_mut(*child_handle) {
+                            child.parent = Some(parent_handle);
+                            child.parent_mat = world_mat;
+                        }
+                    }
                 } else {
-                    set_childrens_parent(&pearl.children, None, pearls);
+                    for child_handle in pearl.children.iter() {
+                        if let Some(child) = pearls.get_mut(*child_handle) {
+                            child.parent = None;
+                        }
+                    }
                 }
             }
-            None => set_childrens_parent(&pearl.children, None, pearls),
+            None => {
+                for child_handle in pearl.children.iter() {
+                    if let Some(child) = pearls.get_mut(*child_handle) {
+                        child.parent = None;
+                    }
+                }
+            }
         }
     }
 }

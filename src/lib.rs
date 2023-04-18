@@ -10,6 +10,11 @@ pub mod prelude {
         BobaResources, EventListener, EventRegistrar,
     };
 
+    pub use boba_3d::{
+        glam::{Quat, Vec3},
+        Transform, TransformData,
+    };
+
     pub use milk_tea::{events::Update, MilkTeaHeadless, MilkTeaWindow};
 
     pub use taro_renderer::TaroBuilder;
