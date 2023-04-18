@@ -46,7 +46,7 @@ impl Pearl for Transform {
         };
 
         // if this transform had a parent and the parent exists
-        // add this handle to the parents child set
+        // add this handle to the parents child set, and set the childs parent_matrix
         parent.children.insert(handle);
         let parent_mat = parent.calculate_world_mat();
         pearls.get_mut(handle).unwrap().parent_mat = parent_mat;
@@ -293,6 +293,8 @@ fn force_replace_parent(
     if let Some(parent_handle) = parent_handle_option {
         if let Some(parent) = pearls.get_mut(parent_handle) {
             parent.children.insert(child_handle);
+            let parent_mat = parent.calculate_world_mat();
+            pearls.get_mut(child_handle).unwrap().parent_mat = parent_mat;
         }
     }
 
