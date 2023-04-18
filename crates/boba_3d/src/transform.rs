@@ -92,13 +92,13 @@ impl Transform {
     }
 
     /// Calculates and returns the world position of this transform
-    pub fn world_pos(&self) -> Vec3 {
-        self.world_mat().to_scale_rotation_translation().2
+    pub fn calculate_world_pos(&self) -> Vec3 {
+        self.calculate_world_mat().to_scale_rotation_translation().2
     }
 
     /// Calculates and returns the world rotation of this transform
-    pub fn world_rot(&self) -> Quat {
-        self.world_mat().to_scale_rotation_translation().1
+    pub fn calculate_world_rot(&self) -> Quat {
+        self.calculate_world_mat().to_scale_rotation_translation().1
     }
 
     /// Calculates and returns the lossy world scale for this transform
@@ -107,8 +107,8 @@ impl Transform {
     /// is a child of other transforms with certain rotations and scales.
     /// This is a limitation of forcing the child scale representaton into a Vec3.
     /// However, the world matrix will still contain accurate information.
-    pub fn lossy_scale(&self) -> Vec3 {
-        self.world_mat().to_scale_rotation_translation().0
+    pub fn calculate_lossy_scale(&self) -> Vec3 {
+        self.calculate_world_mat().to_scale_rotation_translation().0
     }
 
     /// Returns the local position of the transform relative to its parent.
@@ -126,13 +126,13 @@ impl Transform {
         self.local_scale
     }
 
-    /// Returns the world matrix for this transform
-    pub fn world_mat(&self) -> Mat4 {
-        self.parent_mat * self.local_mat()
+    /// Calculates and returns the world matrix for this transform
+    pub fn calculate_world_mat(&self) -> Mat4 {
+        self.parent_mat * self.calculate_local_mat()
     }
 
-    /// Returns the local matrix for this transform
-    pub fn local_mat(&self) -> Mat4 {
+    /// Calculates and returns the local matrix for this transform
+    pub fn calculate_local_mat(&self) -> Mat4 {
         Mat4::from_scale_rotation_translation(self.local_scale, self.local_rot, self.local_pos)
     }
 }
@@ -186,7 +186,7 @@ impl TransformHandleExt for Handle<Transform> {
 
     fn sync_children(self, pearls: &mut impl PearlProvider) {
         let Some(this_child) = pearls.get(self) else { return };
-        let world_mat = this_child.world_mat();
+        let world_mat = this_child.calculate_world_mat();
         let children = this_child.children.clone();
 
         for child_handle in children.iter() {
