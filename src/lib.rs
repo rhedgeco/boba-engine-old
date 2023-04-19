@@ -15,7 +15,10 @@ pub mod prelude {
         Transform, TransformData,
     };
 
-    pub use milk_tea::{events::Update, MilkTeaHeadless, MilkTeaWindow};
+    pub use milk_tea::{
+        events::{KeyCode, KeyboardInput, Update},
+        MilkTeaCommands, MilkTeaHeadless, MilkTeaWindow,
+    };
 
     pub use taro_renderer::TaroBuilder;
 }

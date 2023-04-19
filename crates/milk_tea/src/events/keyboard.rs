@@ -1,4 +1,6 @@
-use winit::event::{self, DeviceId};
+use winit::event::{self, DeviceId, ElementState, VirtualKeyCode};
+
+pub type KeyCode = VirtualKeyCode;
 
 pub struct KeyboardInput {
     device_id: DeviceId,
@@ -15,12 +17,24 @@ impl KeyboardInput {
         }
     }
 
-    pub fn device(&self) -> DeviceId {
+    pub fn device_id(&self) -> DeviceId {
         self.device_id
     }
 
-    pub fn input(&self) -> event::KeyboardInput {
-        self.input
+    pub fn scancode(&self) -> u32 {
+        self.input.scancode
+    }
+
+    pub fn keycode(&self) -> Option<KeyCode> {
+        self.input.virtual_keycode
+    }
+
+    pub fn is_pressed(&self) -> bool {
+        self.input.state == ElementState::Pressed
+    }
+
+    pub fn is_released(&self) -> bool {
+        self.input.state == ElementState::Released
     }
 
     pub fn is_synthetic(&self) -> bool {
