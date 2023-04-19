@@ -36,6 +36,12 @@ impl BobaResources {
         Some(any.downcast_ref::<T>().unwrap())
     }
 
+    /// Gets a reference to `T` if it exists, then runs the function `f`.
+    pub fn get_and<T: 'static>(&self, f: impl FnOnce(&T)) {
+        let Some(item) = self.get::<T>() else { return };
+        f(item);
+    }
+
     /// Returns a mutable reference to the resource of type `T` stored in this map.
     ///
     /// Returns `None` if the resource does not exist.
@@ -43,6 +49,12 @@ impl BobaResources {
     pub fn get_mut<T: 'static>(&mut self) -> Option<&mut T> {
         let any = self.resources.get_mut(&TypeId::of::<T>())?;
         Some(any.downcast_mut::<T>().unwrap())
+    }
+
+    /// Gets a mutable reference to `T` if it exists, then runs the function `f`.
+    pub fn get_mut_and<T: 'static>(&mut self, f: impl FnOnce(&mut T)) {
+        let Some(item) = self.get_mut::<T>() else { return };
+        f(item);
     }
 
     /// Removes and returns the resource of type `T` stored in this map.
