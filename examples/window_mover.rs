@@ -1,5 +1,4 @@
 use boba::prelude::*;
-use milk_tea::MilkTeaWindow;
 
 struct WindowMover {
     move_speed: f64,
@@ -23,14 +22,15 @@ impl Pearl for WindowMover {
 
 impl EventListener<Update> for WindowMover {
     fn callback(pearl: &mut PearlData<Self>, event: EventData<Update>) {
-        let Some(window) = event.resources.get::<MilkTeaWindow>() else { return };
-        let Ok(mut position) = window.window().outer_position() else { return };
+        let Some(windows) = event.resources.get::<MilkTeaWindows>() else { return };
+        let window = windows.main();
+        let Ok(mut position) = window.outer_position() else { return };
 
         pearl.move_buffer += pearl.move_speed * event.delta_time();
         position.x += pearl.move_buffer.trunc() as i32;
         pearl.move_buffer = pearl.move_buffer.fract();
 
-        window.window().set_outer_position(position);
+        window.set_outer_position(position);
     }
 }
 

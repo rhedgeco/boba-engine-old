@@ -9,8 +9,8 @@ use winit::{
 };
 
 use crate::{
-    events::{KeyboardInput, Update},
-    MilkTeaBuilder, MilkTeaCommand, MilkTeaCommands, MilkTeaWindow,
+    events::{KeyboardInput, LateUpdate, Update},
+    MilkTeaCommand, MilkTeaCommands, MilkTeaWindows, RenderBuilder,
 };
 
 const SOFTWARE_ERROR_CODE: i32 = 70;
@@ -43,7 +43,7 @@ impl MilkTea {
         Self::default()
     }
 
-    pub fn run<W: MilkTeaBuilder>(mut self, window_builder: W) -> MilkTeaResult {
+    pub fn run<W: RenderBuilder>(mut self, window_builder: W) -> MilkTeaResult {
         let event_loop = EventLoop::new();
         let window = window::WindowBuilder::new()
             .with_inner_size(LogicalSize::new(self.settings.size.0, self.settings.size.1))
@@ -52,10 +52,10 @@ impl MilkTea {
 
         self.resources.insert(MilkTeaCommands::new());
         self.resources
-            .insert(MilkTeaWindow::new(window_builder.build(window)));
+            .insert(MilkTeaWindows::new(window_builder.build(window)));
 
         let mut timer = DeltaTimer::new();
-        event_loop.run(move |event, _, control_flow| match event {
+        event_loop.run(move |event, event_loop, control_flow| match event {
             Event::WindowEvent { ref event, .. } => match event {
                 WindowEvent::CloseRequested => control_flow.set_exit(),
                 WindowEvent::KeyboardInput {
@@ -71,7 +71,9 @@ impl MilkTea {
             Event::MainEventsCleared => {
                 let delta_time = timer.measure().as_secs_f64();
                 let mut update = Update::new(delta_time);
+                let mut late_update = LateUpdate::new(delta_time);
                 self.pearls.trigger(&mut update, &mut self.resources);
+                self.pearls.trigger(&mut late_update, &mut self.resources);
 
                 let commands = match self.resources.get_mut::<MilkTeaCommands>() {
                     Some(commands) => commands,
@@ -88,17 +90,16 @@ impl MilkTea {
                     }
                 }
             }
-            Event::RedrawRequested(_) => {
+            Event::RedrawRequested(id) => {
                 // remove the window, so we can still pass the resources into the render function
-                let Some(mut window) = self.resources.remove::<MilkTeaWindow>() else {
+                let Some(mut window) = self.resources.remove::<MilkTeaWindows>() else {
                     control_flow.set_exit_with_code(SOFTWARE_ERROR_CODE);
                     return;
                 };
 
-                // render the window
-                window
-                    .manager()
-                    .render(&mut self.pearls, &mut self.resources);
+                // build queued windows and render
+                window.build_window_queue(event_loop);
+                window.render(id, &mut self.pearls, &mut self.resources);
 
                 // re-insert the window afterwards
                 self.resources.insert(window);
@@ -125,7 +126,9 @@ impl MilkTeaHeadless {
         loop {
             let delta_time = timer.measure().as_secs_f64();
             let mut update = Update::new(delta_time);
+            let mut late_update = LateUpdate::new(delta_time);
             self.pearls.trigger(&mut update, &mut self.resources);
+            self.pearls.trigger(&mut late_update, &mut self.resources);
 
             match self.resources.get_mut::<MilkTeaCommands>() {
                 None => return,

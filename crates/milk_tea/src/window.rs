@@ -1,32 +1,66 @@
 use boba_core::{pearls::map::BobaPearls, BobaResources};
-use winit::window::Window;
+use indexmap::IndexMap;
+use log::error;
+use winit::{
+    event_loop::EventLoopWindowTarget,
+    window::{Window, WindowBuilder, WindowId},
+};
 
-pub trait WindowManager: 'static {
-    fn window(&self) -> &Window;
-    fn render(&mut self, pearls: &mut BobaPearls, resources: &mut BobaResources);
+pub trait MilkTeaRenderer: 'static {
+    fn main(&self) -> &Window;
+    fn get(&self, name: &str) -> Option<&Window>;
+    fn insert(&mut self, name: String, window: Window);
+    fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources);
 }
 
-pub trait MilkTeaBuilder: 'static {
-    type Window: WindowManager;
-    fn build(self, window: Window) -> Self::Window;
+pub trait RenderBuilder {
+    type Renderer: MilkTeaRenderer;
+    fn build(self, window: Window) -> Self::Renderer;
 }
 
-pub struct MilkTeaWindow {
-    manager: Box<dyn WindowManager>,
+pub struct MilkTeaWindows {
+    renderer: Box<dyn MilkTeaRenderer>,
+    window_queue: IndexMap<String, WindowBuilder>,
 }
 
-impl MilkTeaWindow {
-    pub(super) fn new(manager: impl WindowManager) -> Self {
+impl MilkTeaWindows {
+    pub(super) fn new(renderer: impl MilkTeaRenderer) -> Self {
         Self {
-            manager: Box::new(manager),
+            renderer: Box::new(renderer),
+            window_queue: IndexMap::new(),
         }
     }
 
-    pub(super) fn manager(&mut self) -> &mut Box<dyn WindowManager> {
-        &mut self.manager
+    pub(super) fn render(
+        &mut self,
+        id: WindowId,
+        pearls: &mut BobaPearls,
+        resources: &mut BobaResources,
+    ) {
+        self.renderer.render(id, pearls, resources);
     }
 
-    pub fn window(&self) -> &Window {
-        self.manager.window()
+    pub(super) fn build_window_queue(&mut self, event_loop: &EventLoopWindowTarget<()>) {
+        for (name, builder) in self.window_queue.drain(..) {
+            match builder.build(event_loop) {
+                Err(error) => error!("Failed to create window `{name}`. Error: {error}"),
+                Ok(window) => {
+                    window.request_redraw();
+                    self.renderer.insert(name, window);
+                }
+            };
+        }
+    }
+
+    pub fn main(&self) -> &Window {
+        self.renderer.main()
+    }
+
+    pub fn get(&self, name: &str) -> Option<&Window> {
+        self.renderer.get(name)
+    }
+
+    pub fn insert(&mut self, name: &str, builder: WindowBuilder) {
+        self.window_queue.insert(name.into(), builder);
     }
 }

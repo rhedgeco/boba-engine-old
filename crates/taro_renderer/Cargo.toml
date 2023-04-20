@@ -6,5 +6,6 @@ edition = "2021"
 [dependencies]
 wgpu = "0.15"
 pollster = "0.3"
+indexmap = "1.9"
 
 milk_tea = { path = "../milk_tea" }

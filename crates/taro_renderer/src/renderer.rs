@@ -1,9 +1,10 @@
+use indexmap::IndexMap;
 use milk_tea::{
     boba_core::{pearls::map::BobaPearls, BobaResources},
-    winit::window::Window,
-    MilkTeaBuilder, WindowManager,
+    winit::window::{Window, WindowId},
+    MilkTeaRenderer, RenderBuilder,
 };
-use wgpu::{Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
+use wgpu::{Device, Instance, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
 use crate::events::{TaroRenderFinish, TaroRenderStart};
 
@@ -18,12 +19,12 @@ impl TaroBuilder {
     }
 }
 
-impl MilkTeaBuilder for TaroBuilder {
-    type Window = TaroWindow;
+impl RenderBuilder for TaroBuilder {
+    type Renderer = TaroRenderer;
 
-    fn build(self, window: Window) -> Self::Window {
+    fn build(self, window: Window) -> Self::Renderer {
         let size = window.inner_size();
-        let instance = wgpu::Instance::new(InstanceDescriptor::default());
+        let instance = Instance::new(InstanceDescriptor::default());
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
         let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -64,36 +65,43 @@ impl MilkTeaBuilder for TaroBuilder {
             view_formats: vec![],
         };
         surface.configure(&device, &config);
+        let config_template = config.clone();
 
-        TaroWindow {
+        let main_window = WindowManager {
             window,
-            config,
             surface,
+            config,
+        };
+
+        let mut id_mapper = IndexMap::new();
+        id_mapper.insert("main".to_string(), main_window.window.id());
+
+        let mut windows = IndexMap::new();
+        windows.insert(main_window.window.id(), main_window);
+
+        TaroRenderer {
+            id_mapper,
+            windows,
             device,
             queue,
+            instance,
+            config_template,
         }
     }
 }
 
-pub struct TaroWindow {
+struct WindowManager {
     window: Window,
-    config: SurfaceConfiguration,
     surface: Surface,
-    device: Device,
-    queue: Queue,
+    config: SurfaceConfiguration,
 }
 
-impl WindowManager for TaroWindow {
-    fn window(&self) -> &Window {
-        &self.window
-    }
-
-    fn render(&mut self, pearls: &mut BobaPearls, resources: &mut BobaResources) {
+impl WindowManager {
+    pub fn update_size(&mut self, device: &Device) {
         let new_size = self
             .window
             .inner_size()
             .to_logical(self.window.scale_factor());
-
         if new_size.width > 0
             && new_size.height > 0
             && new_size.width != self.config.width
@@ -101,10 +109,60 @@ impl WindowManager for TaroWindow {
         {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
-            self.surface.configure(&self.device, &self.config);
+            self.surface.configure(device, &self.config);
         }
+    }
+}
 
-        let Ok(output) = self.surface.get_current_texture() else { return };
+pub struct TaroRenderer {
+    id_mapper: IndexMap<String, WindowId>,
+    windows: IndexMap<WindowId, WindowManager>,
+
+    device: Device,
+    queue: Queue,
+
+    instance: Instance,
+    config_template: SurfaceConfiguration,
+}
+
+impl MilkTeaRenderer for TaroRenderer {
+    fn main(&self) -> &Window {
+        let id = self
+            .id_mapper
+            .get("main")
+            .expect("`main` window should exist.");
+
+        &self.windows.get(id).unwrap().window
+    }
+
+    fn get(&self, name: &str) -> Option<&Window> {
+        let id = self.id_mapper.get(name)?;
+        Some(&self.windows.get(id)?.window)
+    }
+
+    fn insert(&mut self, name: String, window: Window) {
+        let size = window.inner_size();
+        let surface = unsafe { self.instance.create_surface(&window) }.unwrap();
+        let mut config = self.config_template.clone();
+        config.width = size.width;
+        config.height = size.height;
+        surface.configure(&self.device, &config);
+
+        let manager = WindowManager {
+            window,
+            surface,
+            config,
+        };
+
+        self.id_mapper.insert(name, manager.window.id());
+        self.windows.insert(manager.window.id(), manager);
+    }
+
+    fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {
+        let Some(window) = self.windows.get_mut(&id) else { return };
+        window.update_size(&self.device);
+
+        let Ok(output) = window.surface.get_current_texture() else { return };
         pearls.trigger(&mut TaroRenderStart, resources);
         let view = output
             .texture
@@ -137,6 +195,6 @@ impl WindowManager for TaroWindow {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
         pearls.trigger(&mut TaroRenderFinish, resources);
-        self.window.request_redraw();
+        window.window.request_redraw();
     }
 }
