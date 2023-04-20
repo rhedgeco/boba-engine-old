@@ -27,8 +27,8 @@ impl EventListener<Update> for WindowMover {
         let Ok(mut position) = window.window().outer_position() else { return };
 
         pearl.move_buffer += pearl.move_speed * event.delta_time();
-        position.x += pearl.move_buffer.floor() as i32;
-        pearl.move_buffer %= 1.;
+        position.x += pearl.move_buffer.trunc() as i32;
+        pearl.move_buffer = pearl.move_buffer.fract();
 
         window.window().set_outer_position(position);
     }
