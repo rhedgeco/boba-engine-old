@@ -7,9 +7,13 @@ use winit::{
 };
 
 pub trait MilkTeaRenderer: 'static {
-    fn main(&self) -> &Window;
+    fn window_count(&self) -> usize;
+    fn is_empty(&self) -> bool;
     fn get(&self, name: &str) -> Option<&Window>;
+    fn get_name(&self, id: WindowId) -> Option<&str>;
     fn insert(&mut self, name: String, window: Window);
+    fn drop_id(&mut self, id: WindowId);
+    fn drop_name(&mut self, name: &str);
     fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources);
 }
 
@@ -52,15 +56,32 @@ impl MilkTeaWindows {
         }
     }
 
-    pub fn main(&self) -> &Window {
-        self.renderer.main()
+    pub(super) fn drop_id(&mut self, id: WindowId) {
+        self.renderer.drop_id(id);
+    }
+
+    pub fn window_count(&self) -> usize {
+        self.renderer.window_count()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.renderer.is_empty()
     }
 
     pub fn get(&self, name: &str) -> Option<&Window> {
         self.renderer.get(name)
     }
 
+    pub fn get_name(&self, id: WindowId) -> Option<&str> {
+        self.renderer.get_name(id)
+    }
+
     pub fn insert(&mut self, name: &str, builder: WindowBuilder) {
         self.window_queue.insert(name.into(), builder);
+    }
+
+    pub fn drop(&mut self, name: &str) {
+        self.window_queue.remove(name);
+        self.renderer.drop_name(name);
     }
 }

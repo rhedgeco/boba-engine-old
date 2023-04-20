@@ -23,14 +23,14 @@ impl Pearl for WindowMover {
 impl EventListener<Update> for WindowMover {
     fn callback(pearl: &mut PearlData<Self>, event: EventData<Update>) {
         let Some(windows) = event.resources.get::<MilkTeaWindows>() else { return };
-        let window = windows.main();
-        let Ok(mut position) = window.outer_position() else { return };
+        let Some(main_window) = windows.get("main") else { return };
+        let Ok(mut position) = main_window.outer_position() else { return };
 
         pearl.move_buffer += pearl.move_speed * event.delta_time();
         position.x += pearl.move_buffer.trunc() as i32;
         pearl.move_buffer = pearl.move_buffer.fract();
 
-        window.set_outer_position(position);
+        main_window.set_outer_position(position);
     }
 }
 

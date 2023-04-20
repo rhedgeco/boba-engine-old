@@ -3,18 +3,29 @@ use winit::event::{self, DeviceId, ElementState, VirtualKeyCode};
 pub type KeyCode = VirtualKeyCode;
 
 pub struct KeyboardInput {
+    window_name: String,
     device_id: DeviceId,
     input: event::KeyboardInput,
     is_synthetic: bool,
 }
 
 impl KeyboardInput {
-    pub fn new(device: DeviceId, input: event::KeyboardInput, synthetic: bool) -> Self {
+    pub fn new(
+        window_name: String,
+        device: DeviceId,
+        input: event::KeyboardInput,
+        synthetic: bool,
+    ) -> Self {
         Self {
+            window_name,
             device_id: device,
             input,
             is_synthetic: synthetic,
         }
+    }
+
+    pub fn window_name(&self) -> &str {
+        &self.window_name
     }
 
     pub fn device_id(&self) -> DeviceId {

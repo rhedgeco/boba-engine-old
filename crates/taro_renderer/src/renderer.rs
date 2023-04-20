@@ -67,14 +67,16 @@ impl RenderBuilder for TaroBuilder {
         surface.configure(&device, &config);
         let config_template = config.clone();
 
+        let window_name = "main".to_string();
         let main_window = WindowManager {
+            name: window_name.clone(),
             window,
             surface,
             config,
         };
 
         let mut id_mapper = IndexMap::new();
-        id_mapper.insert("main".to_string(), main_window.window.id());
+        id_mapper.insert(window_name, main_window.window.id());
 
         let mut windows = IndexMap::new();
         windows.insert(main_window.window.id(), main_window);
@@ -91,6 +93,7 @@ impl RenderBuilder for TaroBuilder {
 }
 
 struct WindowManager {
+    name: String,
     window: Window,
     surface: Surface,
     config: SurfaceConfiguration,
@@ -126,18 +129,21 @@ pub struct TaroRenderer {
 }
 
 impl MilkTeaRenderer for TaroRenderer {
-    fn main(&self) -> &Window {
-        let id = self
-            .id_mapper
-            .get("main")
-            .expect("`main` window should exist.");
+    fn window_count(&self) -> usize {
+        self.windows.len()
+    }
 
-        &self.windows.get(id).unwrap().window
+    fn is_empty(&self) -> bool {
+        self.windows.is_empty()
     }
 
     fn get(&self, name: &str) -> Option<&Window> {
         let id = self.id_mapper.get(name)?;
         Some(&self.windows.get(id)?.window)
+    }
+
+    fn get_name(&self, id: WindowId) -> Option<&str> {
+        Some(&self.windows.get(&id)?.name)
     }
 
     fn insert(&mut self, name: String, window: Window) {
@@ -149,6 +155,7 @@ impl MilkTeaRenderer for TaroRenderer {
         surface.configure(&self.device, &config);
 
         let manager = WindowManager {
+            name: name.clone(),
             window,
             surface,
             config,
@@ -156,6 +163,16 @@ impl MilkTeaRenderer for TaroRenderer {
 
         self.id_mapper.insert(name, manager.window.id());
         self.windows.insert(manager.window.id(), manager);
+    }
+
+    fn drop_id(&mut self, id: WindowId) {
+        let Some(manager) = self.windows.remove(&id) else { return };
+        self.id_mapper.remove(&manager.name);
+    }
+
+    fn drop_name(&mut self, name: &str) {
+        let Some(id) = self.id_mapper.remove(name) else { return };
+        self.windows.remove(&id);
     }
 
     fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {

@@ -56,18 +56,43 @@ impl MilkTea {
 
         let mut timer = DeltaTimer::new();
         event_loop.run(move |event, event_loop, control_flow| match event {
-            Event::WindowEvent { ref event, .. } => match event {
-                WindowEvent::CloseRequested => control_flow.set_exit(),
-                WindowEvent::KeyboardInput {
-                    device_id,
-                    input,
-                    is_synthetic,
-                } => {
-                    let mut input = KeyboardInput::new(*device_id, *input, *is_synthetic);
-                    self.pearls.trigger(&mut input, &mut self.resources);
+            Event::WindowEvent {
+                ref event,
+                window_id,
+            } => {
+                let Some(windows) = self.resources.get_mut::<MilkTeaWindows>() else {
+                    control_flow.set_exit_with_code(SOFTWARE_ERROR_CODE);
+                    return;
+                };
+
+                match event {
+                    WindowEvent::CloseRequested => {
+                        windows.drop_id(window_id);
+                        if windows.is_empty() {
+                            control_flow.set_exit();
+                            return;
+                        }
+                    }
+                    WindowEvent::KeyboardInput {
+                        device_id,
+                        input,
+                        is_synthetic,
+                    } => {
+                        let Some(window_name) = windows.get_name(window_id) else {
+                            return;
+                        };
+
+                        let mut input = KeyboardInput::new(
+                            window_name.into(),
+                            *device_id,
+                            *input,
+                            *is_synthetic,
+                        );
+                        self.pearls.trigger(&mut input, &mut self.resources);
+                    }
+                    _ => (),
                 }
-                _ => (),
-            },
+            }
             Event::MainEventsCleared => {
                 let delta_time = timer.measure().as_secs_f64();
                 let mut update = Update::new(delta_time);
