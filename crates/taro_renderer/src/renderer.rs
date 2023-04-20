@@ -1,7 +1,7 @@
 use milk_tea::{
     boba_core::{pearls::map::BobaPearls, BobaResources},
     winit::window::Window,
-    MilkTeaBuilder, MilkTeaWindow,
+    MilkTeaBuilder, WindowManager,
 };
 use wgpu::{Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
@@ -83,7 +83,7 @@ pub struct TaroWindow {
     queue: Queue,
 }
 
-impl MilkTeaWindow for TaroWindow {
+impl WindowManager for TaroWindow {
     fn window(&self) -> &Window {
         &self.window
     }

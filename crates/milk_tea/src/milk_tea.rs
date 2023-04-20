@@ -51,7 +51,8 @@ impl MilkTea {
             .build(&event_loop)?;
 
         self.resources.insert(MilkTeaCommands::new());
-        self.resources.insert(window_builder.build(window));
+        self.resources
+            .insert(MilkTeaWindow::new(window_builder.build(window)));
 
         let mut timer = DeltaTimer::new();
         event_loop.run(move |event, _, control_flow| match event {
@@ -89,13 +90,15 @@ impl MilkTea {
             }
             Event::RedrawRequested(_) => {
                 // remove the window, so we can still pass the resources into the render function
-                let Some(mut window) = self.resources.remove::<W::Window>() else {
+                let Some(mut window) = self.resources.remove::<MilkTeaWindow>() else {
                     control_flow.set_exit_with_code(SOFTWARE_ERROR_CODE);
                     return;
                 };
 
                 // render the window
-                window.render(&mut self.pearls, &mut self.resources);
+                window
+                    .manager()
+                    .render(&mut self.pearls, &mut self.resources);
 
                 // re-insert the window afterwards
                 self.resources.insert(window);
