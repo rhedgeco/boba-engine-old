@@ -10,7 +10,7 @@ pub struct KeyboardInput {
 }
 
 impl KeyboardInput {
-    pub fn new(
+    pub(crate) fn new(
         window_name: String,
         device: DeviceId,
         input: event::KeyboardInput,
