@@ -26,7 +26,7 @@ impl EventListener<Update> for LimitTestPearl {
 }
 
 fn main() {
-    let mut pearls = BobaPearls::new();
-    pearls.insert(LimitTestPearl { count: 10000 });
-    MilkTeaHeadless::run(pearls, BobaResources::new());
+    let mut milk_tea = MilkTeaHeadless::new();
+    milk_tea.pearls.insert(LimitTestPearl { count: 10000 });
+    milk_tea.run();
 }

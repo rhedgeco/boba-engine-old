@@ -24,21 +24,21 @@ impl EventListener<Update> for TransformPrinter {
 }
 
 fn main() {
-    let mut pearls = BobaPearls::new();
+    let mut milk_tea = MilkTeaHeadless::new();
 
-    let transform_base = pearls.insert(Transform::new(TransformData {
+    let transform_base = milk_tea.pearls.insert(Transform::new(TransformData {
         rot: Quat::from_axis_angle(Vec3::Y, 90f32.to_radians()),
         scale: Vec3::X * 2f32,
         ..Default::default()
     }));
 
-    let transform = pearls.insert(Transform::new(TransformData {
+    let transform = milk_tea.pearls.insert(Transform::new(TransformData {
         pos: Vec3::X,
         parent: Some(transform_base),
         ..Default::default()
     }));
 
-    pearls.insert(TransformPrinter { transform });
+    milk_tea.pearls.insert(TransformPrinter { transform });
 
-    MilkTeaHeadless::run(pearls, BobaResources::new());
+    milk_tea.run();
 }

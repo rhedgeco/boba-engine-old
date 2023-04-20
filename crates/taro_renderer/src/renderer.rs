@@ -1,10 +1,7 @@
 use milk_tea::{
     boba_core::{pearls::map::BobaPearls, BobaResources},
-    winit::{
-        dpi::LogicalSize,
-        window::{Window, WindowId},
-    },
-    MilkTeaRenderer, RendererBuilder,
+    winit::window::Window,
+    MilkTeaBuilder, MilkTeaWindow,
 };
 use wgpu::{Device, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
@@ -21,10 +18,10 @@ impl TaroBuilder {
     }
 }
 
-impl RendererBuilder for TaroBuilder {
-    type Renderer = TaroRenderer;
+impl MilkTeaBuilder for TaroBuilder {
+    type Window = TaroWindow;
 
-    fn build(self, window: Window) -> Self::Renderer {
+    fn build(self, window: Window) -> Self::Window {
         let size = window.inner_size();
         let instance = wgpu::Instance::new(InstanceDescriptor::default());
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
@@ -34,7 +31,6 @@ impl RendererBuilder for TaroBuilder {
             force_fallback_adapter: false,
         }))
         .unwrap();
-
         let (device, queue) = pollster::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 features: wgpu::Features::empty(),
@@ -50,7 +46,6 @@ impl RendererBuilder for TaroBuilder {
             None, // Trace path
         ))
         .unwrap();
-
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps
             .formats
@@ -70,7 +65,7 @@ impl RendererBuilder for TaroBuilder {
         };
         surface.configure(&device, &config);
 
-        TaroRenderer {
+        TaroWindow {
             window,
             config,
             surface,
@@ -80,7 +75,7 @@ impl RendererBuilder for TaroBuilder {
     }
 }
 
-pub struct TaroRenderer {
+pub struct TaroWindow {
     window: Window,
     config: SurfaceConfiguration,
     surface: Surface,
@@ -88,8 +83,12 @@ pub struct TaroRenderer {
     queue: Queue,
 }
 
-impl MilkTeaRenderer for TaroRenderer {
-    fn update_size(&mut self) {
+impl MilkTeaWindow for TaroWindow {
+    fn window(&self) -> &Window {
+        &self.window
+    }
+
+    fn render(&mut self, pearls: &mut BobaPearls, resources: &mut BobaResources) {
         let new_size = self
             .window
             .inner_size()
@@ -104,21 +103,8 @@ impl MilkTeaRenderer for TaroRenderer {
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
         }
-    }
 
-    fn set_size(&mut self, width: u32, height: u32) {
-        self.window.set_inner_size(LogicalSize::new(width, height));
-        self.update_size();
-    }
-
-    fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {
-        if self.window.id() != id {
-            return;
-        }
-
-        self.update_size();
         let Ok(output) = self.surface.get_current_texture() else { return };
-
         pearls.trigger(&mut TaroRenderStart, resources);
         let view = output
             .texture
@@ -128,7 +114,6 @@ impl MilkTeaRenderer for TaroRenderer {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
             });
-
         {
             let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -148,11 +133,9 @@ impl MilkTeaRenderer for TaroRenderer {
                 depth_stencil_attachment: None,
             });
         }
-
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
-
         pearls.trigger(&mut TaroRenderFinish, resources);
         self.window.request_redraw();
     }

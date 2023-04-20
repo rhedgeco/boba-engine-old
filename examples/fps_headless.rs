@@ -15,7 +15,7 @@ impl EventListener<Update> for UpdatePrinter {
 }
 
 fn main() {
-    let mut pearls = BobaPearls::new();
-    pearls.insert(UpdatePrinter);
-    MilkTeaHeadless::run(pearls, BobaResources::new());
+    let mut milk_tea = MilkTeaHeadless::new();
+    milk_tea.pearls.insert(UpdatePrinter);
+    milk_tea.run();
 }

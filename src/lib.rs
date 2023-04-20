@@ -17,7 +17,7 @@ pub mod prelude {
 
     pub use milk_tea::{
         events::{KeyCode, KeyboardInput, Update},
-        MilkTeaCommands, MilkTeaHeadless, MilkTeaWindow,
+        MilkTea, MilkTeaCommands, MilkTeaHeadless,
     };
 
     pub use taro_renderer::TaroBuilder;

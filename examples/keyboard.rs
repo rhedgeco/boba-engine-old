@@ -24,10 +24,9 @@ impl EventListener<KeyboardInput> for KeyboardPrinter {
 }
 
 fn main() {
-    let mut pearls = BobaPearls::new();
-    pearls.insert(KeyboardPrinter);
+    env_logger::init();
 
-    let resources = BobaResources::new();
-    let taro = TaroBuilder::new();
-    MilkTeaWindow::new().run(pearls, resources, taro).unwrap();
+    let mut milk_tea = MilkTea::new();
+    milk_tea.pearls.insert(KeyboardPrinter);
+    milk_tea.run(TaroBuilder::new()).unwrap();
 }

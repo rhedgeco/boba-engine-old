@@ -35,7 +35,7 @@ impl EventListener<Update> for RebirthPearl {
 }
 
 fn main() {
-    let mut pearls = BobaPearls::new();
-    pearls.insert(RebirthPearl { count: 0 });
-    MilkTeaHeadless::run(pearls, BobaResources::new());
+    let mut milk_tea = MilkTeaHeadless::new();
+    milk_tea.pearls.insert(RebirthPearl { count: 0 });
+    milk_tea.run();
 }
