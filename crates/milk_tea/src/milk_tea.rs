@@ -60,87 +60,91 @@ impl MilkTea {
         );
 
         let mut timer = DeltaTimer::new();
-        event_loop.run(move |event, window_target, control_flow| match event {
-            Event::WindowEvent {
-                ref event,
-                window_id,
-            } => {
-                let Some(windows) = self.resources.get_mut::<MilkTeaWindows>() else {
+        event_loop.run(move |event, window_target, control_flow| {
+            control_flow.set_wait();
+
+            match event {
+                Event::WindowEvent {
+                    ref event,
+                    window_id,
+                } => {
+                    let Some(windows) = self.resources.get_mut::<MilkTeaWindows>() else {
                     control_flow.set_exit_with_code(SOFTWARE_ERROR_CODE);
                     return;
                 };
 
-                match event {
-                    WindowEvent::CloseRequested => {
-                        let name_option = windows.drop_now(window_id);
-                        if windows.is_empty() {
-                            control_flow.set_exit();
+                    match event {
+                        WindowEvent::CloseRequested => {
+                            let name_option = windows.drop_now(window_id);
+                            if windows.is_empty() {
+                                control_flow.set_exit();
+                            }
+
+                            if let Some(name) = name_option {
+                                let mut window_drop = WindowDrop::new(window_id, name);
+                                self.pearls.trigger(&mut window_drop, &mut self.resources);
+                            }
                         }
-
-                        if let Some(name) = name_option {
-                            let mut window_drop = WindowDrop::new(window_id, name);
-                            self.pearls.trigger(&mut window_drop, &mut self.resources);
+                        WindowEvent::KeyboardInput {
+                            device_id,
+                            input,
+                            is_synthetic,
+                        } => {
+                            let Some(window_name) = windows.get_name(window_id) else { return };
+                            let mut input = KeyboardInput::new(
+                                window_name.into(),
+                                *device_id,
+                                *input,
+                                *is_synthetic,
+                            );
+                            self.pearls.trigger(&mut input, &mut self.resources);
                         }
-                    }
-                    WindowEvent::KeyboardInput {
-                        device_id,
-                        input,
-                        is_synthetic,
-                    } => {
-                        let Some(window_name) = windows.get_name(window_id) else { return };
-                        let mut input = KeyboardInput::new(
-                            window_name.into(),
-                            *device_id,
-                            *input,
-                            *is_synthetic,
-                        );
-                        self.pearls.trigger(&mut input, &mut self.resources);
-                    }
-                    _ => (),
-                }
-            }
-            Event::MainEventsCleared => {
-                let delta_time = timer.measure().as_secs_f64();
-                let mut update = Update::new(delta_time);
-                let mut late_update = LateUpdate::new(delta_time);
-                self.pearls.trigger(&mut update, &mut self.resources);
-                self.pearls.trigger(&mut late_update, &mut self.resources);
-
-                let commands = match self.resources.get_mut::<MilkTeaCommands>() {
-                    Some(commands) => commands,
-                    None => {
-                        control_flow.set_exit_with_code(SOFTWARE_ERROR_CODE);
-                        return;
-                    }
-                };
-
-                for command in commands.drain() {
-                    match command {
-                        MilkTeaCommand::Exit => control_flow.set_exit(),
                         _ => (),
                     }
                 }
-            }
-            Event::RedrawRequested(id) => {
-                // remove the window, so we can still pass the resources into the render function
-                let Some(mut windows) = self.resources.remove::<MilkTeaWindows>() else {
+                Event::MainEventsCleared => {
+                    let delta_time = timer.measure().as_secs_f64();
+                    let mut update = Update::new(delta_time);
+                    let mut late_update = LateUpdate::new(delta_time);
+                    self.pearls.trigger(&mut update, &mut self.resources);
+                    self.pearls.trigger(&mut late_update, &mut self.resources);
+
+                    let commands = match self.resources.get_mut::<MilkTeaCommands>() {
+                        Some(commands) => commands,
+                        None => {
+                            control_flow.set_exit_with_code(SOFTWARE_ERROR_CODE);
+                            return;
+                        }
+                    };
+
+                    for command in commands.drain() {
+                        match command {
+                            MilkTeaCommand::Exit => control_flow.set_exit(),
+                            _ => (),
+                        }
+                    }
+                }
+                Event::RedrawRequested(id) => {
+                    // remove the window, so we can still pass the resources into the render function
+                    let Some(mut windows) = self.resources.remove::<MilkTeaWindows>() else {
                     control_flow.set_exit_with_code(SOFTWARE_ERROR_CODE);
                     return;
                 };
 
-                // build and drop queued windows
-                windows.submit_drop_queue();
-                while let Some(mut spawn_event) = windows.spawn_next(window_target) {
-                    self.pearls.trigger(&mut spawn_event, &mut self.resources);
+                    // build and drop queued windows
+                    windows.submit_drop_queue();
+                    while let Some(mut spawn_event) = windows.spawn_next(window_target) {
+                        self.pearls.trigger(&mut spawn_event, &mut self.resources);
+                    }
+
+                    // render window
+                    windows.render(id, &mut self.pearls, &mut self.resources);
+
+                    // re-insert the window afterwards
+                    self.resources.insert(windows);
                 }
-
-                // render window
-                windows.render(id, &mut self.pearls, &mut self.resources);
-
-                // re-insert the window afterwards
-                self.resources.insert(windows);
+                _ => (),
             }
-            _ => (),
         });
     }
 }

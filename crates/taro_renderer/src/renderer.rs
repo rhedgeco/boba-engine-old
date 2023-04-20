@@ -213,6 +213,5 @@ impl MilkTeaRenderer for TaroRenderer {
         self.queue.submit(std::iter::once(encoder.finish()));
         output.present();
         pearls.trigger(&mut TaroRenderFinish, resources);
-        window.window.request_redraw();
     }
 }
