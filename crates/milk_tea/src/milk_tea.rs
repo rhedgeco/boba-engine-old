@@ -2,14 +2,13 @@ use std::time::{Duration, Instant};
 
 use boba_core::{pearls::map::BobaPearls, BobaResources};
 use winit::{
-    dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::EventLoop,
-    window,
+    window::WindowBuilder,
 };
 
 use crate::{
-    events::{KeyboardInput, LateUpdate, Update},
+    events::{KeyboardInput, LateUpdate, Update, WindowDrop, WindowSpawn},
     MilkTeaCommand, MilkTeaCommands, MilkTeaWindows, RenderBuilder,
 };
 
@@ -43,19 +42,25 @@ impl MilkTea {
         Self::default()
     }
 
-    pub fn run<W: RenderBuilder>(mut self, window_builder: W) -> MilkTeaResult {
+    pub fn run<R: RenderBuilder>(
+        mut self,
+        main_window: WindowBuilder,
+        render_builder: R,
+    ) -> MilkTeaResult {
         let event_loop = EventLoop::new();
-        let window = window::WindowBuilder::new()
-            .with_inner_size(LogicalSize::new(self.settings.size.0, self.settings.size.1))
-            .with_title(&self.settings.title)
-            .build(&event_loop)?;
-
+        let window = main_window.build(&event_loop)?;
+        let main_window_id = window.id();
+        let renderer = render_builder.build(window);
         self.resources.insert(MilkTeaCommands::new());
-        self.resources
-            .insert(MilkTeaWindows::new(window_builder.build(window)));
+        self.resources.insert(MilkTeaWindows::new(renderer));
+
+        self.pearls.trigger(
+            &mut WindowSpawn::new(main_window_id, "main".into()),
+            &mut self.resources,
+        );
 
         let mut timer = DeltaTimer::new();
-        event_loop.run(move |event, event_loop, control_flow| match event {
+        event_loop.run(move |event, window_target, control_flow| match event {
             Event::WindowEvent {
                 ref event,
                 window_id,
@@ -67,10 +72,14 @@ impl MilkTea {
 
                 match event {
                     WindowEvent::CloseRequested => {
-                        windows.drop_id(window_id);
+                        let name_option = windows.drop_now(window_id);
                         if windows.is_empty() {
                             control_flow.set_exit();
-                            return;
+                        }
+
+                        if let Some(name) = name_option {
+                            let mut window_drop = WindowDrop::new(window_id, name);
+                            self.pearls.trigger(&mut window_drop, &mut self.resources);
                         }
                     }
                     WindowEvent::KeyboardInput {
@@ -78,10 +87,7 @@ impl MilkTea {
                         input,
                         is_synthetic,
                     } => {
-                        let Some(window_name) = windows.get_name(window_id) else {
-                            return;
-                        };
-
+                        let Some(window_name) = windows.get_name(window_id) else { return };
                         let mut input = KeyboardInput::new(
                             window_name.into(),
                             *device_id,
@@ -117,17 +123,22 @@ impl MilkTea {
             }
             Event::RedrawRequested(id) => {
                 // remove the window, so we can still pass the resources into the render function
-                let Some(mut window) = self.resources.remove::<MilkTeaWindows>() else {
+                let Some(mut windows) = self.resources.remove::<MilkTeaWindows>() else {
                     control_flow.set_exit_with_code(SOFTWARE_ERROR_CODE);
                     return;
                 };
 
-                // build queued windows and render
-                window.build_window_queue(event_loop);
-                window.render(id, &mut self.pearls, &mut self.resources);
+                // build and drop queued windows
+                windows.submit_drop_queue();
+                while let Some(mut spawn_event) = windows.spawn_next(window_target) {
+                    self.pearls.trigger(&mut spawn_event, &mut self.resources);
+                }
+
+                // render window
+                windows.render(id, &mut self.pearls, &mut self.resources);
 
                 // re-insert the window afterwards
-                self.resources.insert(window);
+                self.resources.insert(windows);
             }
             _ => (),
         });

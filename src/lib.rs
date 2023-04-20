@@ -17,6 +17,10 @@ pub mod prelude {
 
     pub use milk_tea::{
         events::{KeyCode, KeyboardInput, LateUpdate, Update},
+        winit::{
+            dpi::{LogicalSize, PhysicalSize},
+            window::WindowBuilder,
+        },
         MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaWindows,
     };
 

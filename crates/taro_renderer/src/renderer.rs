@@ -165,14 +165,15 @@ impl MilkTeaRenderer for TaroRenderer {
         self.windows.insert(manager.window.id(), manager);
     }
 
-    fn drop_id(&mut self, id: WindowId) {
-        let Some(manager) = self.windows.remove(&id) else { return };
-        self.id_mapper.remove(&manager.name);
+    fn drop_by_name(&mut self, name: String) {
+        let Some(id) = self.id_mapper.remove(&name) else { return };
+        self.windows.remove(&id);
     }
 
-    fn drop_name(&mut self, name: &str) {
-        let Some(id) = self.id_mapper.remove(name) else { return };
-        self.windows.remove(&id);
+    fn drop_by_id(&mut self, id: WindowId) -> Option<String> {
+        let manager = self.windows.remove(&id)?;
+        self.id_mapper.remove(&manager.name);
+        Some(manager.name)
     }
 
     fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {
