@@ -69,14 +69,18 @@ impl Transform {
         }
     }
 
+    pub fn calculate_world_scale_pos_rot(&self) -> (Vec3, Quat, Vec3) {
+        self.calculate_world_mat().to_scale_rotation_translation()
+    }
+
     /// Calculates and returns the world position of this transform
     pub fn calculate_world_pos(&self) -> Vec3 {
-        self.calculate_world_mat().to_scale_rotation_translation().2
+        self.calculate_world_scale_pos_rot().2
     }
 
     /// Calculates and returns the world rotation of this transform
     pub fn calculate_world_rot(&self) -> Quat {
-        self.calculate_world_mat().to_scale_rotation_translation().1
+        self.calculate_world_scale_pos_rot().1
     }
 
     /// Calculates and returns the lossy world scale for this transform
@@ -86,7 +90,7 @@ impl Transform {
     /// This is a limitation of forcing the child scale representaton into a Vec3.
     /// However, the world matrix will still contain accurate information.
     pub fn calculate_lossy_scale(&self) -> Vec3 {
-        self.calculate_world_mat().to_scale_rotation_translation().0
+        self.calculate_world_scale_pos_rot().0
     }
 
     /// Returns the local position of the transform relative to its parent.

@@ -6,23 +6,16 @@ use milk_tea::{
 };
 use wgpu::{Device, Instance, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
-use crate::{
-    events::{TaroRender, TaroRenderFinish, TaroRenderStart},
-    TaroCamera,
-};
+use crate::events::{TaroRender, TaroRenderFinish, TaroRenderStart};
 
 #[derive(Default)]
 pub struct TaroBuilder {
-    cameras: Vec<TaroCamera>,
+    _private: (),
 }
 
 impl TaroBuilder {
     pub fn new() -> Self {
         Self::default()
-    }
-
-    pub fn add_camera(&mut self, camera: TaroCamera) {
-        self.cameras.push(camera)
     }
 }
 
@@ -202,6 +195,7 @@ impl MilkTeaRenderer for TaroRenderer {
         // create render event
         let mut render_event = TaroRender::new(
             window.name.clone(),
+            (output.texture.width(), output.texture.height()),
             self.device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                     label: Some(&format!("{} Render Encoder", window.name)),

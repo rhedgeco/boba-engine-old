@@ -1,6 +1,6 @@
 use boba::prelude::*;
 
-#[derive(Default, Pearl)]
+#[derive(Default, SimplePearl)]
 struct DummyItem {
     _item: u128,
 }

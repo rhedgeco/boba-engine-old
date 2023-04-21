@@ -1,0 +1,9 @@
+[package]
+name = "taro_3d"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+boba_3d = { path = "../boba_3d" }
+boba_core = { path = "../boba_core" }
+taro_renderer = { path = "../taro_renderer" }

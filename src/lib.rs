@@ -4,7 +4,7 @@ pub use taro_renderer;
 
 pub mod prelude {
     pub use boba_core::{
-        macros::Pearl,
+        macros::SimplePearl,
         pearls::map::{BobaPearls, EventData, Handle, PearlData, PearlProvider},
         pearls::{Pearl, PearlId},
         BobaResources, EventListener, EventRegistrar,
@@ -24,5 +24,7 @@ pub mod prelude {
         MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaWindows,
     };
 
-    pub use taro_renderer::{TaroBuilder, TaroCamera};
+    pub use taro_renderer::TaroBuilder;
+
+    pub use taro_3d::TaroCamera;
 }
