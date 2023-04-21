@@ -1,24 +1,39 @@
-use wgpu::{CommandEncoder, Queue, RenderPass, RenderPassDescriptor};
+use wgpu::{CommandEncoder, Device, Queue, TextureView};
 
 pub struct TaroRender {
     target: String,
     size: (u32, u32),
-    encoder: CommandEncoder,
+    view: TextureView,
+    device: Device,
+    queue: Queue,
+    encoders: Vec<CommandEncoder>,
     redraw: bool,
 }
 
 impl TaroRender {
-    pub(crate) fn new(target: String, size: (u32, u32), encoder: CommandEncoder) -> Self {
+    pub(crate) fn new(
+        target: String,
+        size: (u32, u32),
+        view: TextureView,
+        device: Device,
+        queue: Queue,
+    ) -> Self {
         Self {
             target,
             size,
-            encoder,
+            view,
+            device,
+            queue,
+            encoders: Vec::new(),
             redraw: false,
         }
     }
 
-    pub(crate) fn submit(self, queue: &Queue) {
-        queue.submit(std::iter::once(self.encoder.finish()));
+    pub(crate) fn submit(self) -> (Device, Queue) {
+        self.queue
+            .submit(self.encoders.into_iter().map(|e| e.finish()));
+
+        (self.device, self.queue)
     }
 
     pub(crate) fn should_redraw_immediate(&self) -> bool {
@@ -41,14 +56,23 @@ impl TaroRender {
         self.size.1
     }
 
-    pub fn set_immediate_redraw(&mut self) {
-        self.redraw = true;
+    pub fn output_view(&self) -> &TextureView {
+        &self.view
     }
 
-    pub fn begin_render_pass<'pass>(
-        &'pass mut self,
-        desc: &RenderPassDescriptor<'pass, '_>,
-    ) -> RenderPass<'pass> {
-        self.encoder.begin_render_pass(desc)
+    pub fn device(&self) -> &Device {
+        &self.device
+    }
+
+    pub fn queue(&self) -> &Queue {
+        &self.queue
+    }
+
+    pub fn submit_encoder(&mut self, encoder: CommandEncoder) {
+        self.encoders.push(encoder);
+    }
+
+    pub fn set_immediate_redraw(&mut self) {
+        self.redraw = true;
     }
 }

@@ -1,13 +1,11 @@
 use boba_3d::glam::Mat4;
-use boba_core::{pearls::map::EventPearls, BobaResources};
+use boba_core::pearls::map::EventData;
+use taro_renderer::events::TaroRender;
+
+use crate::stages::WhiteRenderStage;
 
 pub trait RenderStage: 'static {
-    fn render(
-        &mut self,
-        view_proj_mat: &Mat4,
-        pearls: &mut EventPearls,
-        resources: &mut BobaResources,
-    );
+    fn render(&mut self, view_proj_mat: &Mat4, event: &mut EventData<TaroRender>);
 }
 
 pub struct RenderStages {
@@ -16,7 +14,9 @@ pub struct RenderStages {
 
 impl Default for RenderStages {
     fn default() -> Self {
-        Self { stages: Vec::new() }
+        let mut new = Self { stages: Vec::new() };
+        new.push(WhiteRenderStage);
+        new
     }
 }
 
@@ -29,14 +29,9 @@ impl RenderStages {
         self.stages.push(Box::new(stage));
     }
 
-    pub fn render_all(
-        &mut self,
-        view_proj_mat: &Mat4,
-        pearls: &mut EventPearls,
-        resources: &mut BobaResources,
-    ) {
+    pub fn render_all(&mut self, view_proj_mat: &Mat4, event: &mut EventData<TaroRender>) {
         for stage in self.stages.iter_mut() {
-            stage.render(view_proj_mat, pearls, resources);
+            stage.render(view_proj_mat, event);
         }
     }
 }

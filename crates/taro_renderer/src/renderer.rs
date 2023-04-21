@@ -84,8 +84,8 @@ impl RenderBuilder for TaroBuilder {
         TaroRenderer {
             id_mapper,
             windows,
-            device,
-            queue,
+            device: Some(device),
+            queue: Some(queue),
             instance,
             config_template,
         }
@@ -121,8 +121,8 @@ pub struct TaroRenderer {
     id_mapper: IndexMap<String, WindowId>,
     windows: IndexMap<WindowId, WindowManager>,
 
-    device: Device,
-    queue: Queue,
+    device: Option<Device>,
+    queue: Option<Queue>,
 
     instance: Instance,
     config_template: SurfaceConfiguration,
@@ -152,7 +152,7 @@ impl MilkTeaRenderer for TaroRenderer {
         let mut config = self.config_template.clone();
         config.width = size.width;
         config.height = size.height;
-        surface.configure(&self.device, &config);
+        surface.configure(self.device.as_ref().unwrap(), &config);
 
         let manager = WindowManager {
             name: name.clone(),
@@ -179,7 +179,7 @@ impl MilkTeaRenderer for TaroRenderer {
     fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {
         // get the widow by id and update its size
         let Some(window) = self.windows.get_mut(&id) else { return };
-        window.update_size(&self.device);
+        window.update_size(self.device.as_ref().unwrap());
 
         // get the current texture for the window
         let Ok(output) = window.surface.get_current_texture() else { return };
@@ -193,33 +193,15 @@ impl MilkTeaRenderer for TaroRenderer {
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         // create render event
+        let device = self.device.take().unwrap();
+        let queue = self.queue.take().unwrap();
         let mut render_event = TaroRender::new(
             window.name.clone(),
             (output.texture.width(), output.texture.height()),
-            self.device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                    label: Some(&format!("{} Render Encoder", window.name)),
-                }),
+            view,
+            device,
+            queue,
         );
-
-        // create an initial black render pass
-        let _ = render_event.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Initial Black Render Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.0,
-                        g: 0.0,
-                        b: 0.0,
-                        a: 1.0,
-                    }),
-                    store: true,
-                },
-            })],
-            depth_stencil_attachment: None,
-        });
 
         // trigger render event on all pearls
         pearls.trigger(&mut render_event, resources);
@@ -229,8 +211,10 @@ impl MilkTeaRenderer for TaroRenderer {
             window.window.request_redraw();
         }
 
-        // submit the render data to the queue
-        render_event.submit(&self.queue);
+        // submit the render data and get device and queue back
+        let (device, queue) = render_event.submit();
+        self.device = Some(device);
+        self.queue = Some(queue);
 
         // present the output
         output.present();
