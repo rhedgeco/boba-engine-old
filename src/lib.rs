@@ -26,5 +26,5 @@ pub mod prelude {
 
     pub use taro_renderer::TaroBuilder;
 
-    pub use taro_3d::TaroCamera;
+    pub use taro_3d::{TaroCamera, TaroCameraSettings};
 }
