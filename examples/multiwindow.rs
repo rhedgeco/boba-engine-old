@@ -20,13 +20,13 @@ impl Pearl for WindowSpawner {
 
 impl EventListener<WindowSpawn> for WindowListener {
     fn callback(_: &mut PearlData<Self>, event: EventData<WindowSpawn>) {
-        println!("Spawned Window. Name: '{}'", event.name());
+        println!("Spawned Window '{}'", event.name());
     }
 }
 
 impl EventListener<WindowDrop> for WindowListener {
     fn callback(_: &mut PearlData<Self>, event: EventData<WindowDrop>) {
-        println!("Closed Window. Name: '{}'", event.name());
+        println!("Closed Window '{}'", event.name());
     }
 }
 
