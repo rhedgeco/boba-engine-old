@@ -1,4 +1,4 @@
-use wgpu::{CommandEncoder, Device, Queue, TextureView};
+use wgpu::{CommandBuffer, CommandEncoder, Device, Queue, TextureView};
 
 pub struct TaroRender {
     target: String,
@@ -6,7 +6,7 @@ pub struct TaroRender {
     view: TextureView,
     device: Device,
     queue: Queue,
-    encoders: Vec<CommandEncoder>,
+    encoders: Vec<CommandBuffer>,
     redraw: bool,
 }
 
@@ -30,9 +30,7 @@ impl TaroRender {
     }
 
     pub(crate) fn submit(self) -> (Device, Queue) {
-        self.queue
-            .submit(self.encoders.into_iter().map(|e| e.finish()));
-
+        self.queue.submit(self.encoders.into_iter());
         (self.device, self.queue)
     }
 
@@ -69,10 +67,10 @@ impl TaroRender {
     }
 
     pub fn queue_encoder(&mut self, encoder: CommandEncoder) {
-        self.encoders.push(encoder);
+        self.encoders.push(encoder.finish());
     }
 
-    pub fn set_immediate_redraw(&mut self) {
+    pub fn set_redraw_immediate(&mut self) {
         self.redraw = true;
     }
 }

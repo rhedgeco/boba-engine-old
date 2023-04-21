@@ -82,6 +82,6 @@ impl EventListener<TaroRender> for TaroCamera {
         let view_proj_mat = proj_mat * view_mat;
         pearl.settings.stages.render_all(&view_proj_mat, &mut event);
 
-        event.set_immediate_redraw();
+        event.set_redraw_immediate();
     }
 }
