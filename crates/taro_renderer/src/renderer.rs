@@ -6,7 +6,10 @@ use milk_tea::{
 };
 use wgpu::{Device, Instance, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
-use crate::events::{TaroRenderFinish, TaroRenderStart};
+use crate::{
+    events::{TaroRenderFinish, TaroRenderStart},
+    TaroCamera,
+};
 
 #[derive(Default)]
 pub struct TaroBuilder {
@@ -191,16 +194,16 @@ impl MilkTeaRenderer for TaroRenderer {
                 label: Some("Render Encoder"),
             });
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
                             a: 1.0,
                         }),
                         store: true,
@@ -208,6 +211,20 @@ impl MilkTeaRenderer for TaroRenderer {
                 })],
                 depth_stencil_attachment: None,
             });
+
+            if let Some(camera_iter) = pearls.iter_mut::<TaroCamera>() {
+                let mut cameras = camera_iter
+                    .filter(|c| c.has_target(&window.name))
+                    .collect::<Vec<_>>();
+
+                for camera in cameras.iter_mut() {
+                    camera.render(&mut render_pass)
+                }
+
+                if !cameras.is_empty() {
+                    window.window.request_redraw();
+                }
+            }
         }
         // submit will accept anything that implements IntoIter
         self.queue.submit(std::iter::once(encoder.finish()));

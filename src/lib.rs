@@ -24,5 +24,5 @@ pub mod prelude {
         MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaWindows,
     };
 
-    pub use taro_renderer::TaroBuilder;
+    pub use taro_renderer::{TaroBuilder, TaroCamera};
 }

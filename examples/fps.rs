@@ -19,6 +19,7 @@ fn main() {
 
     let mut milk_tea = MilkTea::new();
     milk_tea.pearls.insert(UpdatePrinter);
+    milk_tea.pearls.insert(TaroCamera::with_target("main"));
 
     let window = WindowBuilder::new()
         .with_title("Milk Tea Window")
