@@ -1,4 +1,4 @@
-use std::slice::IterMut;
+use std::slice::{Iter, IterMut};
 
 use crate::pearls::Pearl;
 
@@ -60,5 +60,55 @@ impl<'a, 'access> ExclusivePearlAccess<'a, 'access> {
         }
 
         self.access.get_mut(handle)
+    }
+
+    pub fn iter<P: Pearl>(&self) -> Option<ExclusiveIter<P>> {
+        Some(ExclusiveIter {
+            exclude: self.exclude,
+            iter: self.access.iter()?,
+        })
+    }
+
+    pub fn iter_mut<P: Pearl>(&mut self) -> Option<ExclusiveIterMut<P>> {
+        Some(ExclusiveIterMut {
+            exclude: self.exclude,
+            iter: self.access.iter_mut()?,
+        })
+    }
+}
+
+pub struct ExclusiveIter<'a, P: Pearl> {
+    exclude: RawHandle,
+    iter: Iter<'a, PearlData<P>>,
+}
+
+impl<'a, P: Pearl> Iterator for ExclusiveIter<'a, P> {
+    type Item = &'a PearlData<P>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.iter.next()?;
+        if next.handle() == self.exclude {
+            return self.iter.next();
+        }
+
+        Some(next)
+    }
+}
+
+pub struct ExclusiveIterMut<'a, P: Pearl> {
+    exclude: RawHandle,
+    iter: IterMut<'a, PearlData<P>>,
+}
+
+impl<'a, P: Pearl> Iterator for ExclusiveIterMut<'a, P> {
+    type Item = &'a mut PearlData<P>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next = self.iter.next()?;
+        if next.handle() == self.exclude {
+            return self.iter.next();
+        }
+
+        Some(next)
     }
 }
