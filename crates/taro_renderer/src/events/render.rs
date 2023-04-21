@@ -68,7 +68,7 @@ impl TaroRender {
         &self.queue
     }
 
-    pub fn submit_encoder(&mut self, encoder: CommandEncoder) {
+    pub fn queue_encoder(&mut self, encoder: CommandEncoder) {
         self.encoders.push(encoder);
     }
 

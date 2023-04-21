@@ -32,6 +32,6 @@ impl RenderStage for WhiteRenderStage {
             depth_stencil_attachment: None,
         });
 
-        event.submit_encoder(encoder);
+        event.queue_encoder(encoder);
     }
 }
