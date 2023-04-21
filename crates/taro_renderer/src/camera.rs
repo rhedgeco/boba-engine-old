@@ -1,9 +1,22 @@
-use milk_tea::boba_core::{macros::Pearl, pearls::Pearl};
-use wgpu::RenderPass;
+use milk_tea::boba_core::{
+    pearls::{
+        map::{EventData, PearlData},
+        Pearl,
+    },
+    EventListener, EventRegistrar,
+};
 
-#[derive(Pearl, Default)]
+use crate::events::TaroRender;
+
+#[derive(Default)]
 pub struct TaroCamera {
     target: Option<String>,
+}
+
+impl Pearl for TaroCamera {
+    fn register(registrar: &mut impl EventRegistrar<Self>) {
+        registrar.listen_for::<TaroRender>();
+    }
 }
 
 impl TaroCamera {
@@ -30,8 +43,15 @@ impl TaroCamera {
     pub fn set_target(&mut self, target: &str) {
         self.target = Some(target.into());
     }
+}
 
-    pub fn render(&mut self, render_pass: &mut RenderPass) {
-        let _ = render_pass;
+impl EventListener<TaroRender> for TaroCamera {
+    fn callback(pearl: &mut PearlData<Self>, mut event: EventData<TaroRender>) {
+        if Some(event.target()) != pearl.target() {
+            return;
+        }
+
+        println!("Rendering camera for target '{}'", event.target());
+        event.set_immediate_redraw();
     }
 }

@@ -7,18 +7,22 @@ use milk_tea::{
 use wgpu::{Device, Instance, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
 
 use crate::{
-    events::{TaroRenderFinish, TaroRenderStart},
+    events::{TaroRender, TaroRenderFinish, TaroRenderStart},
     TaroCamera,
 };
 
 #[derive(Default)]
 pub struct TaroBuilder {
-    _private: (),
+    cameras: Vec<TaroCamera>,
 }
 
 impl TaroBuilder {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn add_camera(&mut self, camera: TaroCamera) {
+        self.cameras.push(camera)
     }
 }
 
@@ -180,55 +184,64 @@ impl MilkTeaRenderer for TaroRenderer {
     }
 
     fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {
+        // get the widow by id and update its size
         let Some(window) = self.windows.get_mut(&id) else { return };
         window.update_size(&self.device);
 
+        // get the current texture for the window
         let Ok(output) = window.surface.get_current_texture() else { return };
+
+        // notify pearls of render start
         pearls.trigger(&mut TaroRenderStart, resources);
+
+        // create view for the output texture
         let view = output
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("Render Encoder"),
-            });
-        {
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.0,
-                            g: 0.0,
-                            b: 0.0,
-                            a: 1.0,
-                        }),
-                        store: true,
-                    },
-                })],
-                depth_stencil_attachment: None,
-            });
 
-            if let Some(camera_iter) = pearls.iter_mut::<TaroCamera>() {
-                let mut cameras = camera_iter
-                    .filter(|c| c.has_target(&window.name))
-                    .collect::<Vec<_>>();
+        // create render event
+        let mut render_event = TaroRender::new(
+            window.name.clone(),
+            self.device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                    label: Some(&format!("{} Render Encoder", window.name)),
+                }),
+        );
 
-                for camera in cameras.iter_mut() {
-                    camera.render(&mut render_pass)
-                }
+        // create an initial black render pass
+        let _ = render_event.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("Initial Black Render Pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &view,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color {
+                        r: 0.0,
+                        g: 0.0,
+                        b: 0.0,
+                        a: 1.0,
+                    }),
+                    store: true,
+                },
+            })],
+            depth_stencil_attachment: None,
+        });
 
-                if !cameras.is_empty() {
-                    window.window.request_redraw();
-                }
-            }
+        // trigger render event on all pearls
+        pearls.trigger(&mut render_event, resources);
+
+        // check for immediate redraws
+        if render_event.should_redraw_immediate() {
+            window.window.request_redraw();
         }
-        // submit will accept anything that implements IntoIter
-        self.queue.submit(std::iter::once(encoder.finish()));
+
+        // submit the render data to the queue
+        render_event.submit(&self.queue);
+
+        // present the output
         output.present();
+
+        // notify pearls of completed rendering
         pearls.trigger(&mut TaroRenderFinish, resources);
     }
 }
