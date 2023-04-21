@@ -51,7 +51,7 @@ impl EventListener<TaroRender> for TaroCamera {
             return;
         }
 
-        println!("Rendering camera for target '{}'", event.target());
+        // TODO: Render objects using encoder
         event.set_immediate_redraw();
     }
 }
