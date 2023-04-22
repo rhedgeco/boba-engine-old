@@ -6,101 +6,137 @@ use winit::{
     window::{Window, WindowBuilder, WindowId},
 };
 
-use crate::events::WindowSpawn;
+use crate::events::{WindowDestroy, WindowSpawn};
 
-pub trait RenderBuilder {
-    type Renderer: MilkTeaRenderer;
-    fn build(self, window: Window) -> Self::Renderer;
+pub trait RenderBuilder: Sized {
+    type Renderer: WindowRenderer;
+    fn build(self) -> Self::Renderer;
 }
 
-pub trait MilkTeaRenderer: 'static {
-    fn window_count(&self) -> usize;
+pub trait WindowRenderer: 'static {
     fn is_empty(&self) -> bool;
-    fn get(&self, name: &str) -> Option<&Window>;
-    fn get_name(&self, id: WindowId) -> Option<&str>;
-    fn insert(&mut self, name: String, window: Window);
-    fn drop_by_name(&mut self, name: String);
-    fn drop_by_id(&mut self, id: WindowId) -> Option<String>;
-    fn render(&mut self, id: WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources);
+    fn len(&self) -> usize;
+    fn contains(&self, id: WindowId) -> bool;
+    fn init(&mut self, window: Window) -> anyhow::Result<()>;
+    fn destroy(&mut self, id: WindowId) -> bool;
+    fn render(
+        &mut self,
+        id: WindowId,
+        name: String,
+        pearls: &mut BobaPearls,
+        resources: &mut BobaResources,
+    );
 }
 
 pub struct MilkTeaWindows {
-    renderer: Box<dyn MilkTeaRenderer>,
-    insert_queue: IndexMap<String, WindowBuilder>,
-    name_drop_queue: IndexSet<String>,
+    renderer: Box<dyn WindowRenderer>,
+    name_to_id: IndexMap<String, WindowId>,
+    id_to_name: IndexMap<WindowId, String>,
+    spawn_queue: IndexMap<String, WindowBuilder>,
+    destroy_queue: IndexSet<String>,
 }
 
 impl MilkTeaWindows {
-    pub(super) fn new(renderer: impl MilkTeaRenderer) -> Self {
+    pub(crate) fn new(renderer: impl WindowRenderer) -> Self {
         Self {
             renderer: Box::new(renderer),
-            insert_queue: IndexMap::new(),
-            name_drop_queue: IndexSet::new(),
+            name_to_id: IndexMap::new(),
+            id_to_name: IndexMap::new(),
+            spawn_queue: IndexMap::new(),
+            destroy_queue: IndexSet::new(),
         }
     }
 
-    pub(super) fn render(
+    pub(crate) fn spawn_now(&mut self, name: &str, window: Window) -> anyhow::Result<WindowSpawn> {
+        let window_id = window.id();
+        self.renderer.init(window)?;
+        self.name_to_id.insert(name.into(), window_id);
+        self.id_to_name.insert(window_id, name.into());
+        Ok(WindowSpawn::new(name.into()))
+    }
+
+    pub(crate) fn submit_destroy_queue(&mut self) -> Vec<WindowDestroy> {
+        let mut destroy_events = Vec::new();
+        for name in self.destroy_queue.drain(..) {
+            let Some(id) = self.name_to_id.get(&name) else { continue };
+            if self.renderer.destroy(*id) {
+                destroy_events.push(WindowDestroy::new(name));
+            }
+        }
+        destroy_events
+    }
+
+    pub(crate) fn submit_spawn_queue(
+        &mut self,
+        window_target: &EventLoopWindowTarget<()>,
+    ) -> Vec<WindowSpawn> {
+        let mut spawn_events = Vec::new();
+        for (name, builder) in self.spawn_queue.drain(..) {
+            let window = match builder.build(window_target) {
+                Ok(window) => window,
+                Err(e) => {
+                    error!("Spawn Window '{name}' Error: {e}");
+                    continue;
+                }
+            };
+
+            let window_id = window.id();
+            if let Err(e) = self.renderer.init(window) {
+                error!("Window '{name}' renderer init Error: {e}");
+                continue;
+            }
+
+            self.name_to_id.insert(name.clone(), window_id);
+            self.id_to_name.insert(window_id, name.clone());
+            spawn_events.push(WindowSpawn::new(name));
+        }
+
+        spawn_events
+    }
+
+    pub(crate) fn render(
         &mut self,
         id: WindowId,
         pearls: &mut BobaPearls,
         resources: &mut BobaResources,
     ) {
-        self.renderer.render(id, pearls, resources);
+        let Some(name) = self.get_name(id) else { return };
+        self.renderer.render(id, name, pearls, resources);
     }
 
-    pub(super) fn spawn_next(
-        &mut self,
-        window_target: &EventLoopWindowTarget<()>,
-    ) -> Option<WindowSpawn> {
-        let (name, builder) = self.insert_queue.pop()?;
-        let window = match builder.build(window_target) {
-            Ok(window) => window,
-            Err(error) => {
-                error!("Failed to create window `{name}`. Error: {error}");
-                return self.spawn_next(window_target);
-            }
-        };
-
-        let spawn_event = WindowSpawn::new(window.id(), name.clone());
-        window.request_redraw();
-        self.name_drop_queue.remove(&name);
-        self.renderer.insert(name, window);
-
-        Some(spawn_event)
-    }
-
-    pub(super) fn submit_drop_queue(&mut self) {
-        for name in self.name_drop_queue.drain(..) {
-            self.renderer.drop_by_name(name);
-        }
-    }
-
-    pub(super) fn drop_now(&mut self, id: WindowId) -> Option<String> {
-        self.renderer.drop_by_id(id)
-    }
-
-    pub fn window_count(&self) -> usize {
-        self.renderer.window_count()
-    }
-
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.renderer.is_empty()
     }
 
-    pub fn get(&self, name: &str) -> Option<&Window> {
-        self.renderer.get(name)
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.renderer.len()
     }
 
-    pub fn get_name(&self, id: WindowId) -> Option<&str> {
-        self.renderer.get_name(id)
+    #[inline]
+    pub fn contains(&self, name: &str) -> bool {
+        let Some(id) = self.get_id(name) else { return false };
+        self.renderer.contains(id)
     }
 
-    pub fn insert(&mut self, name: &str, builder: WindowBuilder) {
-        self.insert_queue.insert(name.into(), builder);
+    #[inline]
+    pub fn get_id(&self, name: &str) -> Option<WindowId> {
+        Some(*self.name_to_id.get(name)?)
     }
 
-    pub fn queue_drop(&mut self, name: &str) {
-        self.insert_queue.remove(name);
-        self.name_drop_queue.insert(name.to_string());
+    #[inline]
+    pub fn get_name(&self, id: WindowId) -> Option<String> {
+        Some(self.id_to_name.get(&id)?.clone())
+    }
+
+    #[inline]
+    pub fn queue_spawn(&mut self, name: &str, builder: WindowBuilder) {
+        self.spawn_queue.insert(name.into(), builder);
+    }
+
+    #[inline]
+    pub fn queue_destroy(&mut self, name: &str) {
+        self.destroy_queue.insert(name.into());
     }
 }

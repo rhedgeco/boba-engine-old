@@ -64,7 +64,7 @@ impl Pearl for TaroCamera {
 
 impl EventListener<TaroRender> for TaroCamera {
     fn callback(pearl: &mut PearlData<Self>, mut event: EventData<TaroRender>) {
-        if !pearl.has_target(event.target()) {
+        if !pearl.has_target(event.window_name()) {
             return;
         }
 
@@ -82,6 +82,6 @@ impl EventListener<TaroRender> for TaroCamera {
         let view_proj_mat = proj_mat * view_mat;
         pearl.settings.stages.render_all(&view_proj_mat, &mut event);
 
-        event.set_redraw_immediate();
+        event.request_immediate_redraw();
     }
 }

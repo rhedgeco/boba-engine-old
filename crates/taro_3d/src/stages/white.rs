@@ -8,11 +8,10 @@ pub struct WhiteRenderStage;
 
 impl RenderStage for WhiteRenderStage {
     fn render(&mut self, _: &Mat4, event: &mut EventData<TaroRender>) {
-        let mut encoder = event
-            .device()
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-                label: Some("White Stage Encoder"),
-            });
+        let device = event.hardware().device();
+        let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+            label: Some("White Stage Encoder"),
+        });
 
         let _ = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("White Render Pass"),

@@ -1,17 +1,10 @@
-use winit::window::WindowId;
-
 pub struct WindowSpawn {
-    id: WindowId,
     name: String,
 }
 
 impl WindowSpawn {
-    pub(crate) fn new(id: WindowId, name: String) -> Self {
-        Self { id, name }
-    }
-
-    pub fn id(&self) -> WindowId {
-        self.id
+    pub(crate) fn new(name: String) -> Self {
+        Self { name }
     }
 
     pub fn name(&self) -> String {
@@ -19,18 +12,27 @@ impl WindowSpawn {
     }
 }
 
-pub struct WindowDrop {
-    id: WindowId,
+pub struct WindowDestroy {
     name: String,
 }
 
-impl WindowDrop {
-    pub(crate) fn new(id: WindowId, name: String) -> Self {
-        Self { id, name }
+impl WindowDestroy {
+    pub(crate) fn new(name: String) -> Self {
+        Self { name }
     }
 
-    pub fn id(&self) -> WindowId {
-        self.id
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+pub struct CloseRequested {
+    name: String,
+}
+
+impl CloseRequested {
+    pub(crate) fn new(name: String) -> Self {
+        Self { name }
     }
 
     pub fn name(&self) -> String {

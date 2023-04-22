@@ -21,7 +21,7 @@ pub mod prelude {
             dpi::{LogicalSize, PhysicalSize},
             window::WindowBuilder,
         },
-        MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaWindows,
+        MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaSettings, MilkTeaWindows,
     };
     pub use taro_3d::{TaroCamera, TaroCameraSettings};
     pub use taro_renderer::TaroBuilder;

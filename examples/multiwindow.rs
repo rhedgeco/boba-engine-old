@@ -1,5 +1,5 @@
 use boba::prelude::*;
-use milk_tea::events::{WindowDrop, WindowSpawn};
+use milk_tea::events::{WindowDestroy, WindowSpawn};
 
 struct WindowListener;
 
@@ -8,7 +8,7 @@ struct WindowSpawner;
 impl Pearl for WindowListener {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
         registrar.listen_for::<WindowSpawn>();
-        registrar.listen_for::<WindowDrop>();
+        registrar.listen_for::<WindowDestroy>();
     }
 }
 
@@ -24,8 +24,8 @@ impl EventListener<WindowSpawn> for WindowListener {
     }
 }
 
-impl EventListener<WindowDrop> for WindowListener {
-    fn callback(_: &mut PearlData<Self>, event: EventData<WindowDrop>) {
+impl EventListener<WindowDestroy> for WindowListener {
+    fn callback(_: &mut PearlData<Self>, event: EventData<WindowDestroy>) {
         println!("Closed Window '{}'", event.name());
     }
 }
@@ -42,8 +42,8 @@ impl EventListener<Update> for WindowSpawner {
             .with_title("Spawned Window 2!")
             .with_inner_size(LogicalSize::new(640, 480));
 
-        windows.insert("spawn1", builder1);
-        windows.insert("spawn2", builder2);
+        windows.queue_spawn("spawn1", builder1);
+        windows.queue_spawn("spawn2", builder2);
         event.pearls.queue_destroy(pearl.handle())
     }
 }
