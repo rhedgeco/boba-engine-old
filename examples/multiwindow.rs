@@ -1,5 +1,4 @@
 use boba::prelude::*;
-use milk_tea::events::{WindowDestroy, WindowSpawn};
 
 struct WindowListener;
 
@@ -9,12 +8,19 @@ impl Pearl for WindowListener {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
         registrar.listen_for::<WindowSpawn>();
         registrar.listen_for::<WindowDestroy>();
+        registrar.listen_for::<WindowCloseRequested>();
     }
 }
 
 impl Pearl for WindowSpawner {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
         registrar.listen_for::<Update>();
+    }
+}
+
+impl EventListener<WindowCloseRequested> for WindowListener {
+    fn callback(_: &mut PearlData<Self>, event: EventData<WindowCloseRequested>) {
+        println!("Close Requested for Window '{}'", event.name());
     }
 }
 
@@ -54,6 +60,7 @@ fn main() {
     let mut milk_tea = MilkTea::new();
     milk_tea.pearls.insert(WindowListener);
     milk_tea.pearls.insert(WindowSpawner);
+    milk_tea.settings.exit_when_close_requested = false;
 
     let window = WindowBuilder::new()
         .with_title("Milk Tea Window")

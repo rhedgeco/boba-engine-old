@@ -16,7 +16,10 @@ pub mod prelude {
         BobaResources, EventListener, EventRegistrar,
     };
     pub use milk_tea::{
-        events::{KeyCode, KeyboardInput, LateUpdate, Update},
+        events::{
+            KeyCode, KeyboardInput, LateUpdate, Update, WindowCloseRequested, WindowDestroy,
+            WindowSpawn,
+        },
         winit::{
             dpi::{LogicalSize, PhysicalSize},
             window::WindowBuilder,

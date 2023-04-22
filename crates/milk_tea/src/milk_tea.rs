@@ -8,7 +8,7 @@ use winit::{
 };
 
 use crate::{
-    events::{CloseRequested, KeyboardInput, LateUpdate, Update},
+    events::{KeyboardInput, LateUpdate, Update, WindowCloseRequested},
     MilkTeaCommand, MilkTeaCommands, MilkTeaSettings, MilkTeaWindows, RenderBuilder,
 };
 
@@ -62,8 +62,18 @@ impl MilkTea {
                     match event {
                         WindowEvent::CloseRequested => {
                             let Some(name) = windows.get_name(window_id) else { return };
-                            self.pearls
-                                .trigger(&mut CloseRequested::new(name), &mut self.resources);
+                            let mut close_event = WindowCloseRequested::new(&name);
+                            self.pearls.trigger(&mut close_event, &mut self.resources);
+
+                            if self.settings.close_window_when_requested {
+                                let Some(windows) = self.resources.get_mut::<MilkTeaWindows>() else {
+                                    control_flow.set_exit();
+                                    return;
+                                };
+                                
+                                let Some(mut destroy_event) = windows.destroy_now(&name) else { return };
+                                self.pearls.trigger(&mut destroy_event, &mut self.resources);
+                            }
 
                             if self.settings.exit_when_close_requested {
                                 control_flow.set_exit();

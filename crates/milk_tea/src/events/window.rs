@@ -3,8 +3,8 @@ pub struct WindowSpawn {
 }
 
 impl WindowSpawn {
-    pub(crate) fn new(name: String) -> Self {
-        Self { name }
+    pub(crate) fn new(name: &str) -> Self {
+        Self { name: name.into() }
     }
 
     pub fn name(&self) -> String {
@@ -17,8 +17,8 @@ pub struct WindowDestroy {
 }
 
 impl WindowDestroy {
-    pub(crate) fn new(name: String) -> Self {
-        Self { name }
+    pub(crate) fn new(name: &str) -> Self {
+        Self { name: name.into() }
     }
 
     pub fn name(&self) -> String {
@@ -26,13 +26,13 @@ impl WindowDestroy {
     }
 }
 
-pub struct CloseRequested {
+pub struct WindowCloseRequested {
     name: String,
 }
 
-impl CloseRequested {
-    pub(crate) fn new(name: String) -> Self {
-        Self { name }
+impl WindowCloseRequested {
+    pub(crate) fn new(name: &str) -> Self {
+        Self { name: name.into() }
     }
 
     pub fn name(&self) -> String {

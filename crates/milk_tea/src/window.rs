@@ -55,12 +55,18 @@ impl MilkTeaWindows {
         Ok(WindowSpawn::new(name.into()))
     }
 
+    pub(crate) fn destroy_now(&mut self, name: &str) -> Option<WindowDestroy> {
+        let id = self.get_id(name)?;
+        self.renderer.destroy(id);
+        Some(WindowDestroy::new(name.into()))
+    }
+
     pub(crate) fn submit_destroy_queue(&mut self) -> Vec<WindowDestroy> {
         let mut destroy_events = Vec::new();
         for name in self.destroy_queue.drain(..) {
             let Some(id) = self.name_to_id.get(&name) else { continue };
             if self.renderer.destroy(*id) {
-                destroy_events.push(WindowDestroy::new(name));
+                destroy_events.push(WindowDestroy::new(&name));
             }
         }
         destroy_events
@@ -88,7 +94,7 @@ impl MilkTeaWindows {
 
             self.name_to_id.insert(name.clone(), window_id);
             self.id_to_name.insert(window_id, name.clone());
-            spawn_events.push(WindowSpawn::new(name));
+            spawn_events.push(WindowSpawn::new(&name));
         }
 
         spawn_events
