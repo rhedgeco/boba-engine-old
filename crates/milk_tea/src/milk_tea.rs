@@ -35,7 +35,7 @@ impl MilkTea {
 
         // create and spawn the window with the window rendering system
         let mut windows = MilkTeaWindows::new(render_builder.build());
-        let mut spawn_event = windows.spawn_now("main", window);
+        let mut spawn_event = windows.spawn_now("main", window)?;
 
         // add commands and windows to the resources
         self.resources.insert(MilkTeaCommands::new());
@@ -60,6 +60,11 @@ impl MilkTea {
                     };
 
                     match event {
+                        WindowEvent::Destroyed => {
+                            if windows.is_empty() {
+                                control_flow.set_exit();
+                            }
+                        }
                         WindowEvent::CloseRequested => {
                             let Some(name) = windows.get_name(window_id) else { return };
                             let mut close_event = WindowCloseRequested::new(&name);
@@ -121,10 +126,10 @@ impl MilkTea {
                     if let Some(windows) = self.resources.get_mut::<MilkTeaWindows>() {
                         let destroy_events = windows.submit_destroy_queue();
                         let spawn_events = windows.submit_spawn_queue(window_target);
-                        for (mut destroy, mut spawn) in
-                            destroy_events.into_iter().zip(spawn_events.into_iter())
-                        {
+                        for mut destroy in destroy_events.into_iter() {
                             self.pearls.trigger(&mut destroy, &mut self.resources);
+                        }
+                        for mut spawn in spawn_events.into_iter() {
                             self.pearls.trigger(&mut spawn, &mut self.resources);
                         }
                     } else {
