@@ -22,7 +22,7 @@ pub mod prelude {
         },
         winit::{
             dpi::{LogicalSize, PhysicalSize},
-            window::WindowBuilder,
+            window::{Fullscreen, WindowBuilder},
         },
         MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaSettings, MilkTeaWindows,
     };
