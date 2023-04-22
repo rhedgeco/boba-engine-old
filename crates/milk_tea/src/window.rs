@@ -17,7 +17,10 @@ pub trait WindowRenderer: 'static {
     fn is_empty(&self) -> bool;
     fn len(&self) -> usize;
     fn contains(&self, id: WindowId) -> bool;
+    fn get(&self, id: WindowId) -> Option<&Window>;
     fn init(&mut self, window: Window) -> anyhow::Result<()>;
+    fn suspend(&mut self);
+    fn resume(&mut self);
     fn destroy(&mut self, id: WindowId) -> bool;
     fn render(
         &mut self,
@@ -45,6 +48,16 @@ impl MilkTeaWindows {
             spawn_queue: IndexMap::new(),
             destroy_queue: IndexSet::new(),
         }
+    }
+
+    #[inline]
+    pub(crate) fn get_id(&self, name: &str) -> Option<WindowId> {
+        Some(*self.name_to_id.get(name)?)
+    }
+
+    #[inline]
+    pub(crate) fn get_name(&self, id: WindowId) -> Option<String> {
+        Some(self.id_to_name.get(&id)?.clone())
     }
 
     pub(crate) fn spawn_now(&mut self, name: &str, window: Window) -> anyhow::Result<WindowSpawn> {
@@ -126,14 +139,9 @@ impl MilkTeaWindows {
         self.renderer.contains(id)
     }
 
-    #[inline]
-    pub fn get_id(&self, name: &str) -> Option<WindowId> {
-        Some(*self.name_to_id.get(name)?)
-    }
-
-    #[inline]
-    pub fn get_name(&self, id: WindowId) -> Option<String> {
-        Some(self.id_to_name.get(&id)?.clone())
+    pub fn get(&self, name: &str) -> Option<&Window> {
+        let id = self.get_id(name)?;
+        self.renderer.get(id)
     }
 
     #[inline]

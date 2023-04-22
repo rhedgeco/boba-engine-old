@@ -1,4 +1,5 @@
 use indexmap::IndexMap;
+use log::error;
 use milk_tea::{
     anyhow::{Context, Result},
     boba_core::{pearls::map::BobaPearls, BobaResources},
@@ -75,6 +76,7 @@ impl WindowManager {
 pub struct TaroRenderer {
     instance: Instance,
     windows: IndexMap<WindowId, WindowManager>,
+    suspended: Vec<Window>,
 }
 
 impl TaroRenderer {
@@ -82,6 +84,7 @@ impl TaroRenderer {
         Self {
             instance,
             windows: IndexMap::new(),
+            suspended: Vec::new(),
         }
     }
 }
@@ -97,6 +100,10 @@ impl WindowRenderer for TaroRenderer {
 
     fn contains(&self, id: WindowId) -> bool {
         self.windows.contains_key(&id)
+    }
+
+    fn get(&self, id: WindowId) -> Option<&Window> {
+        Some(&self.windows.get(&id)?.window)
     }
 
     fn init(&mut self, window: Window) -> Result<()> {
@@ -155,6 +162,22 @@ impl WindowRenderer for TaroRenderer {
         self.windows.insert(manager.window.id(), manager);
 
         Ok(())
+    }
+
+    fn suspend(&mut self) {
+        for (_, manager) in self.windows.drain(..) {
+            self.suspended.push(manager.window);
+        }
+    }
+
+    fn resume(&mut self) {
+        let suspended = std::mem::replace(&mut self.suspended, Vec::new());
+        for window in suspended.into_iter() {
+            let window_id = window.id();
+            if let Err(e) = self.init(window) {
+                error!("There was an error resuming window {window_id:?}. Error: {e}");
+            }
+        }
     }
 
     fn destroy(&mut self, id: WindowId) -> bool {
