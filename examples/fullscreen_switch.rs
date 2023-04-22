@@ -1,5 +1,4 @@
 use boba::prelude::*;
-use milk_tea::winit::window::Fullscreen;
 
 struct FullscreenSwitcher;
 
