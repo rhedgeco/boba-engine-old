@@ -6,7 +6,7 @@ pub use taro_renderer;
 
 pub mod prelude {
     pub use boba_3d::{
-        glam::{Quat, Vec3},
+        glam::{Mat4, Quat, Vec3},
         Transform, TransformData,
     };
     pub use boba_core::{
@@ -26,6 +26,6 @@ pub mod prelude {
         },
         MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaSettings, MilkTeaWindows,
     };
-    pub use taro_3d::{TaroCamera, TaroCameraSettings};
-    pub use taro_renderer::TaroBuilder;
+    pub use taro_3d::{RenderStage, RenderStages, TaroCamera, TaroCameraSettings};
+    pub use taro_renderer::{events::TaroRender, wgpu, TaroBuilder};
 }

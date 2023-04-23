@@ -21,8 +21,8 @@ impl Default for RenderStages {
 }
 
 impl RenderStages {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn empty() -> Self {
+        Self { stages: Vec::new() }
     }
 
     pub fn push(&mut self, stage: impl RenderStage) {
