@@ -1,47 +1,25 @@
 use boba::prelude::*;
+use milk_tea::MilkTeaTime;
+use taro_3d::TaroPipeline;
 
-struct PulsingBrightness {
+struct PulsingPipeline {
     speed: f64,
     progress: f64,
 }
 
-impl PulsingBrightness {
+impl PulsingPipeline {
     pub fn new(speed: f64) -> Self {
         Self {
             speed,
             progress: 0.,
         }
     }
-
-    pub fn brightness(&self) -> f64 {
-        self.progress * self.progress
-    }
 }
 
-impl Pearl for PulsingBrightness {
-    fn register(registrar: &mut impl EventRegistrar<Self>) {
-        registrar.listen_for::<Update>();
-    }
-}
-
-impl EventListener<Update> for PulsingBrightness {
-    fn callback(pearl: &mut PearlData<Self>, event: EventData<Update>) {
-        pearl.progress += event.delta_time() * pearl.speed;
-        if pearl.progress > 1. {
-            pearl.progress = -1. + pearl.progress.fract();
-        }
-    }
-}
-
-struct PulsingRenderStage {
-    brightness: Handle<PulsingBrightness>,
-}
-
-impl RenderStage for PulsingRenderStage {
+impl TaroPipeline for PulsingPipeline {
     fn render(&mut self, _: &Mat4, event: &mut EventData<TaroRender>) {
-        let Some(pearl) = event.pearls.get(self.brightness) else { return };
-        let brightness = pearl.brightness();
-
+        let brightness = self.progress * self.progress;
+        println!("Brightness: {brightness}");
         let device = event.hardware().device();
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("White Stage Encoder"),
@@ -66,6 +44,12 @@ impl RenderStage for PulsingRenderStage {
         });
 
         event.queue_encoder(encoder);
+
+        let Some(time) = event.resources.get::<MilkTeaTime>() else { return };
+        self.progress += self.speed * time.delta_time();
+        if self.progress > 1. {
+            self.progress = -1. + self.progress.fract();
+        }
     }
 }
 
@@ -73,19 +57,15 @@ fn main() {
     env_logger::init();
 
     let mut milk_tea = MilkTea::new();
-    let brightness = milk_tea.pearls.insert(PulsingBrightness::new(2.));
 
     let cam_transform = milk_tea
         .pearls
         .insert(Transform::new(TransformData::default()));
 
-    let mut stages = RenderStages::empty();
-    stages.push(PulsingRenderStage { brightness });
-
     milk_tea.pearls.insert(TaroCamera::with_settings(
         cam_transform,
         TaroCameraSettings {
-            stages,
+            pipeline: Box::new(PulsingPipeline::new(2.)),
             ..Default::default()
         },
     ));

@@ -1,5 +1,3 @@
-use std::time::{Duration, Instant};
-
 use boba_core::{pearls::map::BobaPearls, BobaResources};
 use winit::{
     event::{Event, WindowEvent},
@@ -9,7 +7,7 @@ use winit::{
 
 use crate::{
     events::{KeyboardInput, LateUpdate, Update, WindowCloseRequested},
-    MilkTeaCommand, MilkTeaCommands, MilkTeaSettings, MilkTeaWindows, RenderBuilder,
+    MilkTeaCommand, MilkTeaCommands, MilkTeaSettings, MilkTeaWindows, RenderBuilder, MilkTeaTime,
 };
 
 #[derive(Default)]
@@ -38,6 +36,7 @@ impl MilkTea {
         let mut spawn_event = windows.spawn_now("main", window)?;
 
         // add commands and windows to the resources
+        self.resources.insert(MilkTeaTime::new());
         self.resources.insert(MilkTeaCommands::new());
         self.resources.insert(windows);
 
@@ -45,7 +44,6 @@ impl MilkTea {
         self.pearls.trigger(&mut spawn_event, &mut self.resources);
 
         // run the main event loop
-        let mut timer = DeltaTimer::new();
         event_loop.run(move |event, window_target, control_flow| {
             control_flow.set_wait();
 
@@ -99,8 +97,14 @@ impl MilkTea {
                     }
                 }
                 Event::MainEventsCleared => {
-                    // trigger main updates with delta time
-                    let delta_time = timer.measure().as_secs_f64();
+                    // get the milk tea timer for tracking time since last frame
+                    let Some(time) = self.resources.get_mut::<MilkTeaTime>() else {
+                        control_flow.set_exit();
+                        return;
+                    };
+                    
+                    // reset the timer and run updates on all the pearls
+                    let delta_time = time.reset();
                     let mut update = Update::new(delta_time);
                     let mut late_update = LateUpdate::new(delta_time);
                     self.pearls.trigger(&mut update, &mut self.resources);
@@ -168,10 +172,11 @@ impl MilkTeaHeadless {
     }
 
     pub fn run(mut self) {
-        let mut timer = DeltaTimer::new();
+        self.resources.insert(MilkTeaTime::new());
         self.resources.insert(MilkTeaCommands::new());
         loop {
-            let delta_time = timer.measure().as_secs_f64();
+            let Some(time) = self.resources.get_mut::<MilkTeaTime>() else { return };
+            let delta_time = time.reset();
             let mut update = Update::new(delta_time);
             let mut late_update = LateUpdate::new(delta_time);
             self.pearls.trigger(&mut update, &mut self.resources);
@@ -187,30 +192,6 @@ impl MilkTeaHeadless {
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-struct DeltaTimer {
-    instant: Option<Instant>,
-}
-
-impl DeltaTimer {
-    pub fn new() -> Self {
-        Self { instant: None }
-    }
-
-    pub fn measure(&mut self) -> Duration {
-        match &mut self.instant {
-            None => {
-                self.instant = Some(Instant::now());
-                Duration::new(0, 0)
-            }
-            Some(instant) => {
-                let elapsed = instant.elapsed();
-                *instant = Instant::now();
-                elapsed
             }
         }
     }

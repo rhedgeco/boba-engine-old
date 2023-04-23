@@ -11,14 +11,18 @@ use boba_core::{
 };
 use taro_renderer::events::TaroRender;
 
-use crate::RenderStages;
+use crate::pipelines::SimplePipeline;
+
+pub trait TaroPipeline: 'static {
+    fn render(&mut self, view_proj_mat: &Mat4, event: &mut EventData<TaroRender>);
+}
 
 pub struct TaroCameraSettings {
     pub fovy: f32,
     pub znear: f32,
     pub zfar: f32,
     pub target: Option<String>,
-    pub stages: RenderStages,
+    pub pipeline: Box<dyn TaroPipeline>,
 }
 
 impl Default for TaroCameraSettings {
@@ -28,7 +32,7 @@ impl Default for TaroCameraSettings {
             znear: 0.1,
             zfar: 100.0,
             target: Some("main".into()),
-            stages: Default::default(),
+            pipeline: Box::new(SimplePipeline),
         }
     }
 }
@@ -80,7 +84,7 @@ impl EventListener<TaroRender> for TaroCamera {
         );
 
         let view_proj_mat = proj_mat * view_mat;
-        pearl.settings.stages.render_all(&view_proj_mat, &mut event);
+        pearl.settings.pipeline.render(&view_proj_mat, &mut event);
 
         event.request_immediate_redraw();
     }

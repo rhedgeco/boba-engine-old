@@ -1,7 +1,5 @@
 mod camera;
-mod stage;
 
-pub mod stages;
+pub mod pipelines;
 
 pub use camera::*;
-pub use stage::*;
