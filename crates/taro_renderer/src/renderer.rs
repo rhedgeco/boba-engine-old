@@ -59,15 +59,14 @@ impl WindowManager {
     pub fn update_surface_size(&mut self) {
         let Some(hardware) = &mut self.hardware else { return };
         let physical_size = self.window.inner_size();
-        let logical_size = physical_size.to_logical(self.window.scale_factor());
 
         if physical_size.width > 0
             && physical_size.height > 0
-            && logical_size.width != self.config.width
-            && logical_size.height != self.config.height
+            && physical_size.width != self.config.width
+            && physical_size.height != self.config.height
         {
-            self.config.width = logical_size.width;
-            self.config.height = logical_size.height;
+            self.config.width = physical_size.width;
+            self.config.height = physical_size.height;
             self.surface.configure(hardware.device(), &self.config);
         }
     }
