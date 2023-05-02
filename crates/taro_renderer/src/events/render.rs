@@ -35,11 +35,36 @@ impl TaroRender {
         }
     }
 
-    pub fn submit(self, hardware: &TaroHardware) {
-        if !self.buffers.is_empty() {
-            hardware.queue().submit(self.buffers.into_iter());
-            self.surface.present();
+    pub fn submit(mut self, hardware: &TaroHardware) {
+        if self.buffers.is_empty() {
+            let device = hardware.device();
+            let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+                label: Some("Default Empty Encoder"),
+            });
+
+            let _ = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("Empty Render Pass"),
+                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                    view: &self.view,
+                    resolve_target: None,
+                    ops: wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0,
+                            g: 0.0,
+                            b: 0.0,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    },
+                })],
+                depth_stencil_attachment: None,
+            });
+
+            self.buffers.push(encoder.finish());
         }
+
+        hardware.queue().submit(self.buffers.into_iter());
+        self.surface.present();
     }
 
     pub fn immediate_redraw_requested(&self) -> bool {

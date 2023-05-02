@@ -62,42 +62,6 @@ fn main() {
     milk_tea.pearls.insert(WindowSpawner);
     milk_tea.settings.exit_when_close_requested = false;
 
-    let cam_transform1 = milk_tea
-        .pearls
-        .insert(Transform::new(TransformData::default()));
-
-    milk_tea.pearls.insert(TaroCamera::with_settings(
-        cam_transform1,
-        TaroCameraSettings {
-            target: Some("main".into()),
-            ..Default::default()
-        },
-    ));
-
-    let cam_transform2 = milk_tea
-        .pearls
-        .insert(Transform::new(TransformData::default()));
-
-    milk_tea.pearls.insert(TaroCamera::with_settings(
-        cam_transform2,
-        TaroCameraSettings {
-            target: Some("spawn1".into()),
-            ..Default::default()
-        },
-    ));
-
-    let cam_transform3 = milk_tea
-        .pearls
-        .insert(Transform::new(TransformData::default()));
-
-    milk_tea.pearls.insert(TaroCamera::with_settings(
-        cam_transform3,
-        TaroCameraSettings {
-            target: Some("spawn2".into()),
-            ..Default::default()
-        },
-    ));
-
     let window = WindowBuilder::new()
         .with_title("Milk Tea Window")
         .with_inner_size(LogicalSize::new(1280, 800));

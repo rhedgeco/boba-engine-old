@@ -20,15 +20,6 @@ fn main() {
     let mut milk_tea = MilkTea::new();
     milk_tea.pearls.insert(UpdatePrinter);
 
-    let cam_transform = milk_tea
-        .pearls
-        .insert(Transform::new(TransformData::default()));
-
-    milk_tea.pearls.insert(TaroCamera::with_settings(
-        cam_transform,
-        TaroCameraSettings::default(),
-    ));
-
     let window = WindowBuilder::new()
         .with_title("Milk Tea Window")
         .with_inner_size(LogicalSize::new(1280, 800));
