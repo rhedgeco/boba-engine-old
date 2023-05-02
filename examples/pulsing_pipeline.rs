@@ -1,6 +1,4 @@
 use boba::prelude::*;
-use milk_tea::MilkTeaTime;
-use taro_3d::TaroPipeline;
 
 struct PulsingPipeline {
     speed: f64,
@@ -17,7 +15,7 @@ impl PulsingPipeline {
 }
 
 impl TaroPipeline for PulsingPipeline {
-    fn render(&mut self, _: &Mat4, event: &mut EventData<TaroRenderData>) {
+    fn render(&mut self, _: &Mat4, event: &mut BobaEventData<TaroRender>) {
         let brightness = self.progress * self.progress;
         println!("Brightness: {brightness}");
         let device = event.hardware().device();

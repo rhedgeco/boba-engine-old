@@ -19,25 +19,25 @@ impl Pearl for WindowSpawner {
 }
 
 impl EventListener<WindowCloseRequested> for WindowListener {
-    fn callback(_: &mut PearlData<Self>, event: EventData<WindowCloseRequested>) {
+    fn callback(_: &mut PearlData<Self>, event: BobaEventData<WindowCloseRequested>) {
         println!("Close Requested for Window '{}'", event.name());
     }
 }
 
 impl EventListener<WindowSpawn> for WindowListener {
-    fn callback(_: &mut PearlData<Self>, event: EventData<WindowSpawn>) {
+    fn callback(_: &mut PearlData<Self>, event: BobaEventData<WindowSpawn>) {
         println!("Spawned Window '{}'", event.name());
     }
 }
 
 impl EventListener<WindowDestroy> for WindowListener {
-    fn callback(_: &mut PearlData<Self>, event: EventData<WindowDestroy>) {
+    fn callback(_: &mut PearlData<Self>, event: BobaEventData<WindowDestroy>) {
         println!("Closed Window '{}'", event.name());
     }
 }
 
 impl EventListener<Update> for WindowSpawner {
-    fn callback(pearl: &mut PearlData<Self>, mut event: EventData<Update>) {
+    fn callback(pearl: &mut PearlData<Self>, mut event: BobaEventData<Update>) {
         let Some(windows) = event.resources.get_mut::<MilkTeaWindows>() else { return };
 
         let builder1 = WindowBuilder::new()

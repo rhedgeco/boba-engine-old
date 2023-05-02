@@ -1,9 +1,11 @@
 use boba::prelude::*;
 
-#[derive(Default, SimplePearl)]
+#[derive(Default)]
 struct DummyItem {
     _item: u128,
 }
+
+impl Pearl for DummyItem {}
 
 struct LimitTestPearl {
     count: u32,
@@ -16,7 +18,7 @@ impl Pearl for LimitTestPearl {
 }
 
 impl EventListener<Update> for LimitTestPearl {
-    fn callback(pearl: &mut PearlData<Self>, mut event: EventData<Update>) {
+    fn callback(pearl: &mut PearlData<Self>, mut event: BobaEventData<Update>) {
         println!("FPS: {}", 1. / event.delta_time());
         for _ in 0..pearl.count {
             let link = event.pearls.queue_insert(DummyItem::default());

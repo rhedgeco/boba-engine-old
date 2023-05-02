@@ -11,7 +11,7 @@ impl Pearl for TransformPrinter {
 }
 
 impl EventListener<Update> for TransformPrinter {
-    fn callback(pearl: &mut PearlData<Self>, mut event: EventData<Update>) {
+    fn callback(pearl: &mut PearlData<Self>, mut event: BobaEventData<Update>) {
         let Some(transform) = event.pearls.get(pearl.transform) else { return };
         let location = transform.calculate_world_pos();
         println!("Transform location: {location}");

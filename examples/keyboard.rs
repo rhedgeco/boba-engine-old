@@ -9,7 +9,7 @@ impl Pearl for KeyboardPrinter {
 }
 
 impl EventListener<KeyboardInput> for KeyboardPrinter {
-    fn callback(_: &mut PearlData<Self>, event: EventData<KeyboardInput>) {
+    fn callback(_: &mut PearlData<Self>, event: BobaEventData<KeyboardInput>) {
         if !event.is_pressed() {
             return;
         }
