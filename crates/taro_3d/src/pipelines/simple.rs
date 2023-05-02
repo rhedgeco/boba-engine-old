@@ -1,5 +1,5 @@
 use boba_3d::glam::Mat4;
-use boba_core::pearls::map::EventData;
+use boba_core::BobaEventData;
 use taro_renderer::{events::TaroRender, wgpu};
 
 use crate::TaroPipeline;
@@ -7,7 +7,7 @@ use crate::TaroPipeline;
 pub struct SimplePipeline;
 
 impl TaroPipeline for SimplePipeline {
-    fn render(&mut self, _: &Mat4, event: &mut EventData<TaroRender>) {
+    fn render(&mut self, _: &Mat4, event: &mut BobaEventData<TaroRender>) {
         let device = event.hardware().device();
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("White Stage Encoder"),

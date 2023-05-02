@@ -1,19 +1,19 @@
 use std::slice::{Iter, IterMut};
 
-use crate::pearls::Pearl;
+use crate::pearl::Pearl;
 
-use super::{Handle, PearlAccessMap, PearlData, RawHandle};
+use super::{Handle, PearlData, PearlMapAccess, RawHandle};
 
 pub struct ExclusiveStream<'a, P: Pearl> {
-    iterator: IterMut<'a, PearlData<P>>,
-    access: &'a mut PearlAccessMap<'a>,
+    iter: IterMut<'a, PearlData<P>>,
+    access: &'a mut PearlMapAccess<'a>,
 }
 
 impl<'a, P: Pearl> ExclusiveStream<'a, P> {
-    pub(super) fn new(access: &'a mut PearlAccessMap<'a>) -> Option<Self> {
-        let access_ptr = access as *mut PearlAccessMap;
-        Some(Self {
-            iterator: access.iter_mut()?,
+    pub fn new(access: &'a mut PearlMapAccess<'a>) -> Self {
+        let access_ptr = access as *mut PearlMapAccess;
+        Self {
+            iter: access.iter_mut(),
             // SAFETY: This is unsafe because both the iterator and access variable alias over the same data.
             // However, since the data is returned through an ExclusivePearlAccess,
             // we restrict access to the only data that the iterator is currently handing out access to.
@@ -21,13 +21,13 @@ impl<'a, P: Pearl> ExclusiveStream<'a, P> {
             // the data from the data must go out of scope before 'next' can be called again.
             // Thus, there is never an instance where multiple mutable access is exposed to the user.
             access: unsafe { &mut *access_ptr },
-        })
+        }
     }
 
     pub fn next<'access>(
         &'access mut self,
     ) -> Option<(&'a mut PearlData<P>, ExclusivePearlAccess<'a, 'access>)> {
-        let pearl_data = self.iterator.next()?;
+        let pearl_data = self.iter.next()?;
         let exclusive = ExclusivePearlAccess {
             exclude: pearl_data.handle().into_raw(),
             access: self.access,
@@ -36,9 +36,9 @@ impl<'a, P: Pearl> ExclusiveStream<'a, P> {
     }
 }
 
-pub struct ExclusivePearlAccess<'a, 'access> {
+pub struct ExclusivePearlAccess<'access, 'a> {
     exclude: RawHandle,
-    access: &'access mut PearlAccessMap<'a>,
+    access: &'a mut PearlMapAccess<'access>,
 }
 
 impl<'a, 'access> ExclusivePearlAccess<'a, 'access> {
@@ -62,18 +62,18 @@ impl<'a, 'access> ExclusivePearlAccess<'a, 'access> {
         self.access.get_mut(handle)
     }
 
-    pub fn iter<P: Pearl>(&self) -> Option<ExclusiveIter<P>> {
-        Some(ExclusiveIter {
+    pub fn iter<P: Pearl>(&self) -> ExclusiveIter<P> {
+        ExclusiveIter {
             exclude: self.exclude,
-            iter: self.access.iter()?,
-        })
+            iter: self.access.iter(),
+        }
     }
 
-    pub fn iter_mut<P: Pearl>(&mut self) -> Option<ExclusiveIterMut<P>> {
-        Some(ExclusiveIterMut {
+    pub fn iter_mut<P: Pearl>(&mut self) -> ExclusiveIterMut<P> {
+        ExclusiveIterMut {
             exclude: self.exclude,
-            iter: self.access.iter_mut()?,
-        })
+            iter: self.access.iter_mut(),
+        }
     }
 }
 

@@ -5,7 +5,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use crate::pearls::Pearl;
+use crate::pearl::Pearl;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct RawHandle {

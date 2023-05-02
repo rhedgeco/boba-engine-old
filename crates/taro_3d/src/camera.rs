@@ -3,18 +3,15 @@ use boba_3d::{
     Transform,
 };
 use boba_core::{
-    pearls::{
-        map::{EventData, Handle, PearlData},
-        Pearl,
-    },
-    EventListener, EventRegistrar,
+    pearl::map::{Handle, PearlData},
+    BobaEventData, EventListener, EventRegistrar, Pearl,
 };
 use taro_renderer::events::TaroRender;
 
 use crate::pipelines::SimplePipeline;
 
 pub trait TaroPipeline: 'static {
-    fn render(&mut self, view_proj_mat: &Mat4, event: &mut EventData<TaroRender>);
+    fn render(&mut self, view_proj_mat: &Mat4, event: &mut BobaEventData<TaroRender>);
 }
 
 pub struct TaroCameraSettings {
@@ -67,7 +64,7 @@ impl Pearl for TaroCamera {
 }
 
 impl EventListener<TaroRender> for TaroCamera {
-    fn callback(pearl: &mut PearlData<Self>, mut event: EventData<TaroRender>) {
+    fn callback(pearl: &mut PearlData<Self>, mut event: BobaEventData<TaroRender>) {
         if !pearl.has_target(event.window_name()) {
             return;
         }

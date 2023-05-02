@@ -2,9 +2,13 @@ use std::any::TypeId;
 
 use crate::EventRegistrar;
 
-use super::map::{Handle, PearlData, PearlProvider};
+use super::map::{Handle, PearlData};
 
-/// Central trait to register structs in boba engine.
+pub trait PearlProvider {
+    fn get<P: Pearl>(&self, handle: Handle<P>) -> Option<&P>;
+    fn get_mut<P: Pearl>(&mut self, handle: Handle<P>) -> Option<&mut P>;
+}
+
 #[allow(unused_variables)]
 pub trait Pearl: Sized + 'static {
     fn register(registrar: &mut impl EventRegistrar<Self>) {}
@@ -19,8 +23,8 @@ pub struct PearlId(TypeId);
 impl PearlId {
     /// Returns the id for pearl of type `T`
     #[inline]
-    pub fn of<T: Pearl>() -> Self {
-        Self(TypeId::of::<T>())
+    pub fn of<P: Pearl>() -> Self {
+        Self(TypeId::of::<P>())
     }
 
     /// Returns the underlying [`TypeId`]
@@ -33,26 +37,29 @@ impl PearlId {
 pub trait PearlExt: Pearl {
     fn id() -> PearlId;
     fn pearl_id(&self) -> PearlId;
-    fn into_concrete<P: Pearl>(self) -> Result<P, Self>;
+    fn is<P: Pearl>(&self) -> bool;
+    fn downcast<P: Pearl>(self) -> Result<P, Self>;
 }
 
 impl<T: Pearl> PearlExt for T {
-    #[inline]
     fn id() -> PearlId {
         PearlId::of::<T>()
     }
 
-    #[inline]
     fn pearl_id(&self) -> PearlId {
         T::id()
     }
 
-    fn into_concrete<P: Pearl>(self) -> Result<P, Self> {
-        if T::id() == P::id() {
-            let ptr = Box::into_raw(Box::new(self)) as *mut P;
-            return Ok(unsafe { *Box::from_raw(ptr) });
+    fn is<P: Pearl>(&self) -> bool {
+        P::id() == T::id()
+    }
+
+    fn downcast<P: Pearl>(self) -> Result<P, Self> {
+        if self.is::<P>() {
+            let ptr = std::ptr::addr_of!(self);
+            return Ok(unsafe { (ptr as *const P).read() });
         }
 
-        return Err(self);
+        Err(self)
     }
 }

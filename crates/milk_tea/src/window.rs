@@ -1,4 +1,4 @@
-use boba_core::{pearls::map::BobaPearls, BobaResources};
+use boba_core::{BobaPearls, BobaResources};
 use indexmap::{IndexMap, IndexSet};
 use log::error;
 use winit::{

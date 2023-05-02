@@ -1,5 +1,8 @@
-use boba_core::pearls::{
-    map::{Handle, PearlData, PearlProvider},
+use boba_core::{
+    pearl::{
+        map::{Handle, PearlData},
+        PearlProvider,
+    },
     Pearl,
 };
 use glam::{Mat4, Quat, Vec3};

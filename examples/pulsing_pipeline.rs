@@ -17,7 +17,7 @@ impl PulsingPipeline {
 }
 
 impl TaroPipeline for PulsingPipeline {
-    fn render(&mut self, _: &Mat4, event: &mut EventData<TaroRender>) {
+    fn render(&mut self, _: &Mat4, event: &mut EventData<TaroRenderData>) {
         let brightness = self.progress * self.progress;
         println!("Brightness: {brightness}");
         let device = event.hardware().device();

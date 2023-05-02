@@ -27,5 +27,5 @@ pub mod prelude {
         MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaSettings, MilkTeaWindows,
     };
     pub use taro_3d::{TaroCamera, TaroCameraSettings};
-    pub use taro_renderer::{events::TaroRender, wgpu, TaroBuilder};
+    pub use taro_renderer::{events::TaroRenderData, wgpu, TaroBuilder};
 }

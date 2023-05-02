@@ -1,4 +1,4 @@
-use boba_core::{pearls::map::BobaPearls, BobaResources};
+use boba_core::{BobaResources, BobaPearls};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::EventLoop,
@@ -6,7 +6,7 @@ use winit::{
 };
 
 use crate::{
-    events::{KeyboardInput, LateUpdate, Update, WindowCloseRequested},
+    events::{KeyboardInput, LateUpdate, Update, WindowCloseRequested, WindowSpawn, WindowDestroy},
     MilkTeaCommand, MilkTeaCommands, MilkTeaSettings, MilkTeaWindows, RenderBuilder, MilkTeaTime,
 };
 
@@ -33,7 +33,7 @@ impl MilkTea {
 
         // create and spawn the window with the window rendering system
         let mut windows = MilkTeaWindows::new(render_builder.build());
-        let mut spawn_event = windows.spawn_now("main", window)?;
+        let spawn_event = windows.spawn_now("main", window)?;
 
         // add commands and windows to the resources
         self.resources.insert(MilkTeaTime::new());
@@ -41,7 +41,7 @@ impl MilkTea {
         self.resources.insert(windows);
 
         // trigger the spawn event for the main window
-        self.pearls.trigger(&mut spawn_event, &mut self.resources);
+        self.pearls.trigger::<WindowSpawn>(spawn_event, &mut self.resources);
 
         // run the main event loop
         event_loop.run(move |event, window_target, control_flow| {
@@ -65,8 +65,8 @@ impl MilkTea {
                         }
                         WindowEvent::CloseRequested => {
                             let Some(name) = windows.get_name(window_id) else { return };
-                            let mut close_event = WindowCloseRequested::new(&name);
-                            self.pearls.trigger(&mut close_event, &mut self.resources);
+                            let close_event = WindowCloseRequested::new(&name);
+                            self.pearls.trigger::<WindowCloseRequested>(close_event, &mut self.resources);
 
                             if self.settings.close_window_when_requested {
                                 let Some(windows) = self.resources.get_mut::<MilkTeaWindows>() else {
@@ -74,8 +74,8 @@ impl MilkTea {
                                     return;
                                 };
                                 
-                                let Some(mut destroy_event) = windows.destroy_now(&name) else { return };
-                                self.pearls.trigger(&mut destroy_event, &mut self.resources);
+                                let Some(destroy_event) = windows.destroy_now(&name) else { return };
+                                self.pearls.trigger::<WindowDestroy>(destroy_event, &mut self.resources);
                             }
 
                             if self.settings.exit_when_close_requested {
@@ -88,8 +88,8 @@ impl MilkTea {
                             is_synthetic,
                         } => {
                             let Some(name) = windows.get_name(window_id) else { return };
-                            self.pearls.trigger(
-                                &mut KeyboardInput::new(name, *device_id, *input, *is_synthetic),
+                            self.pearls.trigger::<KeyboardInput>(
+                                KeyboardInput::new(name, *device_id, *input, *is_synthetic),
                                 &mut self.resources,
                             );
                         }
@@ -105,10 +105,10 @@ impl MilkTea {
                     
                     // reset the timer and run updates on all the pearls
                     let delta_time = time.reset();
-                    let mut update = Update::new(delta_time);
-                    let mut late_update = LateUpdate::new(delta_time);
-                    self.pearls.trigger(&mut update, &mut self.resources);
-                    self.pearls.trigger(&mut late_update, &mut self.resources);
+                    let update = Update::new(delta_time);
+                    let late_update = LateUpdate::new(delta_time);
+                    self.pearls.trigger::<Update>(update, &mut self.resources);
+                    self.pearls.trigger::<LateUpdate>(late_update, &mut self.resources);
 
                     // get and execute all the collected milk tea commands
                     if let Some(commands) = self.resources.get_mut::<MilkTeaCommands>() {
@@ -130,11 +130,11 @@ impl MilkTea {
                     if let Some(windows) = self.resources.get_mut::<MilkTeaWindows>() {
                         let destroy_events = windows.submit_destroy_queue();
                         let spawn_events = windows.submit_spawn_queue(window_target);
-                        for mut destroy in destroy_events.into_iter() {
-                            self.pearls.trigger(&mut destroy, &mut self.resources);
+                        for destroy in destroy_events.into_iter() {
+                            self.pearls.trigger::<WindowDestroy>(destroy, &mut self.resources);
                         }
-                        for mut spawn in spawn_events.into_iter() {
-                            self.pearls.trigger(&mut spawn, &mut self.resources);
+                        for spawn in spawn_events.into_iter() {
+                            self.pearls.trigger::<WindowSpawn>(spawn, &mut self.resources);
                         }
                     } else {
                         control_flow.set_exit();
@@ -177,10 +177,10 @@ impl MilkTeaHeadless {
         loop {
             let Some(time) = self.resources.get_mut::<MilkTeaTime>() else { return };
             let delta_time = time.reset();
-            let mut update = Update::new(delta_time);
-            let mut late_update = LateUpdate::new(delta_time);
-            self.pearls.trigger(&mut update, &mut self.resources);
-            self.pearls.trigger(&mut late_update, &mut self.resources);
+            let update = Update::new(delta_time);
+            let late_update = LateUpdate::new(delta_time);
+            self.pearls.trigger::<Update>(update, &mut self.resources);
+            self.pearls.trigger::<LateUpdate>(late_update, &mut self.resources);
 
             match self.resources.get_mut::<MilkTeaCommands>() {
                 None => return,

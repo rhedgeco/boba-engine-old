@@ -2,7 +2,7 @@ use indexmap::IndexMap;
 use log::error;
 use milk_tea::{
     anyhow::{Context, Result},
-    boba_core::{pearls::map::BobaPearls, BobaResources},
+    boba_core::{BobaPearls, BobaResources},
     winit::window::{Window, WindowId},
     RenderBuilder, WindowRenderer,
 };
@@ -52,12 +52,11 @@ pub struct WindowManager {
     window: Window,
     surface: Surface,
     config: SurfaceConfiguration,
-    hardware: Option<TaroHardware>,
+    hardware: TaroHardware,
 }
 
 impl WindowManager {
     pub fn update_surface_size(&mut self) {
-        let Some(hardware) = &mut self.hardware else { return };
         let physical_size = self.window.inner_size();
 
         if physical_size.width > 0
@@ -67,7 +66,7 @@ impl WindowManager {
         {
             self.config.width = physical_size.width;
             self.config.height = physical_size.height;
-            self.surface.configure(hardware.device(), &self.config);
+            self.surface.configure(self.hardware.device(), &self.config);
         }
     }
 }
@@ -155,7 +154,7 @@ impl WindowRenderer for TaroRenderer {
             window,
             surface,
             config,
-            hardware: Some(TaroHardware { device, queue }),
+            hardware: TaroHardware { device, queue },
         };
 
         self.windows.insert(manager.window.id(), manager);
@@ -199,14 +198,13 @@ impl WindowRenderer for TaroRenderer {
 
         // take hardware to send ownership into render event
         // this is required since events must be 'static
-        let hardware = manager.hardware.take().unwrap();
-        let mut render_event = TaroRender::new(name, id, output, hardware);
-        pearls.trigger(&mut render_event, resources);
+        let mut render_event = TaroRender::new(name, id, output);
+        pearls.trigger::<TaroRender>(render_event.event_data(&manager.hardware), resources);
         if render_event.immediate_redraw_requested() {
             manager.window.request_redraw();
         }
 
         // submit render event, and give the hardware back to the manager
-        manager.hardware = Some(render_event.submit())
+        render_event.submit(&manager.hardware);
     }
 }

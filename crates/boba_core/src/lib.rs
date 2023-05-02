@@ -1,9 +1,11 @@
 mod event;
+mod pearls;
 mod resources;
 
-pub mod pearls;
+pub mod pearl;
 
 pub use event::*;
+pub use pearls::*;
 pub use resources::*;
 
-pub use boba_core_macros as macros;
+pub use pearl::{Pearl, PearlId, PearlMap};

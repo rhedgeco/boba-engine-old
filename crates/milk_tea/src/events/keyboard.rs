@@ -1,3 +1,4 @@
+use boba_core::Event;
 use winit::event::{self, DeviceId, ElementState, VirtualKeyCode};
 
 pub type KeyCode = VirtualKeyCode;
@@ -7,6 +8,10 @@ pub struct KeyboardInput {
     device_id: DeviceId,
     input: event::KeyboardInput,
     is_synthetic: bool,
+}
+
+impl Event for KeyboardInput {
+    type Data<'a> = Self;
 }
 
 impl KeyboardInput {
