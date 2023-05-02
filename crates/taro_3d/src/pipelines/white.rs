@@ -4,9 +4,9 @@ use taro_renderer::{events::TaroRender, wgpu};
 
 use crate::TaroPipeline;
 
-pub struct SimplePipeline;
+pub struct WhitePipeline;
 
-impl TaroPipeline for SimplePipeline {
+impl TaroPipeline for WhitePipeline {
     fn render(&mut self, _: &Mat4, event: &mut BobaEventData<TaroRender>) {
         let device = event.hardware().device();
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
