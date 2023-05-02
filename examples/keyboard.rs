@@ -9,14 +9,14 @@ impl Pearl for KeyboardPrinter {
 }
 
 impl EventListener<KeyboardInput> for KeyboardPrinter {
-    fn callback(_: &mut PearlData<Self>, event: BobaEventData<KeyboardInput>) {
-        if !event.is_pressed() {
+    fn callback(_: &mut PearlData<Self>, data: BobaEventData<KeyboardInput>) {
+        if !data.is_pressed() {
             return;
         }
 
-        println!("Key Pressed: {:?}", event.keycode());
-        if event.keycode() == Some(KeyCode::Escape) {
-            if let Some(commands) = event.resources.get_mut::<MilkTeaCommands>() {
+        println!("Key Pressed: {:?}", data.keycode());
+        if data.keycode() == Some(KeyCode::Escape) {
+            if let Some(commands) = data.resources.get_mut::<MilkTeaCommands>() {
                 commands.exit_app();
             }
         }

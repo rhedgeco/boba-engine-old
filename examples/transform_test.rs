@@ -11,13 +11,13 @@ impl Pearl for TransformPrinter {
 }
 
 impl EventListener<Update> for TransformPrinter {
-    fn callback(pearl: &mut PearlData<Self>, mut event: BobaEventData<Update>) {
-        let Some(transform) = event.pearls.get(pearl.transform) else { return };
+    fn callback(pearl: &mut PearlData<Self>, mut data: BobaEventData<Update>) {
+        let Some(transform) = data.pearls.get(pearl.transform) else { return };
         let location = transform.calculate_world_pos();
         println!("Transform location: {location}");
-        event.pearls.queue_destroy(pearl.handle());
+        data.pearls.queue_destroy(pearl.handle());
 
-        if let Some(commands) = event.resources.get_mut::<MilkTeaCommands>() {
+        if let Some(commands) = data.resources.get_mut::<MilkTeaCommands>() {
             commands.exit_app();
         }
     }

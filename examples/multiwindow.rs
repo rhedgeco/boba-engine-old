@@ -19,26 +19,26 @@ impl Pearl for WindowSpawner {
 }
 
 impl EventListener<WindowCloseRequested> for WindowListener {
-    fn callback(_: &mut PearlData<Self>, event: BobaEventData<WindowCloseRequested>) {
-        println!("Close Requested for Window '{}'", event.name());
+    fn callback(_: &mut PearlData<Self>, data: BobaEventData<WindowCloseRequested>) {
+        println!("Close Requested for Window '{}'", data.name());
     }
 }
 
 impl EventListener<WindowSpawn> for WindowListener {
-    fn callback(_: &mut PearlData<Self>, event: BobaEventData<WindowSpawn>) {
-        println!("Spawned Window '{}'", event.name());
+    fn callback(_: &mut PearlData<Self>, data: BobaEventData<WindowSpawn>) {
+        println!("Spawned Window '{}'", data.name());
     }
 }
 
 impl EventListener<WindowDestroy> for WindowListener {
-    fn callback(_: &mut PearlData<Self>, event: BobaEventData<WindowDestroy>) {
-        println!("Closed Window '{}'", event.name());
+    fn callback(_: &mut PearlData<Self>, data: BobaEventData<WindowDestroy>) {
+        println!("Closed Window '{}'", data.name());
     }
 }
 
 impl EventListener<Update> for WindowSpawner {
-    fn callback(pearl: &mut PearlData<Self>, mut event: BobaEventData<Update>) {
-        let Some(windows) = event.resources.get_mut::<MilkTeaWindows>() else { return };
+    fn callback(pearl: &mut PearlData<Self>, mut data: BobaEventData<Update>) {
+        let Some(windows) = data.resources.get_mut::<MilkTeaWindows>() else { return };
 
         let builder1 = WindowBuilder::new()
             .with_title("Spawned Window 1!")
@@ -50,7 +50,7 @@ impl EventListener<Update> for WindowSpawner {
 
         windows.queue_spawn("spawn1", builder1);
         windows.queue_spawn("spawn2", builder2);
-        event.pearls.queue_destroy(pearl.handle())
+        data.pearls.queue_destroy(pearl.handle())
     }
 }
 

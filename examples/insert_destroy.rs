@@ -23,12 +23,12 @@ impl Pearl for RebirthPearl {
 }
 
 impl EventListener<Update> for RebirthPearl {
-    fn callback(pearl: &mut PearlData<Self>, mut world: BobaEventData<Update>) {
+    fn callback(pearl: &mut PearlData<Self>, mut data: BobaEventData<Update>) {
         // queue destroy self
-        world.pearls.queue_destroy(pearl.handle());
+        data.pearls.queue_destroy(pearl.handle());
 
         // queue insert of new child with increased count
-        world.pearls.queue_insert(RebirthPearl {
+        data.pearls.queue_insert(RebirthPearl {
             count: pearl.count + 1,
         });
     }

@@ -18,11 +18,11 @@ impl Pearl for LimitTestPearl {
 }
 
 impl EventListener<Update> for LimitTestPearl {
-    fn callback(pearl: &mut PearlData<Self>, mut event: BobaEventData<Update>) {
-        println!("FPS: {}", 1. / event.delta_time());
+    fn callback(pearl: &mut PearlData<Self>, mut data: BobaEventData<Update>) {
+        println!("FPS: {}", 1. / data.delta_time());
         for _ in 0..pearl.count {
-            let link = event.pearls.queue_insert(DummyItem::default());
-            event.pearls.queue_destroy(link);
+            let link = data.pearls.queue_insert(DummyItem::default());
+            data.pearls.queue_destroy(link);
         }
     }
 }

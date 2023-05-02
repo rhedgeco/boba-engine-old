@@ -9,19 +9,19 @@ impl Pearl for FullscreenSwitcher {
 }
 
 impl EventListener<KeyboardInput> for FullscreenSwitcher {
-    fn callback(_: &mut PearlData<Self>, event: BobaEventData<KeyboardInput>) {
+    fn callback(_: &mut PearlData<Self>, data: BobaEventData<KeyboardInput>) {
         // check if a key was pressed
-        if !event.is_pressed() {
+        if !data.is_pressed() {
             return;
         }
 
         // get necessary window resources
-        let Some(windows) = event.resources.get::<MilkTeaWindows>() else { return };
+        let Some(windows) = data.resources.get::<MilkTeaWindows>() else { return };
         let Some(main_window) = windows.get("main") else { return };
 
         // if the space key is pressed, toggle in and out of fullscreen
         // borderless fullscreen is used by default
-        if event.keycode() == Some(KeyCode::Space) {
+        if data.keycode() == Some(KeyCode::Space) {
             match main_window.fullscreen() {
                 Some(_) => main_window.set_fullscreen(None),
                 None => main_window.set_fullscreen(Some(Fullscreen::Borderless(None))),
@@ -30,7 +30,7 @@ impl EventListener<KeyboardInput> for FullscreenSwitcher {
 
         // if the E key is pressed, move into exclusive fullscreen
         // this will sometimes mess up display monitor settings on linux
-        if event.keycode() == Some(KeyCode::E) {
+        if data.keycode() == Some(KeyCode::E) {
             let Some(monitor) = main_window.current_monitor() else { return };
             let Some(video_mode) = monitor.video_modes().next() else { return };
             println!("Using Video Mode: {video_mode}");
