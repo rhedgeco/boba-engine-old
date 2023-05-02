@@ -75,7 +75,7 @@ impl<'a, T: InsertDestroyQueue> PearlMapQueue<'a, T> {
         };
 
         let map_index = tracker.map_index as usize;
-        if map_index > self.open_routes.len() {
+        if map_index >= self.open_routes.len() {
             RawHandle::from_raw_parts(tracker.length, tracker.map_index, 0).into_type()
         } else {
             let open_routes = &self.open_routes[map_index];
