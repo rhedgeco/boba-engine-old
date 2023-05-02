@@ -8,7 +8,7 @@ use boba_core::{
 };
 use taro_renderer::events::TaroRender;
 
-use crate::pipelines::WhitePipeline;
+use crate::pipelines::UnlitPipeline;
 
 pub trait TaroPipeline: 'static {
     fn render(&mut self, view_proj_mat: &Mat4, event: &mut BobaEventData<TaroRender>);
@@ -29,7 +29,7 @@ impl Default for TaroCameraSettings {
             znear: 0.1,
             zfar: 100.0,
             target: Some("main".into()),
-            pipeline: Box::new(WhitePipeline),
+            pipeline: Box::new(UnlitPipeline),
         }
     }
 }
