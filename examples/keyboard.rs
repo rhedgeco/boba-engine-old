@@ -5,6 +5,13 @@ struct KeyboardPrinter;
 impl Pearl for KeyboardPrinter {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
         registrar.listen_for::<KeyboardInput>();
+        registrar.listen_for::<MouseMotion>();
+    }
+}
+
+impl EventListener<MouseMotion> for KeyboardPrinter {
+    fn callback(_: &mut PearlData<Self>, data: BobaEventData<MouseMotion>) {
+        println!("Mouse Motion: ({}, {})", data.delta_x, data.delta_y);
     }
 }
 

@@ -18,8 +18,8 @@ pub mod prelude {
     };
     pub use milk_tea::{
         events::{
-            KeyCode, KeyboardInput, LateUpdate, Update, WindowCloseRequested, WindowDestroy,
-            WindowSpawn,
+            KeyCode, KeyboardInput, LateUpdate, MouseMotion, Update, WindowCloseRequested,
+            WindowDestroy, WindowSpawn,
         },
         winit::{
             dpi::{LogicalSize, PhysicalSize},

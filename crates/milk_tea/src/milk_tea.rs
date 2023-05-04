@@ -1,12 +1,12 @@
 use boba_core::{BobaResources, BobaPearls};
 use winit::{
-    event::{Event, WindowEvent},
+    event::{Event, WindowEvent, DeviceEvent},
     event_loop::EventLoop,
     window::WindowBuilder,
 };
 
 use crate::{
-    events::{KeyboardInput, LateUpdate, Update, WindowCloseRequested, WindowSpawn, WindowDestroy},
+    events::{LateUpdate, Update, WindowCloseRequested, WindowSpawn, WindowDestroy, MouseMotion, KeyboardInput},
     MilkTeaCommand, MilkTeaCommands, MilkTeaSettings, MilkTeaWindows, RenderBuilder, MilkTeaTime,
 };
 
@@ -48,6 +48,15 @@ impl MilkTea {
             control_flow.set_wait();
 
             match event {
+                Event::DeviceEvent { device_id, event } => {
+                    match event {
+                        DeviceEvent::MouseMotion { delta } => {
+                            let motion_event = MouseMotion { device_id, delta_x: delta.0, delta_y: delta.1 };
+                            self.pearls.trigger::<MouseMotion>(&motion_event, &mut self.resources);
+                        }
+                        _ => (),
+                    }
+                }
                 Event::WindowEvent {
                     ref event,
                     window_id,
