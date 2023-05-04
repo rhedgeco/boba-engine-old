@@ -3,7 +3,7 @@ use milk_tea::{
     anyhow::{self, Context},
     boba_core::{BobaPearls, BobaResources},
     winit::{
-        dpi::PhysicalSize,
+        dpi::{PhysicalPosition, PhysicalSize},
         event_loop::EventLoopWindowTarget,
         window::{Window, WindowBuilder, WindowId},
     },
@@ -155,6 +155,21 @@ impl WindowEditor for WindowManager {
     fn set_size(&mut self, size: (u32, u32)) {
         self.window
             .set_inner_size(PhysicalSize::new(size.0, size.1));
+    }
+
+    fn position(&self) -> (u32, u32) {
+        match self.window.outer_position() {
+            Ok(pos) => (
+                pos.x.clamp(0, i32::MAX) as u32,
+                pos.y.clamp(0, i32::MAX) as u32,
+            ),
+            Err(_) => (0, 0),
+        }
+    }
+
+    fn set_position(&self, pos: (u32, u32)) {
+        self.window
+            .set_outer_position(PhysicalPosition::new(pos.0, pos.1));
     }
 
     fn fullscreen(&self) -> bool {

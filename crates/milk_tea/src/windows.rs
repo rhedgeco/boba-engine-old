@@ -29,12 +29,21 @@ pub trait RenderBuilder {
 }
 
 pub trait WindowEditor: 'static {
+    // required methods
     fn title(&self) -> String;
     fn set_title(&mut self, title: &str);
     fn size(&self) -> (u32, u32);
     fn set_size(&mut self, size: (u32, u32));
+    fn position(&self) -> (u32, u32);
+    fn set_position(&self, pos: (u32, u32));
     fn fullscreen(&self) -> bool;
     fn set_fullscreen(&mut self, full: bool);
+
+    // auto-implemented helper methods
+    fn move_position(&mut self, delta: (u32, u32)) {
+        let (x, y) = self.position();
+        self.set_position((x + delta.0, y + delta.1));
+    }
 }
 
 pub trait RenderManager: 'static {
