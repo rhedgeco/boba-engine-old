@@ -1,115 +1,58 @@
-use indexmap::IndexMap;
-use log::error;
+use hashbrown::HashMap;
 use milk_tea::{
-    anyhow::{Context, Result},
+    anyhow::{self, Context},
     boba_core::{BobaPearls, BobaResources},
-    winit::window::{Window, WindowId},
-    RenderBuilder, WindowRenderer,
+    winit::{
+        dpi::PhysicalSize,
+        event_loop::EventLoopWindowTarget,
+        window::{Window, WindowBuilder, WindowId},
+    },
+    RenderBuilder, RenderManager, WindowEditor, WindowSettings,
 };
-use wgpu::{Device, Instance, InstanceDescriptor, Queue, Surface, SurfaceConfiguration};
+use wgpu::{Device, Instance, Queue, Surface, SurfaceConfiguration};
 
 use crate::events::TaroRender;
 
-#[derive(Default)]
+fn build_window(
+    settings: WindowSettings,
+    target: &EventLoopWindowTarget<()>,
+) -> anyhow::Result<Window> {
+    Ok(WindowBuilder::new()
+        .with_title(settings.title)
+        .with_inner_size(PhysicalSize::new(settings.size.0, settings.size.1))
+        .build(target)?)
+}
+
 pub struct TaroBuilder {
-    desc: InstanceDescriptor,
+    _private: (),
 }
 
 impl TaroBuilder {
     pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn with_descriptor(desc: InstanceDescriptor) -> Self {
-        Self { desc }
+        Self { _private: () }
     }
 }
 
 impl RenderBuilder for TaroBuilder {
     type Renderer = TaroRenderer;
 
-    fn build(self) -> Self::Renderer {
-        TaroRenderer::new(Instance::new(self.desc))
-    }
-}
-
-pub struct TaroHardware {
-    device: Device,
-    queue: Queue,
-}
-
-impl TaroHardware {
-    pub fn device(&self) -> &Device {
-        &self.device
-    }
-
-    pub fn queue(&self) -> &Queue {
-        &self.queue
-    }
-}
-
-pub struct WindowManager {
-    window: Window,
-    surface: Surface,
-    config: SurfaceConfiguration,
-    hardware: TaroHardware,
-}
-
-impl WindowManager {
-    pub fn update_surface_size(&mut self) {
-        let physical_size = self.window.inner_size();
-
-        if physical_size.width > 0
-            && physical_size.height > 0
-            && physical_size.width != self.config.width
-            && physical_size.height != self.config.height
-        {
-            self.config.width = physical_size.width;
-            self.config.height = physical_size.height;
-            self.surface.configure(self.hardware.device(), &self.config);
-        }
-    }
-}
-
-pub struct TaroRenderer {
-    instance: Instance,
-    windows: IndexMap<WindowId, WindowManager>,
-    suspended: Vec<Window>,
-}
-
-impl TaroRenderer {
-    fn new(instance: Instance) -> Self {
-        Self {
-            instance,
-            windows: IndexMap::new(),
-            suspended: Vec::new(),
-        }
-    }
-}
-
-impl WindowRenderer for TaroRenderer {
-    fn is_empty(&self) -> bool {
-        self.windows.is_empty()
-    }
-
-    fn len(&self) -> usize {
-        self.windows.len()
-    }
-
-    fn contains(&self, id: WindowId) -> bool {
-        self.windows.contains_key(&id)
-    }
-
-    fn get(&self, id: WindowId) -> Option<&Window> {
-        Some(&self.windows.get(&id)?.window)
-    }
-
-    fn init(&mut self, window: Window) -> Result<()> {
+    fn build(
+        self,
+        name: &str,
+        settings: WindowSettings,
+        target: &EventLoopWindowTarget<()>,
+    ) -> anyhow::Result<Self::Renderer> {
+        let window = build_window(settings, target)?;
         let size = window.inner_size();
-        let surface = unsafe { self.instance.create_surface(&window) }?;
 
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+            backends: wgpu::Backends::all(),
+            dx12_shader_compiler: Default::default(),
+        });
+
+        let surface = unsafe { instance.create_surface(&window) }?;
         let adapter =
-            pollster::block_on(self.instance.request_adapter(&wgpu::RequestAdapterOptions {
+            pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptionsBase {
                 power_preference: wgpu::PowerPreference::HighPerformance,
                 compatible_surface: Some(&surface),
                 force_fallback_adapter: false,
@@ -128,7 +71,7 @@ impl WindowRenderer for TaroRenderer {
                 },
                 label: None,
             },
-            None, // Trace path
+            None,
         ))?;
 
         let surface_caps = surface.get_capabilities(&adapter);
@@ -136,7 +79,7 @@ impl WindowRenderer for TaroRenderer {
             .formats
             .iter()
             .copied()
-            .filter(|f| f.describe().srgb)
+            .filter(|f| f.is_srgb())
             .next()
             .unwrap_or(surface_caps.formats[0]);
         let config = wgpu::SurfaceConfiguration {
@@ -150,58 +93,171 @@ impl WindowRenderer for TaroRenderer {
         };
         surface.configure(&device, &config);
 
-        let manager = WindowManager {
-            window,
-            surface,
-            config,
-            hardware: TaroHardware { device, queue },
-        };
+        let mut name_map = HashMap::new();
+        name_map.insert(window.id(), name.to_string());
 
-        self.windows.insert(manager.window.id(), manager);
+        let mut windows = HashMap::new();
+        windows.insert(
+            name.to_string(),
+            WindowManager {
+                window,
+                surface,
+                config: config.clone(),
+            },
+        );
+
+        Ok(TaroRenderer {
+            instance,
+            hardware: TaroHardware { device, queue },
+            template: config,
+            name_map,
+            windows,
+        })
+    }
+}
+
+struct WindowManager {
+    window: Window,
+    surface: Surface,
+    config: SurfaceConfiguration,
+}
+
+impl WindowManager {
+    pub fn update_surface(&mut self, hardware: &TaroHardware) {
+        let physical_size = self.window.inner_size();
+
+        if physical_size.width > 0
+            && physical_size.height > 0
+            && physical_size.width != self.config.width
+            && physical_size.height != self.config.height
+        {
+            self.config.width = physical_size.width;
+            self.config.height = physical_size.height;
+            self.surface.configure(hardware.device(), &self.config);
+        }
+    }
+}
+
+impl WindowEditor for WindowManager {
+    fn title(&self) -> String {
+        self.window.title()
+    }
+
+    fn set_title(&mut self, title: &str) {
+        self.window.set_title(title)
+    }
+
+    fn size(&self) -> (u32, u32) {
+        let size = self.window.inner_size();
+        (size.width, size.height)
+    }
+
+    fn set_size(&mut self, size: (u32, u32)) {
+        self.window
+            .set_inner_size(PhysicalSize::new(size.0, size.1));
+    }
+
+    fn fullscreen(&self) -> bool {
+        self.window.fullscreen().is_some()
+    }
+
+    fn set_fullscreen(&mut self, full: bool) {
+        self.window.set_fullscreen(match full {
+            false => None,
+            true => Some(milk_tea::winit::window::Fullscreen::Borderless(None)),
+        })
+    }
+}
+
+pub struct TaroHardware {
+    device: Device,
+    queue: Queue,
+}
+
+impl TaroHardware {
+    pub fn device(&self) -> &Device {
+        &self.device
+    }
+
+    pub fn queue(&self) -> &Queue {
+        &self.queue
+    }
+}
+
+pub struct TaroRenderer {
+    instance: Instance,
+    hardware: TaroHardware,
+    template: SurfaceConfiguration,
+
+    name_map: HashMap<WindowId, String>,
+    windows: HashMap<String, WindowManager>,
+}
+
+impl RenderManager for TaroRenderer {
+    fn spawn_window(
+        &mut self,
+        name: &str,
+        settings: WindowSettings,
+        target: &EventLoopWindowTarget<()>,
+    ) -> anyhow::Result<()> {
+        let window = build_window(settings, target)?;
+        let size = window.inner_size();
+        let surface = unsafe { self.instance.create_surface(&window) }?;
+        let config = wgpu::SurfaceConfiguration {
+            width: size.width,
+            height: size.height,
+            ..self.template.clone()
+        };
+        surface.configure(&self.hardware.device(), &config);
+
+        self.name_map.insert(window.id(), name.into());
+        self.windows.insert(
+            name.into(),
+            WindowManager {
+                window,
+                surface,
+                config,
+            },
+        );
 
         Ok(())
     }
 
-    fn suspend(&mut self) {
-        for (_, manager) in self.windows.drain(..) {
-            self.suspended.push(manager.window);
-        }
+    fn close_window(&mut self, name: &str) -> bool {
+        self.windows.remove(name).is_some()
     }
 
-    fn resume(&mut self) {
-        let suspended = std::mem::replace(&mut self.suspended, Vec::new());
-        for window in suspended.into_iter() {
-            let window_id = window.id();
-            if let Err(e) = self.init(window) {
-                error!("There was an error resuming window {window_id:?}. Error: {e}");
-            }
-        }
+    fn get_window(&mut self, name: &str) -> Option<&mut dyn WindowEditor> {
+        let window_manager = self.windows.get_mut(name)?;
+        Some(window_manager as &mut dyn WindowEditor)
     }
 
-    fn destroy(&mut self, id: WindowId) -> bool {
-        self.windows.remove(&id).is_some()
+    fn len(&self) -> usize {
+        self.windows.len()
     }
 
-    fn render(
-        &mut self,
-        id: WindowId,
-        name: String,
-        pearls: &mut BobaPearls,
-        resources: &mut BobaResources,
-    ) {
-        // get the window to render
-        let Some(manager) = self.windows.get_mut(&id) else { return };
+    fn is_empty(&self) -> bool {
+        self.windows.is_empty()
+    }
 
-        // update the surface and get the output texture for this render
-        manager.update_surface_size();
+    fn get_name(&self, id: &WindowId) -> Option<&str> {
+        Some(self.name_map.get(id)?)
+    }
+
+    fn redraw(&mut self, id: &WindowId, pearls: &mut BobaPearls, resources: &mut BobaResources) {
+        // get the target window
+        let Some(name) = self.name_map.get(id) else { return };
+        let Some(manager) = self.windows.get_mut(name) else { return };
+
+        // update the surface and get the current output texture
+        manager.update_surface(&self.hardware);
         let Ok(output) = manager.surface.get_current_texture() else { return };
 
-        // take hardware to send ownership into render event
-        // this is required since events must be 'static
-        let mut render_event = TaroRender::new(name, id, output);
-        pearls.trigger::<TaroRender>(render_event.event_data(&manager.hardware), resources);
+        // trigger the render event
+        let mut render_event = TaroRender::new(name.clone(), output);
+        pearls.trigger::<TaroRender>(render_event.event_data(&self.hardware), resources);
 
-        // submit render event, and give the hardware back to the manager
-        render_event.submit(&manager.hardware);
+        // submit all collected render data
+        render_event.submit(&self.hardware);
     }
 }

@@ -1,55 +1,25 @@
 use boba_core::Event;
 
-pub struct WindowSpawn {
-    name: String,
+pub struct WindowSpawned {
+    pub name: String,
 }
 
-impl Event for WindowSpawn {
-    type Data<'a> = Self;
+impl Event for WindowSpawned {
+    type Data<'a> = &'a Self;
 }
 
-impl WindowSpawn {
-    pub(crate) fn new(name: &str) -> Self {
-        Self { name: name.into() }
-    }
-
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
+pub struct WindowClosed {
+    pub name: String,
 }
 
-pub struct WindowDestroy {
-    name: String,
-}
-
-impl Event for WindowDestroy {
-    type Data<'a> = Self;
-}
-
-impl WindowDestroy {
-    pub(crate) fn new(name: &str) -> Self {
-        Self { name: name.into() }
-    }
-
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
+impl Event for WindowClosed {
+    type Data<'a> = &'a Self;
 }
 
 pub struct WindowCloseRequested {
-    name: String,
+    pub name: String,
 }
 
 impl Event for WindowCloseRequested {
-    type Data<'a> = Self;
-}
-
-impl WindowCloseRequested {
-    pub(crate) fn new(name: &str) -> Self {
-        Self { name: name.into() }
-    }
-
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
+    type Data<'a> = &'a Self;
 }

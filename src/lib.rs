@@ -18,14 +18,14 @@ pub mod prelude {
     };
     pub use milk_tea::{
         events::{
-            KeyCode, KeyboardInput, LateUpdate, MouseMotion, Update, WindowCloseRequested,
-            WindowDestroy, WindowSpawn,
+            KeyCode, KeyboardInput, LateUpdate, MouseMotion, Time, Update, WindowCloseRequested,
+            WindowClosed, WindowSpawned,
         },
         winit::{
             dpi::{LogicalSize, PhysicalSize},
             window::{Fullscreen, WindowBuilder},
         },
-        MilkTea, MilkTeaCommands, MilkTeaHeadless, MilkTeaSettings, MilkTeaTime, MilkTeaWindows,
+        Commands, MilkTea, MilkTeaHeadless, MilkTeaSettings, WindowSettings, Windows,
     };
     pub use taro_3d::{TaroCamera, TaroCameraSettings, TaroPipeline, TaroSkybox};
     pub use taro_renderer::{events::TaroRender, wgpu, TaroBuilder};

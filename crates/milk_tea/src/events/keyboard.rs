@@ -11,7 +11,7 @@ pub struct KeyboardInput {
 }
 
 impl Event for KeyboardInput {
-    type Data<'a> = Self;
+    type Data<'a> = &'a Self;
 }
 
 impl KeyboardInput {

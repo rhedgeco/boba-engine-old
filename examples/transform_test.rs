@@ -17,7 +17,7 @@ impl EventListener<Update> for TransformPrinter {
         println!("Transform location: {location}");
         data.pearls.queue_destroy(pearl.handle());
 
-        if let Some(commands) = data.resources.get_mut::<MilkTeaCommands>() {
+        if let Some(commands) = data.resources.get_mut::<Commands>() {
             commands.exit_app();
         }
     }

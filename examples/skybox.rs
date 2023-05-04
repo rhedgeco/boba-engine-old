@@ -24,9 +24,7 @@ fn main() {
         b: 0.3,
     });
 
-    let window = WindowBuilder::new()
-        .with_title("Milk Tea Window")
-        .with_inner_size(LogicalSize::new(1280, 800));
-
-    milk_tea.run(window, TaroBuilder::new()).unwrap();
+    milk_tea
+        .run(WindowSettings::default(), TaroBuilder::new())
+        .unwrap();
 }

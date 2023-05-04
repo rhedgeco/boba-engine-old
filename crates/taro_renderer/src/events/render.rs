@@ -1,25 +1,23 @@
-use milk_tea::{boba_core::Event, winit::window::WindowId};
+use milk_tea::boba_core::Event;
 use wgpu::{CommandBuffer, CommandEncoder, SurfaceTexture, TextureView};
 
 use crate::TaroHardware;
 
 pub struct TaroRender {
     name: String,
-    window_id: WindowId,
     surface: SurfaceTexture,
     view: TextureView,
     buffers: Vec<CommandBuffer>,
 }
 
 impl TaroRender {
-    pub(crate) fn new(name: String, window_id: WindowId, surface: SurfaceTexture) -> Self {
+    pub(crate) fn new(name: String, surface: SurfaceTexture) -> Self {
         let view = surface
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
         Self {
             name,
-            window_id,
             surface,
             view,
             buffers: Vec::new(),
@@ -28,7 +26,7 @@ impl TaroRender {
 
     pub fn event_data<'a>(&'a mut self, hardware: &'a TaroHardware) -> TaroRenderData {
         TaroRenderData {
-            render_event: self,
+            event: self,
             hardware,
         }
     }
@@ -71,29 +69,25 @@ impl Event for TaroRender {
 }
 
 pub struct TaroRenderData<'a> {
-    render_event: &'a mut TaroRender,
+    event: &'a mut TaroRender,
     hardware: &'a TaroHardware,
 }
 
 impl<'a> TaroRenderData<'a> {
     pub fn window_name(&self) -> &str {
-        &self.render_event.name
-    }
-
-    pub fn window_id(&self) -> WindowId {
-        self.render_event.window_id
+        &self.event.name
     }
 
     pub fn image_width(&self) -> u32 {
-        self.render_event.surface.texture.width()
+        self.event.surface.texture.width()
     }
 
     pub fn image_height(&self) -> u32 {
-        self.render_event.surface.texture.height()
+        self.event.surface.texture.height()
     }
 
     pub fn output_view(&self) -> &TextureView {
-        &self.render_event.view
+        &self.event.view
     }
 
     pub fn hardware(&self) -> &TaroHardware {
@@ -101,6 +95,6 @@ impl<'a> TaroRenderData<'a> {
     }
 
     pub fn queue_encoder(&mut self, encoder: CommandEncoder) {
-        self.render_event.buffers.push(encoder.finish());
+        self.event.buffers.push(encoder.finish());
     }
 }

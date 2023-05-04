@@ -43,8 +43,8 @@ impl TaroPipeline for PulsingPipeline {
 
         event.queue_encoder(encoder);
 
-        let Some(time) = event.resources.get::<MilkTeaTime>() else { return };
-        self.progress += self.speed * time.delta_time();
+        let Some(time) = event.resources.get::<Time>() else { return };
+        self.progress += self.speed * time.delta();
         if self.progress > 1. {
             self.progress = -1. + self.progress.fract();
         }
@@ -68,9 +68,7 @@ fn main() {
         },
     ));
 
-    let window = WindowBuilder::new()
-        .with_title("Milk Tea Window")
-        .with_inner_size(LogicalSize::new(1280, 800));
-
-    milk_tea.run(window, TaroBuilder::new()).unwrap();
+    milk_tea
+        .run(WindowSettings::default(), TaroBuilder::new())
+        .unwrap();
 }
