@@ -139,6 +139,10 @@ impl MilkTeaWindows {
         self.renderer.contains(id)
     }
 
+    pub(crate) fn get_by_id(&self, id: WindowId) -> Option<&Window> {
+        self.renderer.get(id)
+    }
+
     pub fn get(&self, name: &str) -> Option<&Window> {
         let id = self.get_id(name)?;
         self.renderer.get(id)

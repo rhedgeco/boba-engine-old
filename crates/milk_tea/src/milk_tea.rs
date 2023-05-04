@@ -160,6 +160,13 @@ impl MilkTea {
                     // render the requested window
                     windows.render(id, &mut self.pearls, &mut self.resources);
 
+                    // request redraw if necessary
+                    if !self.settings.manual_window_redraw {
+                        if let Some(window) = windows.get_by_id(id) {
+                            window.request_redraw();
+                        }
+                    }
+
                     // put windows back into resources for next iteration
                     self.resources.insert(windows);
                 }

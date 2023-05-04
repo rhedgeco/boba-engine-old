@@ -200,9 +200,6 @@ impl WindowRenderer for TaroRenderer {
         // this is required since events must be 'static
         let mut render_event = TaroRender::new(name, id, output);
         pearls.trigger::<TaroRender>(render_event.event_data(&manager.hardware), resources);
-        if render_event.immediate_redraw_requested() {
-            manager.window.request_redraw();
-        }
 
         // submit render event, and give the hardware back to the manager
         render_event.submit(&manager.hardware);

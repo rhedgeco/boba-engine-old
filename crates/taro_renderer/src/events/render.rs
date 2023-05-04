@@ -9,7 +9,6 @@ pub struct TaroRender {
     surface: SurfaceTexture,
     view: TextureView,
     buffers: Vec<CommandBuffer>,
-    redraw: bool,
 }
 
 impl TaroRender {
@@ -24,7 +23,6 @@ impl TaroRender {
             surface,
             view,
             buffers: Vec::new(),
-            redraw: false,
         }
     }
 
@@ -66,10 +64,6 @@ impl TaroRender {
         hardware.queue().submit(self.buffers.into_iter());
         self.surface.present();
     }
-
-    pub fn immediate_redraw_requested(&self) -> bool {
-        self.redraw
-    }
 }
 
 impl Event for TaroRender {
@@ -108,9 +102,5 @@ impl<'a> TaroRenderData<'a> {
 
     pub fn queue_encoder(&mut self, encoder: CommandEncoder) {
         self.render_event.buffers.push(encoder.finish());
-    }
-
-    pub fn request_immediate_redraw(&mut self) {
-        self.render_event.redraw = true;
     }
 }
