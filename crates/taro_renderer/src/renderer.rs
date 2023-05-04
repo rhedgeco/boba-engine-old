@@ -152,9 +152,13 @@ impl WindowEditor for WindowManager {
         (size.width, size.height)
     }
 
-    fn set_size(&mut self, size: (u32, u32)) {
-        self.window
-            .set_inner_size(PhysicalSize::new(size.0, size.1));
+    fn set_size(&mut self, width: u32, height: u32) {
+        if width == 0 || height == 0 {
+            log::warn!("Cannot set window width or height to 0. Skipping.");
+            return;
+        }
+
+        self.window.set_inner_size(PhysicalSize::new(width, height));
     }
 
     fn position(&self) -> (u32, u32) {
@@ -167,9 +171,8 @@ impl WindowEditor for WindowManager {
         }
     }
 
-    fn set_position(&self, pos: (u32, u32)) {
-        self.window
-            .set_outer_position(PhysicalPosition::new(pos.0, pos.1));
+    fn set_position(&self, x: u32, y: u32) {
+        self.window.set_outer_position(PhysicalPosition::new(x, y));
     }
 
     fn fullscreen(&self) -> bool {

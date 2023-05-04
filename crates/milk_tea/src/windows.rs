@@ -28,24 +28,6 @@ pub trait RenderBuilder {
     ) -> anyhow::Result<Self::Renderer>;
 }
 
-pub trait WindowEditor: 'static {
-    // required methods
-    fn title(&self) -> String;
-    fn set_title(&mut self, title: &str);
-    fn size(&self) -> (u32, u32);
-    fn set_size(&mut self, size: (u32, u32));
-    fn position(&self) -> (u32, u32);
-    fn set_position(&self, pos: (u32, u32));
-    fn fullscreen(&self) -> bool;
-    fn set_fullscreen(&mut self, full: bool);
-
-    // auto-implemented helper methods
-    fn move_position(&mut self, delta: (u32, u32)) {
-        let (x, y) = self.position();
-        self.set_position((x + delta.0, y + delta.1));
-    }
-}
-
 pub trait RenderManager: 'static {
     // window management
     fn spawn_window(
@@ -137,5 +119,32 @@ impl Windows {
 
     pub fn queue_close(&mut self, name: &str) {
         self.close_queue.insert(name.into());
+    }
+}
+
+pub trait WindowEditor: 'static {
+    // ---
+    // required methods
+    fn title(&self) -> String;
+    fn set_title(&mut self, title: &str);
+    fn size(&self) -> (u32, u32);
+    fn set_size(&mut self, width: u32, height: u32);
+    fn position(&self) -> (u32, u32);
+    fn set_position(&self, x: u32, y: u32);
+    fn fullscreen(&self) -> bool;
+    fn set_fullscreen(&mut self, full: bool);
+
+    // ---
+    // auto-implemented helper methods
+    fn move_position(&mut self, delta: (u32, u32)) {
+        let (x, y) = self.position();
+        self.set_position(x + delta.0, y + delta.1);
+    }
+
+    fn expand(&mut self, delta_x: i32, delta_y: i32) {
+        let size = self.size();
+        let new_x = (size.0 as i64 + delta_x as i64).clamp(0, u32::MAX as i64) as u32;
+        let new_y = (size.1 as i64 + delta_y as i64).clamp(0, u32::MAX as i64) as u32;
+        self.set_size(new_x, new_y);
     }
 }
