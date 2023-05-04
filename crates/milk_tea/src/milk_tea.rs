@@ -208,6 +208,7 @@ impl MilkTeaHeadless {
     pub fn run(mut self) {
         self.resources.insert(Time::new());
         loop {
+            // get and execute the basic update events
             let Some(time) = self.resources.get_mut::<Time>() else {
                 log::warn!("Could not find 'Time' in resources. Exiting application");
                 return;
@@ -218,6 +219,21 @@ impl MilkTeaHeadless {
                 .trigger::<Update>(&Update { delta }, &mut self.resources);
             self.pearls
                 .trigger::<LateUpdate>(&LateUpdate { delta }, &mut self.resources);
+
+            // get and execute all the collected milk tea commands
+            let Some(commands) = self.resources.get_mut::<Commands>() else {
+                log::warn!("Could not find 'Commands' in resources. Exiting application");
+                return;
+            };
+
+            for command in commands.drain() {
+                match command {
+                    Command::Exit => {
+                        return;
+                    }
+                    _ => (),
+                }
+            }
         }
     }
 }
