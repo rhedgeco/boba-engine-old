@@ -1,7 +1,6 @@
 use std::{
     any::{Any, TypeId},
     collections::hash_map,
-    ops::{Deref, DerefMut},
     slice::{Iter, IterMut},
 };
 
@@ -276,22 +275,6 @@ pub struct BobaEventData<'a, 'data, 'access, 'queue, E: Event> {
     pub event: &'a mut E::Data<'data>,
     pub pearls: BobaEventPearls<'access, 'a, 'queue>,
     pub resources: &'a mut BobaResources,
-}
-
-impl<'a, 'data, 'access, 'queue, E: Event> DerefMut
-    for BobaEventData<'a, 'data, 'access, 'queue, E>
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        self.event
-    }
-}
-
-impl<'a, 'data, 'access, 'queue, E: Event> Deref for BobaEventData<'a, 'data, 'access, 'queue, E> {
-    type Target = E::Data<'data>;
-
-    fn deref(&self) -> &Self::Target {
-        self.event
-    }
 }
 
 pub struct BobaEventPearls<'access, 'a, 'queue> {

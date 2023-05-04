@@ -10,7 +10,7 @@ impl Pearl for UpdatePrinter {
 
 impl EventListener<Update> for UpdatePrinter {
     fn callback(_: &mut PearlData<Self>, data: BobaEventData<Update>) {
-        println!("FPS: {}", 1. / data.delta);
+        println!("FPS: {}", 1. / data.event.delta);
     }
 }
 

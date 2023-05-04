@@ -11,7 +11,7 @@ impl Pearl for FullscreenSwitcher {
 impl EventListener<KeyboardInput> for FullscreenSwitcher {
     fn callback(_: &mut PearlData<Self>, data: BobaEventData<KeyboardInput>) {
         // check if a key was pressed
-        if !data.is_pressed() {
+        if !data.event.is_pressed() {
             return;
         }
 

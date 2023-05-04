@@ -65,14 +65,14 @@ impl Pearl for TaroCamera {
 
 impl EventListener<TaroRender> for TaroCamera {
     fn callback(pearl: &mut PearlData<Self>, mut data: BobaEventData<TaroRender>) {
-        if !pearl.has_target(data.window_name()) {
+        if !pearl.has_target(data.event.window_name()) {
             return;
         }
 
         let Some(transform) = data.pearls.get(pearl.transform) else { return };
         let (_, rot, pos) = transform.calculate_world_scale_pos_rot();
         let view_mat = Mat4::look_to_rh(pos, rot * Vec3::Z, Vec3::Y);
-        let aspect_ratio = data.image_width() as f32 / data.image_height() as f32;
+        let aspect_ratio = data.event.image_width() as f32 / data.event.image_height() as f32;
         let proj_mat = Mat4::perspective_rh(
             pearl.settings.fovy.to_radians(),
             aspect_ratio,

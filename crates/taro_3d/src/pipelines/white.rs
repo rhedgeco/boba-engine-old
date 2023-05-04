@@ -7,8 +7,8 @@ use crate::TaroPipeline;
 pub struct WhitePipeline;
 
 impl TaroPipeline for WhitePipeline {
-    fn render(&mut self, _: &Mat4, event: &mut BobaEventData<TaroRender>) {
-        let device = event.hardware().device();
+    fn render(&mut self, _: &Mat4, data: &mut BobaEventData<TaroRender>) {
+        let device = data.event.hardware().device();
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("White Stage Encoder"),
         });
@@ -16,7 +16,7 @@ impl TaroPipeline for WhitePipeline {
         let _ = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("White Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: event.output_view(),
+                view: data.event.output_view(),
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -31,6 +31,6 @@ impl TaroPipeline for WhitePipeline {
             depth_stencil_attachment: None,
         });
 
-        event.queue_encoder(encoder);
+        data.event.queue_encoder(encoder);
     }
 }

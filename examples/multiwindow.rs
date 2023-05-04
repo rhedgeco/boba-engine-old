@@ -20,19 +20,19 @@ impl Pearl for WindowSpawner {
 
 impl EventListener<WindowCloseRequested> for WindowListener {
     fn callback(_: &mut PearlData<Self>, data: BobaEventData<WindowCloseRequested>) {
-        println!("Close Requested for Window '{}'", data.name);
+        println!("Close Requested for Window '{}'", data.event.name);
     }
 }
 
 impl EventListener<WindowSpawned> for WindowListener {
     fn callback(_: &mut PearlData<Self>, data: BobaEventData<WindowSpawned>) {
-        println!("Spawned Window '{}'", data.name);
+        println!("Spawned Window '{}'", data.event.name);
     }
 }
 
 impl EventListener<WindowClosed> for WindowListener {
     fn callback(_: &mut PearlData<Self>, data: BobaEventData<WindowClosed>) {
-        println!("Closed Window '{}'", data.name);
+        println!("Closed Window '{}'", data.event.name);
     }
 }
 

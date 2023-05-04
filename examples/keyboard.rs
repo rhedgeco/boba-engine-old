@@ -11,18 +11,21 @@ impl Pearl for KeyboardPrinter {
 
 impl EventListener<MouseMotion> for KeyboardPrinter {
     fn callback(_: &mut PearlData<Self>, data: BobaEventData<MouseMotion>) {
-        println!("Mouse Motion: ({}, {})", data.delta_x, data.delta_y);
+        println!(
+            "Mouse Motion: ({}, {})",
+            data.event.delta_x, data.event.delta_y
+        );
     }
 }
 
 impl EventListener<KeyboardInput> for KeyboardPrinter {
     fn callback(_: &mut PearlData<Self>, data: BobaEventData<KeyboardInput>) {
-        if !data.is_pressed() {
+        if !data.event.is_pressed() {
             return;
         }
 
-        println!("Key Pressed: {:?}", data.keycode());
-        if data.keycode() == Some(KeyCode::Escape) {
+        println!("Key Pressed: {:?}", data.event.keycode());
+        if data.event.keycode() == Some(KeyCode::Escape) {
             if let Some(commands) = data.resources.get_mut::<Commands>() {
                 commands.exit_app();
             }

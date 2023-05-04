@@ -18,7 +18,7 @@ impl TaroPipeline for PulsingPipeline {
     fn render(&mut self, _: &Mat4, event: &mut BobaEventData<TaroRender>) {
         let brightness = self.progress * self.progress;
         println!("Brightness: {brightness}");
-        let device = event.hardware().device();
+        let device = event.event.hardware().device();
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("White Stage Encoder"),
         });
@@ -26,7 +26,7 @@ impl TaroPipeline for PulsingPipeline {
         let _ = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("White Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: event.output_view(),
+                view: event.event.output_view(),
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color {
@@ -41,7 +41,7 @@ impl TaroPipeline for PulsingPipeline {
             depth_stencil_attachment: None,
         });
 
-        event.queue_encoder(encoder);
+        event.event.queue_encoder(encoder);
 
         let Some(time) = event.resources.get::<Time>() else { return };
         self.progress += self.speed * time.delta();

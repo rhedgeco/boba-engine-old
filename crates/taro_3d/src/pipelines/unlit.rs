@@ -8,7 +8,7 @@ pub struct UnlitPipeline;
 
 impl TaroPipeline for UnlitPipeline {
     fn render(&mut self, _: &Mat4, data: &mut BobaEventData<TaroRender>) {
-        let device = data.hardware().device();
+        let device = data.event.hardware().device();
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("White Stage Encoder"),
         });
@@ -28,6 +28,6 @@ impl TaroPipeline for UnlitPipeline {
             });
         });
 
-        data.queue_encoder(encoder);
+        data.event.queue_encoder(encoder);
     }
 }
