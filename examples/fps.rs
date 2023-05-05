@@ -24,7 +24,7 @@ fn main() {
         .pearls
         .insert(Transform::new(TransformData::default()));
 
-    milk_tea.pearls.insert(TaroCamera::new(transform));
+    milk_tea.pearls.insert(Taro3DCamera::new(transform));
 
     milk_tea
         .run(WindowSettings::default(), TaroBuilder::new())

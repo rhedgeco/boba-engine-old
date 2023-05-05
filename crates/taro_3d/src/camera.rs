@@ -37,12 +37,12 @@ impl Default for TaroCameraSettings {
     }
 }
 
-pub struct TaroCamera {
+pub struct Taro3DCamera {
     pub transform: Handle<Transform>,
     pub settings: TaroCameraSettings,
 }
 
-impl TaroCamera {
+impl Taro3DCamera {
     pub fn new(transform: Handle<Transform>) -> Self {
         Self::with_settings(transform, TaroCameraSettings::default())
     }
@@ -60,14 +60,14 @@ impl TaroCamera {
     }
 }
 
-impl Pearl for TaroCamera {
+impl Pearl for Taro3DCamera {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
         registrar.listen_for::<Update>();
         registrar.listen_for::<TaroRender>();
     }
 }
 
-impl EventListener<Update> for TaroCamera {
+impl EventListener<Update> for Taro3DCamera {
     fn callback(pearl: &mut PearlData<Self>, data: BobaEventData<Update>) {
         let Some(target) = &pearl.settings.target else { return };
         let Some(windows) = data.resources.get_mut::<Windows>() else { return };
@@ -76,7 +76,7 @@ impl EventListener<Update> for TaroCamera {
     }
 }
 
-impl EventListener<TaroRender> for TaroCamera {
+impl EventListener<TaroRender> for Taro3DCamera {
     fn callback(pearl: &mut PearlData<Self>, mut data: BobaEventData<TaroRender>) {
         if !pearl.has_target(data.event.window_name()) {
             return;

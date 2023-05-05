@@ -10,7 +10,7 @@ fn main() {
         .pearls
         .insert(Transform::new(TransformData::default()));
 
-    milk_tea.pearls.insert(TaroCamera::with_settings(
+    milk_tea.pearls.insert(Taro3DCamera::with_settings(
         cam_transform,
         TaroCameraSettings {
             pipeline: Box::new(UnlitPipeline),
