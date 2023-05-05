@@ -6,7 +6,10 @@ use boba_core::{
     pearl::map::{Handle, PearlData},
     BobaEventData, EventListener, EventRegistrar, Pearl,
 };
-use taro_renderer::events::TaroRender;
+use taro_renderer::{
+    events::TaroRender,
+    milk_tea::{events::Update, Windows},
+};
 
 use crate::pipelines::UnlitPipeline;
 
@@ -59,7 +62,17 @@ impl TaroCamera {
 
 impl Pearl for TaroCamera {
     fn register(registrar: &mut impl EventRegistrar<Self>) {
+        registrar.listen_for::<Update>();
         registrar.listen_for::<TaroRender>();
+    }
+}
+
+impl EventListener<Update> for TaroCamera {
+    fn callback(pearl: &mut PearlData<Self>, data: BobaEventData<Update>) {
+        let Some(target) = &pearl.settings.target else { return };
+        let Some(windows) = data.resources.get_mut::<Windows>() else { return };
+        let Some(target_window) = windows.get_window(&target) else { return };
+        target_window.request_redraw();
     }
 }
 

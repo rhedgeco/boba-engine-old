@@ -13,7 +13,7 @@ use crate::{
 };
 
 pub struct MilkTeaSettings {
-    pub automatic_redraw: bool,
+    pub wait_for_event: bool,
     pub exit_on_close: bool,
     pub close_window_when_requested: bool,
 }
@@ -21,7 +21,7 @@ pub struct MilkTeaSettings {
 impl Default for MilkTeaSettings {
     fn default() -> Self {
         Self {
-            automatic_redraw: true,
+            wait_for_event: false,
             exit_on_close: false,
             close_window_when_requested: true,
         }
@@ -60,7 +60,10 @@ impl MilkTea {
         );
 
         event_loop.run(move |event, window_target, control_flow| {
-            control_flow.set_wait();
+            match self.settings.wait_for_event {
+                true => control_flow.set_wait(),
+                false => control_flow.set_poll(),
+            }
 
             match event {
                 Event::DeviceEvent { device_id, event } => match event {

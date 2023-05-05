@@ -26,8 +26,8 @@ impl TaroPipeline for UnlitPipeline {
                 })],
                 depth_stencil_attachment: None,
             });
-        });
 
-        data.event.queue_encoder(encoder);
+            data.event.queue_encoder(encoder);
+        });
     }
 }

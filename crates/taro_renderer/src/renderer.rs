@@ -185,6 +185,10 @@ impl WindowEditor for WindowManager {
             true => Some(milk_tea::winit::window::Fullscreen::Borderless(None)),
         })
     }
+
+    fn request_redraw(&mut self) {
+        self.window.request_redraw();
+    }
 }
 
 pub struct TaroHardware {

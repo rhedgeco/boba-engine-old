@@ -133,6 +133,7 @@ pub trait WindowEditor: 'static {
     fn set_position(&self, x: u32, y: u32);
     fn fullscreen(&self) -> bool;
     fn set_fullscreen(&mut self, full: bool);
+    fn request_redraw(&mut self);
 
     // ---
     // auto-implemented helper methods
