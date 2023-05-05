@@ -6,10 +6,8 @@ use boba_core::{
     pearl::map::{Handle, PearlData},
     BobaEventData, EventListener, EventRegistrar, Pearl,
 };
-use taro_renderer::{
-    events::TaroRender,
-    milk_tea::{events::Update, Windows},
-};
+use milk_tea::{events::Update, Windows};
+use taro_renderer::events::TaroRender;
 
 use crate::pipelines::UnlitPipeline;
 

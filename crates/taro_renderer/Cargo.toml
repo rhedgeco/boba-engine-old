@@ -8,5 +8,6 @@ log = "0.4"
 wgpu = "0.16"
 pollster = "0.3"
 hashbrown = "0.13"
+once_cell = "1.17"
 
 milk_tea = { path = "../milk_tea" }

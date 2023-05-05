@@ -6,4 +6,5 @@ edition = "2021"
 [dependencies]
 boba_3d = { path = "../boba_3d" }
 boba_core = { path = "../boba_core" }
+milk_tea = { path = "../milk_tea" }
 taro_renderer = { path = "../taro_renderer" }
