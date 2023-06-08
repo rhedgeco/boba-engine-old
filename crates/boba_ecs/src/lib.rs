@@ -1,10 +1,10 @@
-mod resources;
+mod world;
 
 pub mod archetype;
 pub mod entity;
 pub mod pearl;
 
-pub use resources::*;
+pub use world::*;
 
 pub use archetype::Archetype;
 pub use entity::Entity;

@@ -2,13 +2,14 @@ use std::sync::atomic::{AtomicU16, Ordering};
 
 use crate::Entity;
 
-pub struct EntityCollection<T> {
+#[derive(Debug)]
+pub struct EntityMap<T> {
     collection_id: u16,
     entities: Vec<(Entity, Option<T>)>,
     open: Vec<u32>,
 }
 
-impl<T> Default for EntityCollection<T> {
+impl<T> Default for EntityMap<T> {
     fn default() -> Self {
         static ID_COUNTER: AtomicU16 = AtomicU16::new(0);
 
@@ -20,7 +21,7 @@ impl<T> Default for EntityCollection<T> {
     }
 }
 
-impl<T> EntityCollection<T> {
+impl<T> EntityMap<T> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -34,52 +35,55 @@ impl<T> EntityCollection<T> {
     }
 
     pub fn is_alive(&self, entity: Entity) -> bool {
-        match self.entities.get(entity.uindex()) {
-            Some(stored_entity) if stored_entity.0 == entity => true,
-            _ => false,
-        }
+        matches!(self.entities.get(entity.uindex()), Some(stored_entity) if stored_entity.0 == entity)
     }
 
-    pub fn get_data(&self, entity: Entity) -> Option<&T> {
-        let (stored_entity, data) = self.entities.get(entity.uindex())?;
+    pub fn set(&mut self, entity: Entity, new_value: T) -> bool {
+        let Some(old_value) = self.get_mut(entity) else { return false };
+        *old_value = new_value;
+        true
+    }
+
+    pub fn get(&self, entity: Entity) -> Option<&T> {
+        let (stored_entity, value) = self.entities.get(entity.uindex())?;
         if stored_entity != &entity {
             return None;
         }
 
-        data.as_ref()
+        value.as_ref()
     }
 
-    pub fn get_data_mut(&mut self, entity: Entity) -> Option<&mut T> {
-        let (stored_entity, data) = self.entities.get_mut(entity.uindex())?;
+    pub fn get_mut(&mut self, entity: Entity) -> Option<&mut T> {
+        let (stored_entity, value) = self.entities.get_mut(entity.uindex())?;
         if stored_entity != &entity {
             return None;
         }
 
-        data.as_mut()
+        value.as_mut()
     }
 
-    pub fn spawn(&mut self, data: T) -> Entity {
+    pub fn spawn(&mut self, value: T) -> Entity {
         match self.open.pop() {
             Some(index) => self.entities[index as usize].0,
             None => {
                 let uindex = self.entities.len();
                 let index = u32::try_from(uindex).expect("EntityCollection overflow.");
                 let entity = Entity::from_raw_parts(index, 0, self.collection_id);
-                self.entities.push((entity, Some(data)));
+                self.entities.push((entity, Some(value)));
                 entity
             }
         }
     }
 
     pub fn remove(&mut self, entity: Entity) -> Option<T> {
-        let (stored_entity, data) = self.entities.get_mut(entity.uindex())?;
+        let (stored_entity, value) = self.entities.get_mut(entity.uindex())?;
         if stored_entity != &entity {
             return None;
         }
 
         stored_entity.increment_generation();
         self.open.push(stored_entity.index());
-        data.take()
+        value.take()
     }
 }
 
@@ -89,7 +93,7 @@ mod tests {
 
     #[test]
     fn length() {
-        let mut collection = EntityCollection::new();
+        let mut collection = EntityMap::new();
         assert!(collection.len() == 0);
         assert!(collection.is_empty());
 
@@ -109,7 +113,7 @@ mod tests {
 
     #[test]
     fn from_open() {
-        let mut collection = EntityCollection::new();
+        let mut collection = EntityMap::new();
         let e1 = collection.spawn(());
         let e2 = collection.spawn(());
         assert!(e1.index() == 0);
@@ -123,7 +127,7 @@ mod tests {
 
     #[test]
     fn alive() {
-        let mut collection = EntityCollection::new();
+        let mut collection = EntityMap::new();
         let e1 = collection.spawn(());
         let e2 = collection.spawn(());
         assert!(collection.is_alive(e1));

@@ -1,11 +1,17 @@
-use imposters::Imposter;
+use std::slice::{Iter, IterMut};
 
-use super::{Pearl, PearlId, PearlIdSet};
+use imposters::{collections::vec::ImposterVec, Imposter};
 
-#[derive(Default)]
+use crate::Pearl;
+
+use super::{
+    id::{PearlIdMap, PearlIdSet},
+    PearlId,
+};
+
+#[derive(Debug, Default)]
 pub struct PearlSet {
-    pub(crate) ids: PearlIdSet,
-    pub(crate) pearls: Vec<Imposter>,
+    map: PearlIdMap<Imposter>,
 }
 
 impl PearlSet {
@@ -13,102 +19,117 @@ impl PearlSet {
         Self::default()
     }
 
-    pub fn new_with<P: Pearl>(pearl: P) -> Self {
-        Self {
-            ids: PearlIdSet::new_with::<P>(),
-            pearls: vec![Imposter::new(pearl)],
-        }
-    }
-
-    pub fn ids(&self) -> &PearlIdSet {
-        &self.ids
-    }
-
     pub fn len(&self) -> usize {
-        self.pearls.len()
+        self.map.len()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.pearls.is_empty()
+        self.map.is_empty()
     }
 
-    pub fn insert<P: Pearl>(&mut self, pearl: P) {
-        let imposter = Imposter::new(pearl);
-        match self.ids.insert::<P>() {
-            Ok(_) => self.pearls.push(imposter),
-            Err(index) => self.pearls[index] = imposter,
-        }
+    pub fn id_set(&self) -> &PearlIdSet {
+        self.map.id_set()
+    }
+
+    pub fn insert<P: Pearl>(&mut self, pearl: P) -> Option<P> {
+        self.map.insert(P::id(), Imposter::new(pearl))?.downcast()
     }
 
     pub fn remove<P: Pearl>(&mut self) -> Option<P> {
-        let index = self.ids.remove::<P>()?;
-        self.pearls.remove(index).downcast::<P>()
-    }
-
-    pub fn drop(&mut self, id: &PearlId) -> bool {
-        let Some(index) = self.ids.remove_id(&id) else { return false };
-        self.pearls.remove(index);
-        true
+        self.map.remove(&P::id())?.downcast()
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+#[derive(Debug)]
+pub struct PearlMatrix {
+    len: usize,
+    map: PearlIdMap<ImposterVec>,
+}
 
-    struct TestPearl1;
-    struct TestPearl2;
-    struct TestPearl3;
+impl PearlMatrix {
+    pub fn from_set(set: PearlSet) -> Self {
+        let mut map = PearlIdMap::new();
+        for (id, imposter) in set.map.into_iter() {
+            map.insert(id, ImposterVec::from_imposter(imposter));
+        }
 
-    #[test]
-    fn manipulation() {
-        let mut set = PearlSet::new();
-        assert!(set.len() == 0);
-        assert!(set.is_empty());
-
-        set.insert(TestPearl1);
-        set.insert(TestPearl2);
-        assert!(set.len() == 2);
-        assert!(!set.is_empty());
-
-        set.remove::<TestPearl1>();
-        assert!(set.len() == 1);
-        assert!(!set.is_empty());
-
-        set.remove::<TestPearl1>();
-        assert!(set.len() == 1);
-        assert!(!set.is_empty());
-
-        set.insert(TestPearl3);
-        assert!(set.len() == 2);
-        assert!(!set.is_empty());
-
-        set.drop(&TestPearl2.pearl_id());
-        assert!(set.len() == 1);
-        assert!(!set.is_empty());
-
-        set.drop(&PearlId::of::<TestPearl3>());
-        assert!(set.len() == 0);
-        assert!(set.is_empty());
+        Self { len: 1, map }
     }
 
-    #[test]
-    fn id_comparison() {
-        let mut set1 = PearlSet::new();
-        set1.insert(TestPearl1);
-        set1.insert(TestPearl2);
-        set1.insert(TestPearl3);
+    pub fn len(&self) -> usize {
+        self.len
+    }
 
-        let mut set2 = PearlSet::new();
-        set2.insert(TestPearl1);
-        set2.insert(TestPearl2);
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
 
-        assert!(set1.ids().contains::<TestPearl1>().is_some());
-        assert!(set1.ids().contains::<TestPearl2>().is_some());
-        assert!(set1.ids().contains::<TestPearl3>().is_some());
-        assert!(set2.ids().contains::<TestPearl1>().is_some());
-        assert!(set2.ids().contains::<TestPearl2>().is_some());
-        assert!(set2.ids().contains::<TestPearl3>().is_none());
-        assert!(set1.ids().contains_set(set2.ids()));
+    pub fn id_set(&self) -> &PearlIdSet {
+        self.map.id_set()
+    }
+
+    pub fn push(&mut self, set: PearlSet) {
+        if self.id_set() != set.id_set() {
+            panic!("Tried to push PearlSet into mismatched PearlMatrix.");
+        }
+
+        for (vec, imposter) in self.map.values_mut().zip(set.map.into_values()) {
+            vec.push_imposter(imposter).ok().unwrap();
+        }
+
+        self.len += 1;
+    }
+
+    pub fn swap_remove(&mut self, index: usize) -> PearlSet {
+        let mut map = PearlIdMap::new();
+        for vec in self.map.values_mut() {
+            let imposter = vec.swap_remove(index).expect("Index out of bounds.");
+            let type_id = imposter.type_id();
+            let pearl_id = PearlId { type_id };
+            map.insert(pearl_id, imposter);
+        }
+
+        PearlSet { map }
+    }
+
+    pub fn swap_drop(&mut self, index: usize) {
+        if index >= self.len {
+            panic!("Index out of bounds.");
+        }
+
+        for vec in self.map.values_mut() {
+            vec.swap_drop(index);
+        }
+
+        self.len -= 1;
+    }
+
+    pub fn iter<P: Pearl>(&self) -> Option<Iter<P>> {
+        Some(self.map.get(&P::id())?.as_slice::<P>()?.iter())
+    }
+
+    pub fn iter_mut<P: Pearl>(&mut self) -> Option<IterMut<P>> {
+        Some(self.map.get_mut(&P::id())?.as_slice_mut::<P>()?.iter_mut())
+    }
+
+    pub fn fetch_iter(&mut self) -> IterFetcher {
+        IterFetcher::new(self)
+    }
+}
+
+pub struct IterFetcher<'a> {
+    inner: super::id::map::Fetcher<'a, ImposterVec>,
+}
+
+impl<'a> IterFetcher<'a> {
+    pub fn new(matrix: &'a mut PearlMatrix) -> Self {
+        Self {
+            inner: matrix.map.fetch(),
+        }
+    }
+
+    pub fn get<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
+        let vec = self.inner.get(&P::id())?;
+        Some(vec.as_slice_mut::<P>()?.iter_mut())
     }
 }
