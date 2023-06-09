@@ -152,7 +152,7 @@ impl<'a> Iterator for QueryContains<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             let arch = self.archetypes.next()?;
-            if self.query_ids.is_subset(arch.id_set()) {
+            if arch.id_set().is_subset(self.query_ids) {
                 return Some(arch);
             }
         }
