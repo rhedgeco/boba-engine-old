@@ -44,6 +44,12 @@ impl PearlIdSet {
         self.ids.binary_search(id).ok()
     }
 
+    pub fn insert(&mut self, id: PearlId) {
+        if let Err(index) = self.ids.binary_search(&id) {
+            self.ids.insert(index, id);
+        }
+    }
+
     pub fn find_or_insert(&mut self, id: &PearlId) -> FindOrInsert {
         match self.ids.binary_search(id) {
             Ok(index) => FindOrInsert::Found(index),
@@ -81,7 +87,7 @@ impl PearlIdSet {
 
         // get an iterator over the other ids and obtain the first id in the iterator
         let mut other_iter = other.iter();
-        let Some(mut other_id) = other_iter.next() else { return false };
+        let Some(mut other_id) = other_iter.next() else { return true };
 
         // loop over every id in self, and match them to the other sets ids
         for self_id in self.iter() {
