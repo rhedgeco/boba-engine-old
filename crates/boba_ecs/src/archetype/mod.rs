@@ -89,7 +89,7 @@ impl<'a> IterFetcher<'a> {
         Some(unsafe { std::mem::transmute(self.entities.as_slice()) })
     }
 
-    pub fn get<P: Pearl>(&mut self) -> Option<IterMut<P>> {
+    pub fn get<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
         self.inner.get()
     }
 }
