@@ -4,7 +4,7 @@ use fxhash::{FxHashMap, FxHashSet};
 
 /// A generic storage solution for holding items in boba engine.
 /// It can only hold one of each item, so each item is a kind of singleton.
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct BobaResources {
     resources: FxHashMap<TypeId, Box<dyn Any>>,
 }
