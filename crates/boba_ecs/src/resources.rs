@@ -85,12 +85,12 @@ impl<'a> ResourceFetcher<'a> {
             return None;
         }
 
-        let resource = self.resources.get_mut::<T>()?;
+        unsafe { self.get_unmasked() }
+    }
 
-        // SAFETY: Transmuting here does some messy things to the lifetime.
-        // However, since each particular item is exluded from future calls using the fetched set,
-        // none of them may be accessed twice which would result in multiple mutable access.
-        Some(unsafe { std::mem::transmute(resource) })
+    pub unsafe fn get_unmasked<T: 'static>(&mut self) -> Option<&'a mut T> {
+        let resource = self.resources.get_mut::<T>()?;
+        Some(std::mem::transmute(resource))
     }
 }
 
