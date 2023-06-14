@@ -1,5 +1,6 @@
 pub use boba_3d;
 pub use boba_core;
+pub use boba_ecs;
 pub use milk_tea;
 pub use taro_3d;
 pub use taro_renderer;
