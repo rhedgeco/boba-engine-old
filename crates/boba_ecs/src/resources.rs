@@ -5,11 +5,11 @@ use fxhash::{FxHashMap, FxHashSet};
 /// A generic storage solution for holding items in boba engine.
 /// It can only hold one of each item, so each item is a kind of singleton.
 #[derive(Debug, Default)]
-pub struct BobaResources {
+pub struct Resources {
     resources: FxHashMap<TypeId, Box<dyn Any>>,
 }
 
-impl BobaResources {
+impl Resources {
     /// Returns a new resource map
     #[inline]
     pub fn new() -> Self {
@@ -76,7 +76,7 @@ impl BobaResources {
 
 pub struct ResourceFetcher<'a> {
     fetched: FxHashSet<TypeId>,
-    resources: &'a mut BobaResources,
+    resources: &'a mut Resources,
 }
 
 impl<'a> ResourceFetcher<'a> {
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn insert_get() {
-        let mut res = BobaResources::new();
+        let mut res = Resources::new();
 
         assert!(res.insert(TestStruct1(1)).is_none());
         assert!(res.insert(TestStruct2(2)).is_none());
@@ -117,7 +117,7 @@ mod tests {
 
     #[test]
     fn fetch() {
-        let mut res = BobaResources::new();
+        let mut res = Resources::new();
         res.insert(TestStruct1(5));
         res.insert(TestStruct2(10));
 
