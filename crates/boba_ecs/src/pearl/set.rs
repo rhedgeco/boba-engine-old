@@ -132,4 +132,9 @@ impl<'a> IterFetcher<'a> {
         let vec = self.inner.get(&P::id())?;
         Some(vec.as_slice_mut::<P>()?.iter_mut())
     }
+
+    pub unsafe fn get_unmasked<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
+        let vec = self.inner.get_unmasked(&P::id())?;
+        Some(vec.as_slice_mut::<P>()?.iter_mut())
+    }
 }

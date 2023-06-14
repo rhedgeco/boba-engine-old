@@ -132,11 +132,11 @@ impl<'a, T> Fetcher<'a, T> {
             return None;
         }
 
-        let value = self.map.get_mut(id)?;
+        unsafe { self.get_unmasked(id) }
+    }
 
-        // SAFETY: Transmuting here only changes the lifetime of the value.
-        // While this would normally be unsafe, the mask ensures that the user
-        // is never able to mutably access the same data twice.
+    pub unsafe fn get_unmasked(&mut self, id: &PearlId) -> Option<&'a mut T> {
+        let value = self.map.get_mut(id)?;
         Some(unsafe { std::mem::transmute(value) })
     }
 }

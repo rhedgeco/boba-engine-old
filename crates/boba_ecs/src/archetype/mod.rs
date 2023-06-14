@@ -80,16 +80,24 @@ impl<'a> IterFetcher<'a> {
         }
     }
 
-    pub fn entities(&mut self) -> Option<&[Entity]> {
+    pub fn entities(&mut self) -> Option<&'a [Entity]> {
         if self.fetched_entities {
             return None;
         }
 
         self.fetched_entities = true;
+        unsafe { self.entities_unmasked() }
+    }
+
+    pub unsafe fn entities_unmasked(&mut self) -> Option<&'a [Entity]> {
         Some(unsafe { std::mem::transmute(self.entities.as_slice()) })
     }
 
     pub fn get<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
         self.inner.get()
+    }
+
+    pub unsafe fn get_unmasked<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
+        self.inner.get_unmasked()
     }
 }
