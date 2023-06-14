@@ -66,7 +66,7 @@ impl BobaResources {
         Some(*any.downcast::<T>().unwrap())
     }
 
-    pub fn start_fetching(&mut self) -> ResourceFetcher {
+    pub fn fetch(&mut self) -> ResourceFetcher {
         ResourceFetcher {
             fetched: Default::default(),
             resources: self,
@@ -80,7 +80,7 @@ pub struct ResourceFetcher<'a> {
 }
 
 impl<'a> ResourceFetcher<'a> {
-    pub fn fetch<T: 'static>(&mut self) -> Option<&'a mut T> {
+    pub fn get<T: 'static>(&mut self) -> Option<&'a mut T> {
         if !self.fetched.insert(TypeId::of::<T>()) {
             return None;
         }
@@ -121,13 +121,13 @@ mod tests {
         res.insert(TestStruct1(5));
         res.insert(TestStruct2(10));
 
-        let mut fetcher = res.start_fetching();
-        // let mut fetcher2 = res.start_fetching(); // this should fail to compile
+        let mut fetcher = res.fetch();
+        // let mut fetcher2 = res.fetch(); // this should fail to compile
         // res.insert(TestStruct3(20)); // this should fail to compile
 
-        let test1 = fetcher.fetch::<TestStruct1>();
-        let test2 = fetcher.fetch::<TestStruct2>();
-        let test3 = fetcher.fetch::<TestStruct3>();
+        let test1 = fetcher.get::<TestStruct1>();
+        let test2 = fetcher.get::<TestStruct2>();
+        let test3 = fetcher.get::<TestStruct3>();
 
         assert!(test1.unwrap().0 == 5);
         assert!(test2.unwrap().0 == 10);
