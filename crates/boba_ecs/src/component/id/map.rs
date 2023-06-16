@@ -1,6 +1,6 @@
 use std::iter::Zip;
 
-use super::{PearlId, PearlIdSet};
+use super::{ComponentId, ComponentIdSet};
 
 pub type Ids<'a> = super::set::Iter<'a>;
 pub type IntoIds = super::set::IntoIter;
@@ -12,12 +12,12 @@ pub type IterMut<'a, T> = Zip<Ids<'a>, ValuesMut<'a, T>>;
 pub type IntoIter<T> = Zip<IntoIds, IntoValues<T>>;
 
 #[derive(Debug)]
-pub struct PearlIdMap<T> {
-    set: PearlIdSet,
+pub struct ComponentIdMap<T> {
+    set: ComponentIdSet,
     values: Vec<T>,
 }
 
-impl<T> Default for PearlIdMap<T> {
+impl<T> Default for ComponentIdMap<T> {
     fn default() -> Self {
         Self {
             set: Default::default(),
@@ -26,8 +26,8 @@ impl<T> Default for PearlIdMap<T> {
     }
 }
 
-impl<T> IntoIterator for PearlIdMap<T> {
-    type Item = (PearlId, T);
+impl<T> IntoIterator for ComponentIdMap<T> {
+    type Item = (ComponentId, T);
     type IntoIter = IntoIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -35,7 +35,7 @@ impl<T> IntoIterator for PearlIdMap<T> {
     }
 }
 
-impl<T> PearlIdMap<T> {
+impl<T> ComponentIdMap<T> {
     pub fn new() -> Self {
         Self::default()
     }
@@ -48,7 +48,7 @@ impl<T> PearlIdMap<T> {
         self.values.is_empty()
     }
 
-    pub fn id_set(&self) -> &PearlIdSet {
+    pub fn id_set(&self) -> &ComponentIdSet {
         &self.set
     }
 
@@ -80,12 +80,12 @@ impl<T> PearlIdMap<T> {
         self.set.iter().zip(self.values.iter_mut())
     }
 
-    pub fn get(&self, id: &PearlId) -> Option<&T> {
+    pub fn get(&self, id: &ComponentId) -> Option<&T> {
         let index = self.set.find(id)?;
         Some(&self.values[index])
     }
 
-    pub fn get_mut(&mut self, id: &PearlId) -> Option<&mut T> {
+    pub fn get_mut(&mut self, id: &ComponentId) -> Option<&mut T> {
         let index = self.set.find(id)?;
         Some(&mut self.values[index])
     }
@@ -94,8 +94,8 @@ impl<T> PearlIdMap<T> {
         Fetcher::new(self)
     }
 
-    pub fn insert(&mut self, id: PearlId, value: T) -> Option<T> {
-        use crate::pearl::id::set::FindOrInsert::*;
+    pub fn insert(&mut self, id: ComponentId, value: T) -> Option<T> {
+        use crate::component::id::set::FindOrInsert::*;
         match self.set.find_or_insert(&id) {
             Found(index) => Some(std::mem::replace(&mut self.values[index], value)),
             Inserted(index) => {
@@ -105,7 +105,7 @@ impl<T> PearlIdMap<T> {
         }
     }
 
-    pub fn remove(&mut self, id: &PearlId) -> Option<T> {
+    pub fn remove(&mut self, id: &ComponentId) -> Option<T> {
         match self.set.drop(id) {
             Some(index) => Some(self.values.remove(index)),
             None => None,
@@ -114,20 +114,20 @@ impl<T> PearlIdMap<T> {
 }
 
 pub struct Fetcher<'a, T> {
-    mask: PearlIdSet,
-    map: &'a mut PearlIdMap<T>,
+    mask: ComponentIdSet,
+    map: &'a mut ComponentIdMap<T>,
 }
 
 impl<'a, T> Fetcher<'a, T> {
-    pub fn new(map: &'a mut PearlIdMap<T>) -> Self {
+    pub fn new(map: &'a mut ComponentIdMap<T>) -> Self {
         Self {
-            mask: PearlIdSet::new(),
+            mask: ComponentIdSet::new(),
             map,
         }
     }
 
-    pub fn get(&mut self, id: &PearlId) -> Option<&'a mut T> {
-        use crate::pearl::id::set::FindOrInsert::*;
+    pub fn get(&mut self, id: &ComponentId) -> Option<&'a mut T> {
+        use crate::component::id::set::FindOrInsert::*;
         if let Found(_) = self.mask.find_or_insert(id) {
             return None;
         }
@@ -135,7 +135,7 @@ impl<'a, T> Fetcher<'a, T> {
         unsafe { self.get_unmasked(id) }
     }
 
-    pub unsafe fn get_unmasked(&mut self, id: &PearlId) -> Option<&'a mut T> {
+    pub unsafe fn get_unmasked(&mut self, id: &ComponentId) -> Option<&'a mut T> {
         let value = self.map.get_mut(id)?;
         Some(unsafe { std::mem::transmute(value) })
     }

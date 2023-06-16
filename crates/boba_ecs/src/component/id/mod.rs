@@ -1,27 +1,27 @@
 pub mod map;
 pub mod set;
 
-pub use map::PearlIdMap;
-pub use set::PearlIdSet;
+pub use map::ComponentIdMap;
+pub use set::ComponentIdSet;
 
 use std::{
     any::TypeId,
     fmt::{Display, Formatter},
 };
 
-use crate::Pearl;
+use crate::Component;
 
-/// Light wrapper around [`TypeId`] that can only be created from a valid [`Pearl`] struct.
+/// Light wrapper around [`TypeId`] that can only be created from a valid [`Component`] struct.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct PearlId {
+pub struct ComponentId {
     pub(crate) type_id: TypeId,
 }
 
-impl PearlId {
-    /// Returns a new `PearlId` of type `P`.
-    pub fn of<P: Pearl>() -> Self {
+impl ComponentId {
+    /// Returns a new `ComponentId` of type `P`.
+    pub fn of<T: Component>() -> Self {
         Self {
-            type_id: TypeId::of::<P>(),
+            type_id: TypeId::of::<T>(),
         }
     }
 
@@ -31,7 +31,7 @@ impl PearlId {
     }
 }
 
-impl Display for PearlId {
+impl Display for ComponentId {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.type_id)
     }

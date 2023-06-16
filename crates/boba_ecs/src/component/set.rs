@@ -2,19 +2,19 @@ use std::slice::{Iter, IterMut};
 
 use imposters::{collections::vec::ImposterVec, Imposter};
 
-use crate::Pearl;
+use crate::Component;
 
 use super::{
-    id::{PearlIdMap, PearlIdSet},
-    PearlId,
+    id::{ComponentIdMap, ComponentIdSet},
+    ComponentId,
 };
 
 #[derive(Debug, Default)]
-pub struct PearlSet {
-    map: PearlIdMap<Imposter>,
+pub struct ComponentSet {
+    map: ComponentIdMap<Imposter>,
 }
 
-impl PearlSet {
+impl ComponentSet {
     pub fn new() -> Self {
         Self::default()
     }
@@ -27,28 +27,30 @@ impl PearlSet {
         self.map.is_empty()
     }
 
-    pub fn id_set(&self) -> &PearlIdSet {
+    pub fn id_set(&self) -> &ComponentIdSet {
         self.map.id_set()
     }
 
-    pub fn insert<P: Pearl>(&mut self, pearl: P) -> Option<P> {
-        self.map.insert(P::id(), Imposter::new(pearl))?.downcast()
+    pub fn insert<T: Component>(&mut self, component: T) -> Option<T> {
+        self.map
+            .insert(T::id(), Imposter::new(component))?
+            .downcast()
     }
 
-    pub fn remove<P: Pearl>(&mut self) -> Option<P> {
-        self.map.remove(&P::id())?.downcast()
+    pub fn remove<T: Component>(&mut self) -> Option<T> {
+        self.map.remove(&T::id())?.downcast()
     }
 }
 
 #[derive(Debug)]
-pub struct PearlMatrix {
+pub struct ComponentMatrix {
     len: usize,
-    map: PearlIdMap<ImposterVec>,
+    map: ComponentIdMap<ImposterVec>,
 }
 
-impl PearlMatrix {
-    pub fn from_set(set: PearlSet) -> Self {
-        let mut map = PearlIdMap::new();
+impl ComponentMatrix {
+    pub fn from_set(set: ComponentSet) -> Self {
+        let mut map = ComponentIdMap::new();
         for (id, imposter) in set.map.into_iter() {
             map.insert(id, ImposterVec::from_imposter(imposter));
         }
@@ -64,13 +66,13 @@ impl PearlMatrix {
         self.len == 0
     }
 
-    pub fn id_set(&self) -> &PearlIdSet {
+    pub fn id_set(&self) -> &ComponentIdSet {
         self.map.id_set()
     }
 
-    pub fn push(&mut self, set: PearlSet) {
+    pub fn push(&mut self, set: ComponentSet) {
         if self.id_set() != set.id_set() {
-            panic!("Tried to push PearlSet into mismatched PearlMatrix.");
+            panic!("Tried to push ComponentSet into mismatched ComponentMatrix.");
         }
 
         for (vec, imposter) in self.map.values_mut().zip(set.map.into_values()) {
@@ -80,16 +82,16 @@ impl PearlMatrix {
         self.len += 1;
     }
 
-    pub fn swap_remove(&mut self, index: usize) -> PearlSet {
-        let mut map = PearlIdMap::new();
+    pub fn swap_remove(&mut self, index: usize) -> ComponentSet {
+        let mut map = ComponentIdMap::new();
         for vec in self.map.values_mut() {
             let imposter = vec.swap_remove(index).expect("Index out of bounds.");
             let type_id = imposter.type_id();
-            let pearl_id = PearlId { type_id };
-            map.insert(pearl_id, imposter);
+            let component_id = ComponentId { type_id };
+            map.insert(component_id, imposter);
         }
 
-        PearlSet { map }
+        ComponentSet { map }
     }
 
     pub fn swap_drop(&mut self, index: usize) {
@@ -104,11 +106,11 @@ impl PearlMatrix {
         self.len -= 1;
     }
 
-    pub fn iter<P: Pearl>(&self) -> Option<Iter<P>> {
+    pub fn iter<P: Component>(&self) -> Option<Iter<P>> {
         Some(self.map.get(&P::id())?.as_slice::<P>()?.iter())
     }
 
-    pub fn iter_mut<P: Pearl>(&mut self) -> Option<IterMut<P>> {
+    pub fn iter_mut<P: Component>(&mut self) -> Option<IterMut<P>> {
         Some(self.map.get_mut(&P::id())?.as_slice_mut::<P>()?.iter_mut())
     }
 
@@ -122,19 +124,19 @@ pub struct IterFetcher<'a> {
 }
 
 impl<'a> IterFetcher<'a> {
-    pub fn new(matrix: &'a mut PearlMatrix) -> Self {
+    pub fn new(matrix: &'a mut ComponentMatrix) -> Self {
         Self {
             inner: matrix.map.fetch(),
         }
     }
 
-    pub fn get<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
-        let vec = self.inner.get(&P::id())?;
-        Some(vec.as_slice_mut::<P>()?.iter_mut())
+    pub fn get<T: Component>(&mut self) -> Option<IterMut<'a, T>> {
+        let vec = self.inner.get(&T::id())?;
+        Some(vec.as_slice_mut::<T>()?.iter_mut())
     }
 
-    pub unsafe fn get_unmasked<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
-        let vec = self.inner.get_unmasked(&P::id())?;
-        Some(vec.as_slice_mut::<P>()?.iter_mut())
+    pub unsafe fn get_unmasked<T: Component>(&mut self) -> Option<IterMut<'a, T>> {
+        let vec = self.inner.get_unmasked(&T::id())?;
+        Some(vec.as_slice_mut::<T>()?.iter_mut())
     }
 }

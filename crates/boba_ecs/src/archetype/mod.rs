@@ -1,21 +1,21 @@
 use std::slice::{Iter, IterMut};
 
 use crate::{
-    pearl::{id::PearlIdSet, set::PearlMatrix, PearlSet},
-    Entity, Pearl,
+    component::{id::ComponentIdSet, set::ComponentMatrix, ComponentSet},
+    Component, Entity,
 };
 
 #[derive(Debug)]
 pub struct Archetype {
     entities: Vec<Entity>,
-    pearls: PearlMatrix,
+    components: ComponentMatrix,
 }
 
 impl Archetype {
-    pub fn from_set(entity: Entity, set: PearlSet) -> Self {
+    pub fn from_set(entity: Entity, set: ComponentSet) -> Self {
         Self {
             entities: vec![entity],
-            pearls: PearlMatrix::from_set(set),
+            components: ComponentMatrix::from_set(set),
         }
     }
 
@@ -27,40 +27,40 @@ impl Archetype {
         self.entities.is_empty()
     }
 
-    pub fn id_set(&self) -> &PearlIdSet {
-        self.pearls.id_set()
+    pub fn id_set(&self) -> &ComponentIdSet {
+        self.components.id_set()
     }
 
     pub fn entities(&self) -> &[Entity] {
         &self.entities
     }
 
-    pub fn iter<P: Pearl>(&self) -> Option<Iter<P>> {
-        self.pearls.iter()
+    pub fn iter<T: Component>(&self) -> Option<Iter<T>> {
+        self.components.iter()
     }
 
-    pub fn iter_mut<P: Pearl>(&mut self) -> Option<IterMut<P>> {
-        self.pearls.iter_mut()
+    pub fn iter_mut<T: Component>(&mut self) -> Option<IterMut<T>> {
+        self.components.iter_mut()
     }
 
     pub fn fetch_iter(&mut self) -> IterFetcher {
         IterFetcher::new(self)
     }
 
-    pub fn push(&mut self, entity: Entity, set: PearlSet) {
-        self.pearls.push(set);
+    pub fn push(&mut self, entity: Entity, set: ComponentSet) {
+        self.components.push(set);
         self.entities.push(entity);
     }
 
-    pub fn swap_remove(&mut self, index: usize) -> (Entity, PearlSet) {
+    pub fn swap_remove(&mut self, index: usize) -> (Entity, ComponentSet) {
         let entity = self.entities.swap_remove(index);
-        let set = self.pearls.swap_remove(index);
+        let set = self.components.swap_remove(index);
         (entity, set)
     }
 
     pub fn swap_drop(&mut self, index: usize) -> Entity {
         let entity = self.entities.swap_remove(index);
-        self.pearls.swap_drop(index);
+        self.components.swap_drop(index);
         entity
     }
 }
@@ -68,7 +68,7 @@ impl Archetype {
 pub struct IterFetcher<'a> {
     fetched_entities: bool,
     entities: &'a Vec<Entity>,
-    inner: crate::pearl::set::IterFetcher<'a>,
+    inner: crate::component::set::IterFetcher<'a>,
 }
 
 impl<'a> IterFetcher<'a> {
@@ -76,7 +76,7 @@ impl<'a> IterFetcher<'a> {
         Self {
             fetched_entities: false,
             entities: &archetype.entities,
-            inner: archetype.pearls.fetch_iter(),
+            inner: archetype.components.fetch_iter(),
         }
     }
 
@@ -93,11 +93,11 @@ impl<'a> IterFetcher<'a> {
         Some(unsafe { std::mem::transmute(self.entities.as_slice()) })
     }
 
-    pub fn get<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
+    pub fn get<T: Component>(&mut self) -> Option<IterMut<'a, T>> {
         self.inner.get()
     }
 
-    pub unsafe fn get_unmasked<P: Pearl>(&mut self) -> Option<IterMut<'a, P>> {
+    pub unsafe fn get_unmasked<T: Component>(&mut self) -> Option<IterMut<'a, T>> {
         self.inner.get_unmasked()
     }
 }

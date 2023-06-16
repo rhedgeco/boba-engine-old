@@ -1,7 +1,7 @@
-use super::PearlId;
+use super::ComponentId;
 
-pub type Iter<'a> = std::slice::Iter<'a, PearlId>;
-pub type IntoIter = std::vec::IntoIter<PearlId>;
+pub type Iter<'a> = std::slice::Iter<'a, ComponentId>;
+pub type IntoIter = std::vec::IntoIter<ComponentId>;
 
 #[derive(PartialEq, PartialOrd, Eq, Ord, Debug, Hash)]
 pub enum FindOrInsert {
@@ -10,12 +10,12 @@ pub enum FindOrInsert {
 }
 
 #[derive(Debug, Default, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct PearlIdSet {
-    ids: Vec<PearlId>,
+pub struct ComponentIdSet {
+    ids: Vec<ComponentId>,
 }
 
-impl IntoIterator for PearlIdSet {
-    type Item = PearlId;
+impl IntoIterator for ComponentIdSet {
+    type Item = ComponentId;
     type IntoIter = IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -23,7 +23,7 @@ impl IntoIterator for PearlIdSet {
     }
 }
 
-impl PearlIdSet {
+impl ComponentIdSet {
     pub fn new() -> Self {
         Self::default()
     }
@@ -40,17 +40,17 @@ impl PearlIdSet {
         self.ids.iter()
     }
 
-    pub fn find(&self, id: &PearlId) -> Option<usize> {
+    pub fn find(&self, id: &ComponentId) -> Option<usize> {
         self.ids.binary_search(id).ok()
     }
 
-    pub fn insert(&mut self, id: PearlId) {
+    pub fn insert(&mut self, id: ComponentId) {
         if let Err(index) = self.ids.binary_search(&id) {
             self.ids.insert(index, id);
         }
     }
 
-    pub fn find_or_insert(&mut self, id: &PearlId) -> FindOrInsert {
+    pub fn find_or_insert(&mut self, id: &ComponentId) -> FindOrInsert {
         match self.ids.binary_search(id) {
             Ok(index) => FindOrInsert::Found(index),
             Err(index) => {
@@ -60,7 +60,7 @@ impl PearlIdSet {
         }
     }
 
-    pub fn drop(&mut self, id: &PearlId) -> Option<usize> {
+    pub fn drop(&mut self, id: &ComponentId) -> Option<usize> {
         match self.ids.binary_search(id) {
             Ok(index) => {
                 self.ids.remove(index);
@@ -70,15 +70,15 @@ impl PearlIdSet {
         }
     }
 
-    pub fn remove_index(&mut self, index: usize) -> PearlId {
+    pub fn remove_index(&mut self, index: usize) -> ComponentId {
         self.ids.remove(index)
     }
 
-    pub fn is_superset(&self, other: &PearlIdSet) -> bool {
+    pub fn is_superset(&self, other: &ComponentIdSet) -> bool {
         other.is_subset(self)
     }
 
-    pub fn is_subset(&self, other: &PearlIdSet) -> bool {
+    pub fn is_subset(&self, other: &ComponentIdSet) -> bool {
         // early return if other has more items than self.
         // this makes it automatically not a subset.
         if self.len() < other.len() {

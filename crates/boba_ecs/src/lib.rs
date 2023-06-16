@@ -2,12 +2,12 @@ mod resources;
 mod world;
 
 pub mod archetype;
+pub mod component;
 pub mod entity;
-pub mod pearl;
 
 pub use resources::*;
 pub use world::*;
 
 pub use archetype::Archetype;
+pub use component::Component;
 pub use entity::Entity;
-pub use pearl::Pearl;

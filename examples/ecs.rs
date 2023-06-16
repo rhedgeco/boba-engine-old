@@ -1,8 +1,8 @@
 use std::hint::black_box;
 
 use boba_ecs::{
-    pearl::{id::PearlIdSet, PearlSet},
-    Pearl, World,
+    component::{id::ComponentIdSet, ComponentSet},
+    Component, World,
 };
 
 pub struct TestPearl1 {
@@ -17,26 +17,26 @@ fn main() {
     let mut world = World::new();
 
     for _ in 0..100000 {
-        let mut pearls = PearlSet::new();
+        let mut pearls = ComponentSet::new();
         pearls.insert(TestPearl1 { value: 42 });
         pearls.insert(TestPearl2 { value: 43 });
         world.spawn_with(pearls);
     }
 
     for _ in 0..100000 {
-        let mut pearls = PearlSet::new();
+        let mut pearls = ComponentSet::new();
         pearls.insert(TestPearl1 { value: 44 });
         world.spawn_with(pearls);
     }
 
     for _ in 0..100000 {
-        let mut pearls = PearlSet::new();
+        let mut pearls = ComponentSet::new();
         pearls.insert(TestPearl1 { value: 45 });
         pearls.insert(TestPearl2 { value: 46 });
         world.spawn_with(pearls);
     }
 
-    let mut query_ids = PearlIdSet::new();
+    let mut query_ids = ComponentIdSet::new();
     query_ids.insert(TestPearl1::id());
     query_ids.insert(TestPearl2::id());
 
@@ -44,7 +44,7 @@ fn main() {
 }
 
 fn test_system(world: &mut World) {
-    let mut query_ids = PearlIdSet::new();
+    let mut query_ids = ComponentIdSet::new();
     query_ids.insert(TestPearl1::id());
     query_ids.insert(TestPearl2::id());
 
