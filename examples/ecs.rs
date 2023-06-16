@@ -2,7 +2,7 @@ use std::hint::black_box;
 
 use boba_ecs::{
     component::{id::ComponentIdSet, ComponentSet},
-    Component, World,
+    Component, EntityWorld,
 };
 
 pub struct TestPearl1 {
@@ -14,7 +14,7 @@ pub struct TestPearl2 {
 }
 
 fn main() {
-    let mut world = World::new();
+    let mut world = EntityWorld::new();
 
     for _ in 0..100000 {
         let mut pearls = ComponentSet::new();
@@ -43,7 +43,7 @@ fn main() {
     test_system(&mut world);
 }
 
-fn test_system(world: &mut World) {
+fn test_system(world: &mut EntityWorld) {
     let mut query_ids = ComponentIdSet::new();
     query_ids.insert(TestPearl1::id());
     query_ids.insert(TestPearl2::id());

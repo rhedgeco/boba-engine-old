@@ -16,12 +16,12 @@ struct EntityData {
 /// [`Component`](crate::Component) types. Each [`Entity`] will have an [`Archetype`] and they may
 ///  be queried to obtain the data.
 #[derive(Debug, Default)]
-pub struct World {
+pub struct EntityWorld {
     entities: EntityMap<Option<EntityData>>,
     archetypes: IndexMap<ComponentIdSet, Archetype>,
 }
 
-impl World {
+impl EntityWorld {
     /// Returns a new empty world.
     pub fn new() -> Self {
         Self::default()
@@ -163,7 +163,7 @@ pub struct QueryContains<'a> {
 
 impl<'a> QueryContains<'a> {
     /// Returns a new [`QueryContains`] over the archetypes in `world` using `query_ids`.
-    pub fn new(query_ids: &'a ComponentIdSet, world: &'a mut World) -> Self {
+    pub fn new(query_ids: &'a ComponentIdSet, world: &'a mut EntityWorld) -> Self {
         Self {
             query_ids,
             archetypes: world.archetypes.values_mut(),
